@@ -1,0 +1,1175 @@
+{
+  "v": 1,
+  "items": [
+    {
+      "sig": "a|brand|Stone Logic|#0",
+      "parent": "div|nav-inner|Stone Logic 玩法 世界 截图|#0",
+      "idx": 0
+    },
+    {
+      "sig": "img|brand-icon||navIcon#0",
+      "parent": "a|brand|Stone Logic|#0",
+      "idx": 0
+    },
+    {
+      "sig": "span|brand-name|Stone Logic|navName#0",
+      "parent": "a|brand|Stone Logic|#0",
+      "idx": 1
+    },
+    {
+      "sig": "nav|nav-links|玩法 世界 截图 规则 问答 加入|#0",
+      "parent": "div|nav-inner|Stone Logic 玩法 世界 截图|#0",
+      "idx": 1
+    },
+    {
+      "sig": "a||玩法|#0",
+      "parent": "nav|nav-links|玩法 世界 截图 规则 问答 加入|#0",
+      "idx": 0
+    },
+    {
+      "sig": "a||世界|#0",
+      "parent": "nav|nav-links|玩法 世界 截图 规则 问答 加入|#0",
+      "idx": 1
+    },
+    {
+      "sig": "a||规则|#0",
+      "parent": "nav|nav-links|玩法 世界 截图 规则 问答 加入|#0",
+      "idx": 2
+    },
+    {
+      "sig": "a||问答|#0",
+      "parent": "nav|nav-links|玩法 世界 截图 规则 问答 加入|#0",
+      "idx": 3
+    },
+    {
+      "sig": "a||加入|#0",
+      "parent": "nav|nav-links|玩法 世界 截图 规则 问答 加入|#0",
+      "idx": 4
+    },
+    {
+      "sig": "div|nav-actions|☀️ ⚙️|#0",
+      "parent": "div|nav-inner|Stone Logic 玩法 世界 截图|#0",
+      "idx": 2
+    },
+    {
+      "sig": "button|icon-btn|☀️|themeBtn#0",
+      "parent": "div|nav-actions|☀️ ⚙️|#0",
+      "idx": 0
+    },
+    {
+      "sig": "button|icon-btn|⚙️|settingsBtn#0",
+      "parent": "div|nav-actions|☀️ ⚙️|#0",
+      "idx": 1
+    },
+    {
+      "sig": "section|hero|检测中… Stone Logic 纯生存|hero#0",
+      "parent": "main||检测中… Stone Logic 纯生存|top#0",
+      "idx": 0
+    },
+    {
+      "sig": "div|hero-bg||#0",
+      "parent": "section|hero|检测中… Stone Logic 纯生存|hero#0",
+      "idx": 0
+    },
+    {
+      "sig": "div|hero-inner|检测中… Stone Logic 纯生存|#0",
+      "parent": "section|hero|检测中… Stone Logic 纯生存|hero#0",
+      "idx": 1
+    },
+    {
+      "sig": "div|hero-left|检测中… Stone Logic 纯生存|#0",
+      "parent": "div|hero-inner|检测中… Stone Logic 纯生存|#0",
+      "idx": 0
+    },
+    {
+      "sig": "span|badge|检测中…|statusBadge#0",
+      "parent": "div|hero-left|检测中… Stone Logic 纯生存|#0",
+      "idx": 0
+    },
+    {
+      "sig": "i|dot||#0",
+      "parent": "span|badge|检测中…|statusBadge#0",
+      "idx": 0
+    },
+    {
+      "sig": "span||检测中…|statusText#0",
+      "parent": "span|badge|检测中…|statusBadge#0",
+      "idx": 1
+    },
+    {
+      "sig": "h1|hero-name|Stone Logic|heroName#0",
+      "parent": "div|hero-left|检测中… Stone Logic 纯生存|#0",
+      "idx": 1
+    },
+    {
+      "sig": "p|hero-sub|纯生存 · Paper 26.2 · 起|heroSubtitle#0",
+      "parent": "div|hero-left|检测中… Stone Logic 纯生存|#0",
+      "idx": 2
+    },
+    {
+      "sig": "p|hero-desc|主世界长期不删档，资源世界定期轮换；离线|heroDesc#0",
+      "parent": "div|hero-left|检测中… Stone Logic 纯生存|#0",
+      "idx": 3
+    },
+    {
+      "sig": "div|ip-box|Java 版地址 frp-top.com|ipBox#0",
+      "parent": "div|hero-left|检测中… Stone Logic 纯生存|#0",
+      "idx": 4
+    },
+    {
+      "sig": "span|ip-label|Java 版地址|#0",
+      "parent": "div|ip-row|Java 版地址 frp-top.com|#0",
+      "idx": 0
+    },
+    {
+      "sig": "code|ip-value|frp-top.com:44558|javaIp#0",
+      "parent": "div|ip-row|Java 版地址 frp-top.com|#0",
+      "idx": 1
+    },
+    {
+      "sig": "button|btn-ghost|复制|#0",
+      "parent": "div|ip-row|Java 版地址 frp-top.com|#0",
+      "idx": 2
+    },
+    {
+      "sig": "div|hero-btns|立即加入 下载客户端 ⚡ 快速登陆|#0",
+      "parent": "div|hero-left|检测中… Stone Logic 纯生存|#0",
+      "idx": 5
+    },
+    {
+      "sig": "a|btn-primary|立即加入|joinBtn#0",
+      "parent": "div|hero-btns|立即加入 下载客户端 ⚡ 快速登陆|#0",
+      "idx": 0
+    },
+    {
+      "sig": "a|btn-outline|下载客户端|downloadBtn#0",
+      "parent": "div|hero-btns|立即加入 下载客户端 ⚡ 快速登陆|#0",
+      "idx": 1
+    },
+    {
+      "sig": "button|btn-outline|⚡ 快速登陆|quickLoginBtn#0",
+      "parent": "div|hero-btns|立即加入 下载客户端 ⚡ 快速登陆|#0",
+      "idx": 2
+    },
+    {
+      "sig": "aside|status-card|服务器状态 frp-top.com:44|statusCard#0",
+      "parent": "div|hero-inner|检测中… Stone Logic 纯生存|#0",
+      "idx": 1
+    },
+    {
+      "sig": "div|status-head|服务器状态 frp-top.com:44|#0",
+      "parent": "aside|status-card|服务器状态 frp-top.com:44|statusCard#0",
+      "idx": 0
+    },
+    {
+      "sig": "div||服务器状态 frp-top.com:44|#0",
+      "parent": "div|status-head|服务器状态 frp-top.com:44|#0",
+      "idx": 0
+    },
+    {
+      "sig": "div|status-title|服务器状态|#0",
+      "parent": "div||服务器状态 frp-top.com:44|#0",
+      "idx": 0
+    },
+    {
+      "sig": "div|status-sub|frp-top.com:44558|statusAddr#0",
+      "parent": "div||服务器状态 frp-top.com:44|#0",
+      "idx": 1
+    },
+    {
+      "sig": "div|status-pill|检测中|statusPill#0",
+      "parent": "div|status-head|服务器状态 frp-top.com:44|#0",
+      "idx": 1
+    },
+    {
+      "sig": "div|status-body|0 / 0 在线玩家 版本— 延迟— 上|#0",
+      "parent": "aside|status-card|服务器状态 frp-top.com:44|statusCard#0",
+      "idx": 1
+    },
+    {
+      "sig": "div|players-line|0 / 0 在线玩家|#0",
+      "parent": "div|status-body|0 / 0 在线玩家 版本— 延迟— 上|#0",
+      "idx": 0
+    },
+    {
+      "sig": "span|players-now|0|playersOnline#0",
+      "parent": "div|players-line|0 / 0 在线玩家|#0",
+      "idx": 0
+    },
+    {
+      "sig": "span|players-sep|/|#0",
+      "parent": "div|players-line|0 / 0 在线玩家|#0",
+      "idx": 1
+    },
+    {
+      "sig": "span|players-max|0|playersMax#0",
+      "parent": "div|players-line|0 / 0 在线玩家|#0",
+      "idx": 2
+    },
+    {
+      "sig": "span|players-label|在线玩家|#0",
+      "parent": "div|players-line|0 / 0 在线玩家|#0",
+      "idx": 3
+    },
+    {
+      "sig": "div|bar||#0",
+      "parent": "div|status-body|0 / 0 在线玩家 版本— 延迟— 上|#0",
+      "idx": 1
+    },
+    {
+      "sig": "div|meta-grid|版本— 延迟— 上次更新—|#0",
+      "parent": "div|status-body|0 / 0 在线玩家 版本— 延迟— 上|#0",
+      "idx": 2
+    },
+    {
+      "sig": "div|meta|版本—|#0",
+      "parent": "div|meta-grid|版本— 延迟— 上次更新—|#0",
+      "idx": 0
+    },
+    {
+      "sig": "span||版本|#0",
+      "parent": "div|meta|版本—|#0",
+      "idx": 0
+    },
+    {
+      "sig": "b||—|metaVersion#0",
+      "parent": "div|meta|版本—|#0",
+      "idx": 1
+    },
+    {
+      "sig": "div|meta|延迟—|#0",
+      "parent": "div|meta-grid|版本— 延迟— 上次更新—|#0",
+      "idx": 1
+    },
+    {
+      "sig": "span||延迟|#0",
+      "parent": "div|meta|延迟—|#0",
+      "idx": 0
+    },
+    {
+      "sig": "b||—|metaPing#0",
+      "parent": "div|meta|延迟—|#0",
+      "idx": 1
+    },
+    {
+      "sig": "div|meta|上次更新—|#0",
+      "parent": "div|meta-grid|版本— 延迟— 上次更新—|#0",
+      "idx": 2
+    },
+    {
+      "sig": "span||上次更新|#0",
+      "parent": "div|meta|上次更新—|#0",
+      "idx": 0
+    },
+    {
+      "sig": "b||—|metaTime#0",
+      "parent": "div|meta|上次更新—|#0",
+      "idx": 1
+    },
+    {
+      "sig": "div|motd|正在获取服务器 MOTD…|motd#0",
+      "parent": "div|status-body|0 / 0 在线玩家 版本— 延迟— 上|#0",
+      "idx": 3
+    },
+    {
+      "sig": "div|player-heads||playerHeads#0",
+      "parent": "div|status-body|0 / 0 在线玩家 版本— 延迟— 上|#0",
+      "idx": 4
+    },
+    {
+      "sig": "button|refresh-btn|重新检测|refreshBtn#0",
+      "parent": "aside|status-card|服务器状态 frp-top.com:44|statusCard#0",
+      "idx": 2
+    },
+    {
+      "sig": "div|api-note||apiNote#0",
+      "parent": "aside|status-card|服务器状态 frp-top.com:44|statusCard#0",
+      "idx": 3
+    },
+    {
+      "sig": "section|section|服务器特色 我们提供的内容 ⚔️起床战争|features#0",
+      "parent": "main||检测中… Stone Logic 纯生存|top#0",
+      "idx": 1
+    },
+    {
+      "sig": "h2|sec-title|服务器特色|#0",
+      "parent": "section|section|服务器特色 我们提供的内容 ⚔️起床战争|features#0",
+      "idx": 0
+    },
+    {
+      "sig": "p|sec-desc|我们提供的内容|#0",
+      "parent": "section|section|服务器特色 我们提供的内容 ⚔️起床战争|features#0",
+      "idx": 1
+    },
+    {
+      "sig": "div|grid|⚔️起床战争BedWars 独立竞技场 |featureGrid#0",
+      "parent": "section|section|服务器特色 我们提供的内容 ⚔️起床战争|features#0",
+      "idx": 2
+    },
+    {
+      "sig": "div|card|⚔️起床战争BedWars 独立竞技场 |#0",
+      "parent": "div|grid|⚔️起床战争BedWars 独立竞技场 |featureGrid#0",
+      "idx": 0
+    },
+    {
+      "sig": "span|feat-icon|⚔️|#0",
+      "parent": "div|card|⚔️起床战争BedWars 独立竞技场 |#0",
+      "idx": 0
+    },
+    {
+      "sig": "h3||起床战争|#0",
+      "parent": "div|card|⚔️起床战争BedWars 独立竞技场 |#0",
+      "idx": 1
+    },
+    {
+      "sig": "p||BedWars 独立竞技场 + 自动大厅|#0",
+      "parent": "div|card|⚔️起床战争BedWars 独立竞技场 |#0",
+      "idx": 2
+    },
+    {
+      "sig": "div|card|🫥方块躲猫猫BlockHideAndS|#0",
+      "parent": "div|grid|⚔️起床战争BedWars 独立竞技场 |featureGrid#0",
+      "idx": 1
+    },
+    {
+      "sig": "span|feat-icon|🫥|#0",
+      "parent": "div|card|🫥方块躲猫猫BlockHideAndS|#0",
+      "idx": 0
+    },
+    {
+      "sig": "h3||方块躲猫猫|#0",
+      "parent": "div|card|🫥方块躲猫猫BlockHideAndS|#0",
+      "idx": 1
+    },
+    {
+      "sig": "p||BlockHideAndSeek：伪装成|#0",
+      "parent": "div|card|🫥方块躲猫猫BlockHideAndS|#0",
+      "idx": 2
+    },
+    {
+      "sig": "div|card|🏹PVP 竞技场多个 PVP 世界 +|#0",
+      "parent": "div|grid|⚔️起床战争BedWars 独立竞技场 |featureGrid#0",
+      "idx": 2
+    },
+    {
+      "sig": "span|feat-icon|🏹|#0",
+      "parent": "div|card|🏹PVP 竞技场多个 PVP 世界 +|#0",
+      "idx": 0
+    },
+    {
+      "sig": "h3||PVP 竞技场|#0",
+      "parent": "div|card|🏹PVP 竞技场多个 PVP 世界 +|#0",
+      "idx": 1
+    },
+    {
+      "sig": "p||多个 PVP 世界 + 决斗系统，随时约|#0",
+      "parent": "div|card|🏹PVP 竞技场多个 PVP 世界 +|#0",
+      "idx": 2
+    },
+    {
+      "sig": "div|card|🏡地皮与建筑PlotSquared 地|#0",
+      "parent": "div|grid|⚔️起床战争BedWars 独立竞技场 |featureGrid#0",
+      "idx": 3
+    },
+    {
+      "sig": "span|feat-icon|🏡|#0",
+      "parent": "div|card|🏡地皮与建筑PlotSquared 地|#0",
+      "idx": 0
+    },
+    {
+      "sig": "h3||地皮与建筑|#0",
+      "parent": "div|card|🏡地皮与建筑PlotSquared 地|#0",
+      "idx": 1
+    },
+    {
+      "sig": "p||PlotSquared 地皮世界 + W|#0",
+      "parent": "div|card|🏡地皮与建筑PlotSquared 地|#0",
+      "idx": 2
+    },
+    {
+      "sig": "div|card|👥公会系统PlayerGuild 公会|#0",
+      "parent": "div|grid|⚔️起床战争BedWars 独立竞技场 |featureGrid#0",
+      "idx": 4
+    },
+    {
+      "sig": "span|feat-icon|👥|#0",
+      "parent": "div|card|👥公会系统PlayerGuild 公会|#0",
+      "idx": 0
+    },
+    {
+      "sig": "h3||公会系统|#0",
+      "parent": "div|card|👥公会系统PlayerGuild 公会|#0",
+      "idx": 1
+    },
+    {
+      "sig": "p||PlayerGuild 公会、好友、TP|#0",
+      "parent": "div|card|👥公会系统PlayerGuild 公会|#0",
+      "idx": 2
+    },
+    {
+      "sig": "div|card|💰自由经济QuickShop 摆摊开店|#0",
+      "parent": "div|grid|⚔️起床战争BedWars 独立竞技场 |featureGrid#0",
+      "idx": 5
+    },
+    {
+      "sig": "span|feat-icon|💰|#0",
+      "parent": "div|card|💰自由经济QuickShop 摆摊开店|#0",
+      "idx": 0
+    },
+    {
+      "sig": "h3||自由经济|#0",
+      "parent": "div|card|💰自由经济QuickShop 摆摊开店|#0",
+      "idx": 1
+    },
+    {
+      "sig": "p||QuickShop 摆摊开店、市场交易、|#0",
+      "parent": "div|card|💰自由经济QuickShop 摆摊开店|#0",
+      "idx": 2
+    },
+    {
+      "sig": "div|card|⭐技能与职业mcMMO 技能 + Job|#0",
+      "parent": "div|grid|⚔️起床战争BedWars 独立竞技场 |featureGrid#0",
+      "idx": 6
+    },
+    {
+      "sig": "span|feat-icon|⭐|#0",
+      "parent": "div|card|⭐技能与职业mcMMO 技能 + Job|#0",
+      "idx": 0
+    },
+    {
+      "sig": "h3||技能与职业|#0",
+      "parent": "div|card|⭐技能与职业mcMMO 技能 + Job|#0",
+      "idx": 1
+    },
+    {
+      "sig": "p||mcMMO 技能 + Jobs 职业 +|#0",
+      "parent": "div|card|⭐技能与职业mcMMO 技能 + Job|#0",
+      "idx": 2
+    },
+    {
+      "sig": "div|card|🎁新手礼包进服输入「同意」即领全套铁装|#0",
+      "parent": "div|grid|⚔️起床战争BedWars 独立竞技场 |featureGrid#0",
+      "idx": 7
+    },
+    {
+      "sig": "span|feat-icon|🎁|#0",
+      "parent": "div|card|🎁新手礼包进服输入「同意」即领全套铁装|#0",
+      "idx": 0
+    },
+    {
+      "sig": "h3||新手礼包|#0",
+      "parent": "div|card|🎁新手礼包进服输入「同意」即领全套铁装|#0",
+      "idx": 1
+    },
+    {
+      "sig": "p||进服输入「同意」即领全套铁装 + 500|#0",
+      "parent": "div|card|🎁新手礼包进服输入「同意」即领全套铁装|#0",
+      "idx": 2
+    },
+    {
+      "sig": "div|card|🛡️双重反作弊GrimAC + Vul|#0",
+      "parent": "div|grid|⚔️起床战争BedWars 独立竞技场 |featureGrid#0",
+      "idx": 8
+    },
+    {
+      "sig": "span|feat-icon|🛡️|#0",
+      "parent": "div|card|🛡️双重反作弊GrimAC + Vul|#0",
+      "idx": 0
+    },
+    {
+      "sig": "h3||双重反作弊|#0",
+      "parent": "div|card|🛡️双重反作弊GrimAC + Vul|#0",
+      "idx": 1
+    },
+    {
+      "sig": "p||GrimAC + Vulcan 双重拦截|#0",
+      "parent": "div|card|🛡️双重反作弊GrimAC + Vul|#0",
+      "idx": 2
+    },
+    {
+      "sig": "div|card|🌸季节与世界事件AeternumSea|#0",
+      "parent": "div|grid|⚔️起床战争BedWars 独立竞技场 |featureGrid#0",
+      "idx": 9
+    },
+    {
+      "sig": "span|feat-icon|🌸|#0",
+      "parent": "div|card|🌸季节与世界事件AeternumSea|#0",
+      "idx": 0
+    },
+    {
+      "sig": "h3||季节与世界事件|#0",
+      "parent": "div|card|🌸季节与世界事件AeternumSea|#0",
+      "idx": 1
+    },
+    {
+      "sig": "p||AeternumSeasons 四季变换|#0",
+      "parent": "div|card|🌸季节与世界事件AeternumSea|#0",
+      "idx": 2
+    },
+    {
+      "sig": "section|section|世界一览 共 10 个世界，各司其职、互|worlds#0",
+      "parent": "main||检测中… Stone Logic 纯生存|top#0",
+      "idx": 2
+    },
+    {
+      "sig": "h2|sec-title|世界一览|#0",
+      "parent": "section|section|世界一览 共 10 个世界，各司其职、互|worlds#0",
+      "idx": 0
+    },
+    {
+      "sig": "p|sec-desc|共 10 个世界，各司其职、互不干扰|#0",
+      "parent": "section|section|世界一览 共 10 个世界，各司其职、互|worlds#0",
+      "idx": 1
+    },
+    {
+      "sig": "div|world-grid|主城 · 大厅spawn / lobby|worldGrid#0",
+      "parent": "section|section|世界一览 共 10 个世界，各司其职、互|worlds#0",
+      "idx": 2
+    },
+    {
+      "sig": "div|wcard|主城 · 大厅spawn / lobby|#0",
+      "parent": "div|world-grid|主城 · 大厅spawn / lobby|worldGrid#0",
+      "idx": 0
+    },
+    {
+      "sig": "div|w-tag|主城 · 大厅|#0",
+      "parent": "div|wcard|主城 · 大厅spawn / lobby|#0",
+      "idx": 0
+    },
+    {
+      "sig": "code|w-name|spawn / lobby|#0",
+      "parent": "div|wcard|主城 · 大厅spawn / lobby|#0",
+      "idx": 1
+    },
+    {
+      "sig": "p||传送枢纽与新手引导，回到这里永远安全。|#0",
+      "parent": "div|wcard|主城 · 大厅spawn / lobby|#0",
+      "idx": 2
+    },
+    {
+      "sig": "div|wcard|主世界overworld长期不删档的生存|#0",
+      "parent": "div|world-grid|主城 · 大厅spawn / lobby|worldGrid#0",
+      "idx": 1
+    },
+    {
+      "sig": "div|w-tag|主世界|#0",
+      "parent": "div|wcard|主世界overworld长期不删档的生存|#0",
+      "idx": 0
+    },
+    {
+      "sig": "code|w-name|overworld|#0",
+      "parent": "div|wcard|主世界overworld长期不删档的生存|#0",
+      "idx": 1
+    },
+    {
+      "sig": "p||长期不删档的生存主世界，你的家在这里。|#0",
+      "parent": "div|wcard|主世界overworld长期不删档的生存|#0",
+      "idx": 2
+    },
+    {
+      "sig": "div|wcard|地狱 · 末地the_nether / |#0",
+      "parent": "div|world-grid|主城 · 大厅spawn / lobby|worldGrid#0",
+      "idx": 2
+    },
+    {
+      "sig": "div|w-tag|地狱 · 末地|#0",
+      "parent": "div|wcard|地狱 · 末地the_nether / |#0",
+      "idx": 0
+    },
+    {
+      "sig": "code|w-name|the_nether / the_end|#0",
+      "parent": "div|wcard|地狱 · 末地the_nether / |#0",
+      "idx": 1
+    },
+    {
+      "sig": "p||原版维度，刷材料打末影龙。|#0",
+      "parent": "div|wcard|地狱 · 末地the_nether / |#0",
+      "idx": 2
+    },
+    {
+      "sig": "div|wcard|资源世界world_resource随便|#0",
+      "parent": "div|world-grid|主城 · 大厅spawn / lobby|worldGrid#0",
+      "idx": 3
+    },
+    {
+      "sig": "div|w-tag|资源世界|#0",
+      "parent": "div|wcard|资源世界world_resource随便|#0",
+      "idx": 0
+    },
+    {
+      "sig": "code|w-name|world_resource|#0",
+      "parent": "div|wcard|资源世界world_resource随便|#0",
+      "idx": 1
+    },
+    {
+      "sig": "p||随便挖、随便拆，定期轮换重置，主世界永不|#0",
+      "parent": "div|wcard|资源世界world_resource随便|#0",
+      "idx": 2
+    },
+    {
+      "sig": "div|wcard|地皮世界plotPlotSquared |#0",
+      "parent": "div|world-grid|主城 · 大厅spawn / lobby|worldGrid#0",
+      "idx": 4
+    },
+    {
+      "sig": "div|w-tag|地皮世界|#0",
+      "parent": "div|wcard|地皮世界plotPlotSquared |#0",
+      "idx": 0
+    },
+    {
+      "sig": "code|w-name|plot|#0",
+      "parent": "div|wcard|地皮世界plotPlotSquared |#0",
+      "idx": 1
+    },
+    {
+      "sig": "p||PlotSquared 地皮，一人一块，|#0",
+      "parent": "div|wcard|地皮世界plotPlotSquared |#0",
+      "idx": 2
+    },
+    {
+      "sig": "div|wcard|社区共建community大家一起造的公|#0",
+      "parent": "div|world-grid|主城 · 大厅spawn / lobby|worldGrid#0",
+      "idx": 5
+    },
+    {
+      "sig": "div|w-tag|社区共建|#0",
+      "parent": "div|wcard|社区共建community大家一起造的公|#0",
+      "idx": 0
+    },
+    {
+      "sig": "code|w-name|community|#0",
+      "parent": "div|wcard|社区共建community大家一起造的公|#0",
+      "idx": 1
+    },
+    {
+      "sig": "p||大家一起造的公共建筑区。|#0",
+      "parent": "div|wcard|社区共建community大家一起造的公|#0",
+      "idx": 2
+    },
+    {
+      "sig": "div|wcard|起床战争bwspBedWars 竞技场，|#0",
+      "parent": "div|world-grid|主城 · 大厅spawn / lobby|worldGrid#0",
+      "idx": 6
+    },
+    {
+      "sig": "div|w-tag|起床战争|#0",
+      "parent": "div|wcard|起床战争bwspBedWars 竞技场，|#0",
+      "idx": 0
+    },
+    {
+      "sig": "code|w-name|bwsp|#0",
+      "parent": "div|wcard|起床战争bwspBedWars 竞技场，|#0",
+      "idx": 1
+    },
+    {
+      "sig": "p||BedWars 竞技场，自动排队开局。|#0",
+      "parent": "div|wcard|起床战争bwspBedWars 竞技场，|#0",
+      "idx": 2
+    },
+    {
+      "sig": "div|wcard|方块躲猫猫blockhide / hid|#0",
+      "parent": "div|world-grid|主城 · 大厅spawn / lobby|worldGrid#0",
+      "idx": 7
+    },
+    {
+      "sig": "div|w-tag|方块躲猫猫|#0",
+      "parent": "div|wcard|方块躲猫猫blockhide / hid|#0",
+      "idx": 0
+    },
+    {
+      "sig": "code|w-name|blockhide / hide|#0",
+      "parent": "div|wcard|方块躲猫猫blockhide / hid|#0",
+      "idx": 1
+    },
+    {
+      "sig": "p||伪装成方块，躲过猎人。|#0",
+      "parent": "div|wcard|方块躲猫猫blockhide / hid|#0",
+      "idx": 2
+    },
+    {
+      "sig": "div|wcard|PVP 竞技场pvp / pvp2决斗与|#0",
+      "parent": "div|world-grid|主城 · 大厅spawn / lobby|worldGrid#0",
+      "idx": 8
+    },
+    {
+      "sig": "div|w-tag|PVP 竞技场|#0",
+      "parent": "div|wcard|PVP 竞技场pvp / pvp2决斗与|#0",
+      "idx": 0
+    },
+    {
+      "sig": "code|w-name|pvp / pvp2|#0",
+      "parent": "div|wcard|PVP 竞技场pvp / pvp2决斗与|#0",
+      "idx": 1
+    },
+    {
+      "sig": "p||决斗与混战专用世界。|#0",
+      "parent": "div|wcard|PVP 竞技场pvp / pvp2决斗与|#0",
+      "idx": 2
+    },
+    {
+      "sig": "div|wcard|季节世界aeternum_frost /|#0",
+      "parent": "div|world-grid|主城 · 大厅spawn / lobby|worldGrid#0",
+      "idx": 9
+    },
+    {
+      "sig": "div|w-tag|季节世界|#0",
+      "parent": "div|wcard|季节世界aeternum_frost /|#0",
+      "idx": 0
+    },
+    {
+      "sig": "code|w-name|aeternum_frost / hea|#0",
+      "parent": "div|wcard|季节世界aeternum_frost /|#0",
+      "idx": 1
+    },
+    {
+      "sig": "p||寒暑交替的四季世界，环境会变。|#0",
+      "parent": "div|wcard|季节世界aeternum_frost /|#0",
+      "idx": 2
+    },
+    {
+      "sig": "section|section|服务器规则 请务必遵守 01禁止任何形式|rules#0",
+      "parent": "main||检测中… Stone Logic 纯生存|top#0",
+      "idx": 3
+    },
+    {
+      "sig": "h2|sec-title|服务器规则|#0",
+      "parent": "section|section|服务器规则 请务必遵守 01禁止任何形式|rules#0",
+      "idx": 0
+    },
+    {
+      "sig": "p|sec-desc|请务必遵守|#0",
+      "parent": "section|section|服务器规则 请务必遵守 01禁止任何形式|rules#0",
+      "idx": 1
+    },
+    {
+      "sig": "ul|rule-list|01禁止任何形式的外挂、脚本、宏与 bu|ruleList#0",
+      "parent": "section|section|服务器规则 请务必遵守 01禁止任何形式|rules#0",
+      "idx": 2
+    },
+    {
+      "sig": "li||01禁止任何形式的外挂、脚本、宏与 bu|#0",
+      "parent": "ul|rule-list|01禁止任何形式的外挂、脚本、宏与 bu|ruleList#0",
+      "idx": 0
+    },
+    {
+      "sig": "b||01|#0",
+      "parent": "li||01禁止任何形式的外挂、脚本、宏与 bu|#0",
+      "idx": 0
+    },
+    {
+      "sig": "span||禁止任何形式的外挂、脚本、宏与 bug |#0",
+      "parent": "li||01禁止任何形式的外挂、脚本、宏与 bu|#0",
+      "idx": 1
+    },
+    {
+      "sig": "li||02禁止恶意破坏他人建筑、偷窃、骗取物品|#0",
+      "parent": "ul|rule-list|01禁止任何形式的外挂、脚本、宏与 bu|ruleList#0",
+      "idx": 1
+    },
+    {
+      "sig": "b||02|#0",
+      "parent": "li||02禁止恶意破坏他人建筑、偷窃、骗取物品|#0",
+      "idx": 0
+    },
+    {
+      "sig": "span||禁止恶意破坏他人建筑、偷窃、骗取物品（C|#0",
+      "parent": "li||02禁止恶意破坏他人建筑、偷窃、骗取物品|#0",
+      "idx": 1
+    },
+    {
+      "sig": "li||03禁止在公共频道刷屏、人身攻击、发布违|#0",
+      "parent": "ul|rule-list|01禁止任何形式的外挂、脚本、宏与 bu|ruleList#0",
+      "idx": 2
+    },
+    {
+      "sig": "b||03|#0",
+      "parent": "li||03禁止在公共频道刷屏、人身攻击、发布违|#0",
+      "idx": 0
+    },
+    {
+      "sig": "span||禁止在公共频道刷屏、人身攻击、发布违规或|#0",
+      "parent": "li||03禁止在公共频道刷屏、人身攻击、发布违|#0",
+      "idx": 1
+    },
+    {
+      "sig": "li||04禁止恶意 PVP：PVP 请移步竞技|#0",
+      "parent": "ul|rule-list|01禁止任何形式的外挂、脚本、宏与 bu|ruleList#0",
+      "idx": 3
+    },
+    {
+      "sig": "b||04|#0",
+      "parent": "li||04禁止恶意 PVP：PVP 请移步竞技|#0",
+      "idx": 0
+    },
+    {
+      "sig": "span||禁止恶意 PVP：PVP 请移步竞技场世|#0",
+      "parent": "li||04禁止恶意 PVP：PVP 请移步竞技|#0",
+      "idx": 1
+    },
+    {
+      "sig": "li||05禁止利用漏洞刷物品、刷经验、刷货币，|#0",
+      "parent": "ul|rule-list|01禁止任何形式的外挂、脚本、宏与 bu|ruleList#0",
+      "idx": 4
+    },
+    {
+      "sig": "b||05|#0",
+      "parent": "li||05禁止利用漏洞刷物品、刷经验、刷货币，|#0",
+      "idx": 0
+    },
+    {
+      "sig": "span||禁止利用漏洞刷物品、刷经验、刷货币，发现|#0",
+      "parent": "li||05禁止利用漏洞刷物品、刷经验、刷货币，|#0",
+      "idx": 1
+    },
+    {
+      "sig": "li||06本服为离线服，请妥善保管自己的 Au|#0",
+      "parent": "ul|rule-list|01禁止任何形式的外挂、脚本、宏与 bu|ruleList#0",
+      "idx": 5
+    },
+    {
+      "sig": "b||06|#0",
+      "parent": "li||06本服为离线服，请妥善保管自己的 Au|#0",
+      "idx": 0
+    },
+    {
+      "sig": "span||本服为离线服，请妥善保管自己的 Auth|#0",
+      "parent": "li||06本服为离线服，请妥善保管自己的 Au|#0",
+      "idx": 1
+    },
+    {
+      "sig": "li||07地皮与领地内请互相尊重，长期不在线的|#0",
+      "parent": "ul|rule-list|01禁止任何形式的外挂、脚本、宏与 bu|ruleList#0",
+      "idx": 6
+    },
+    {
+      "sig": "b||07|#0",
+      "parent": "li||07地皮与领地内请互相尊重，长期不在线的|#0",
+      "idx": 0
+    },
+    {
+      "sig": "span||地皮与领地内请互相尊重，长期不在线的建筑|#0",
+      "parent": "li||07地皮与领地内请互相尊重，长期不在线的|#0",
+      "idx": 1
+    },
+    {
+      "sig": "li||08尊重管理员与其他玩家，有问题先在群内|#0",
+      "parent": "ul|rule-list|01禁止任何形式的外挂、脚本、宏与 bu|ruleList#0",
+      "idx": 7
+    },
+    {
+      "sig": "b||08|#0",
+      "parent": "li||08尊重管理员与其他玩家，有问题先在群内|#0",
+      "idx": 0
+    },
+    {
+      "sig": "span||尊重管理员与其他玩家，有问题先在群内反馈|#0",
+      "parent": "li||08尊重管理员与其他玩家，有问题先在群内|#0",
+      "idx": 1
+    },
+    {
+      "sig": "section|section|常见问题 服务器是什么版本？支持哪些客户|faq#0",
+      "parent": "main||检测中… Stone Logic 纯生存|top#0",
+      "idx": 4
+    },
+    {
+      "sig": "h2|sec-title|常见问题|#0",
+      "parent": "section|section|常见问题 服务器是什么版本？支持哪些客户|faq#0",
+      "idx": 0
+    },
+    {
+      "sig": "div|faq|服务器是什么版本？支持哪些客户端？+服务|faqList#0",
+      "parent": "section|section|常见问题 服务器是什么版本？支持哪些客户|faq#0",
+      "idx": 1
+    },
+    {
+      "sig": "div|faq-item|服务器是什么版本？支持哪些客户端？+服务|#0",
+      "parent": "div|faq|服务器是什么版本？支持哪些客户端？+服务|faqList#0",
+      "idx": 0
+    },
+    {
+      "sig": "div|faq-q|服务器是什么版本？支持哪些客户端？+|#0",
+      "parent": "div|faq-item|服务器是什么版本？支持哪些客户端？+服务|#0",
+      "idx": 0
+    },
+    {
+      "sig": "span||服务器是什么版本？支持哪些客户端？|#0",
+      "parent": "div|faq-q|服务器是什么版本？支持哪些客户端？+|#0",
+      "idx": 0
+    },
+    {
+      "sig": "span||+|#0",
+      "parent": "div|faq-q|服务器是什么版本？支持哪些客户端？+|#0",
+      "idx": 1
+    },
+    {
+      "sig": "div|faq-a|服务端为 Purpur 26.2。装了 |#0",
+      "parent": "div|faq-item|服务器是什么版本？支持哪些客户端？+服务|#0",
+      "idx": 1
+    },
+    {
+      "sig": "div|faq-item|是正版验证服吗？需要注册吗？+本服为离线|#0",
+      "parent": "div|faq|服务器是什么版本？支持哪些客户端？+服务|faqList#0",
+      "idx": 1
+    },
+    {
+      "sig": "div|faq-q|是正版验证服吗？需要注册吗？+|#0",
+      "parent": "div|faq-item|是正版验证服吗？需要注册吗？+本服为离线|#0",
+      "idx": 0
+    },
+    {
+      "sig": "span||是正版验证服吗？需要注册吗？|#0",
+      "parent": "div|faq-q|是正版验证服吗？需要注册吗？+|#0",
+      "idx": 0
+    },
+    {
+      "sig": "span||+|#1",
+      "parent": "div|faq-q|是正版验证服吗？需要注册吗？+|#0",
+      "idx": 1
+    },
+    {
+      "sig": "div|faq-a|本服为离线模式，无需正版账号即可进入。首|#0",
+      "parent": "div|faq-item|是正版验证服吗？需要注册吗？+本服为离线|#0",
+      "idx": 1
+    },
+    {
+      "sig": "div|faq-item|新手有什么福利？+进服会收到一本《服务器|#0",
+      "parent": "div|faq|服务器是什么版本？支持哪些客户端？+服务|faqList#0",
+      "idx": 2
+    },
+    {
+      "sig": "div|faq-q|新手有什么福利？+|#0",
+      "parent": "div|faq-item|新手有什么福利？+进服会收到一本《服务器|#0",
+      "idx": 0
+    },
+    {
+      "sig": "span||新手有什么福利？|#0",
+      "parent": "div|faq-q|新手有什么福利？+|#0",
+      "idx": 0
+    },
+    {
+      "sig": "span||+|#2",
+      "parent": "div|faq-q|新手有什么福利？+|#0",
+      "idx": 1
+    },
+    {
+      "sig": "div|faq-a|进服会收到一本《服务器游玩指南》，在聊天|#0",
+      "parent": "div|faq-item|新手有什么福利？+进服会收到一本《服务器|#0",
+      "idx": 1
+    },
+    {
+      "sig": "div|faq-item|怎么去地皮 / 资源世界 / 小游戏？+|#0",
+      "parent": "div|faq|服务器是什么版本？支持哪些客户端？+服务|faqList#0",
+      "idx": 3
+    },
+    {
+      "sig": "div|faq-q|怎么去地皮 / 资源世界 / 小游戏？+|#0",
+      "parent": "div|faq-item|怎么去地皮 / 资源世界 / 小游戏？+|#0",
+      "idx": 0
+    },
+    {
+      "sig": "span||怎么去地皮 / 资源世界 / 小游戏？|#0",
+      "parent": "div|faq-q|怎么去地皮 / 资源世界 / 小游戏？+|#0",
+      "idx": 0
+    },
+    {
+      "sig": "span||+|#3",
+      "parent": "div|faq-q|怎么去地皮 / 资源世界 / 小游戏？+|#0",
+      "idx": 1
+    },
+    {
+      "sig": "div|faq-a|主城 spawn 有传送菜单与地标传送（|#0",
+      "parent": "div|faq-item|怎么去地皮 / 资源世界 / 小游戏？+|#0",
+      "idx": 1
+    },
+    {
+      "sig": "div|faq-item|主世界会删档吗？+主世界、地皮、公会建筑|#0",
+      "parent": "div|faq|服务器是什么版本？支持哪些客户端？+服务|faqList#0",
+      "idx": 4
+    },
+    {
+      "sig": "div|faq-q|主世界会删档吗？+|#0",
+      "parent": "div|faq-item|主世界会删档吗？+主世界、地皮、公会建筑|#0",
+      "idx": 0
+    },
+    {
+      "sig": "span||主世界会删档吗？|#0",
+      "parent": "div|faq-q|主世界会删档吗？+|#0",
+      "idx": 0
+    },
+    {
+      "sig": "span||+|#4",
+      "parent": "div|faq-q|主世界会删档吗？+|#0",
+      "idx": 1
+    },
+    {
+      "sig": "div|faq-a|主世界、地皮、公会建筑长期不删档；资源世|#0",
+      "parent": "div|faq-item|主世界会删档吗？+主世界、地皮、公会建筑|#0",
+      "idx": 1
+    },
+    {
+      "sig": "div|faq-item|需要装模组或材质包吗？+基础玩法不需要任|#0",
+      "parent": "div|faq|服务器是什么版本？支持哪些客户端？+服务|faqList#0",
+      "idx": 5
+    },
+    {
+      "sig": "div|faq-q|需要装模组或材质包吗？+|#0",
+      "parent": "div|faq-item|需要装模组或材质包吗？+基础玩法不需要任|#0",
+      "idx": 0
+    },
+    {
+      "sig": "span||需要装模组或材质包吗？|#0",
+      "parent": "div|faq-q|需要装模组或材质包吗？+|#0",
+      "idx": 0
+    },
+    {
+      "sig": "span||+|#5",
+      "parent": "div|faq-q|需要装模组或材质包吗？+|#0",
+      "idx": 1
+    },
+    {
+      "sig": "div|faq-a|基础玩法不需要任何模组。想用语音聊天请安|#0",
+      "parent": "div|faq-item|需要装模组或材质包吗？+基础玩法不需要任|#0",
+      "idx": 1
+    },
+    {
+      "sig": "div|faq-item|被熊了怎么办？+服务器有 CorePro|#0",
+      "parent": "div|faq|服务器是什么版本？支持哪些客户端？+服务|faqList#0",
+      "idx": 6
+    },
+    {
+      "sig": "div|faq-q|被熊了怎么办？+|#0",
+      "parent": "div|faq-item|被熊了怎么办？+服务器有 CorePro|#0",
+      "idx": 0
+    },
+    {
+      "sig": "span||被熊了怎么办？|#0",
+      "parent": "div|faq-q|被熊了怎么办？+|#0",
+      "idx": 0
+    },
+    {
+      "sig": "span||+|#6",
+      "parent": "div|faq-q|被熊了怎么办？+|#0",
+      "idx": 1
+    },
+    {
+      "sig": "div|faq-a|服务器有 CoreProtect 全程记|#0",
+      "parent": "div|faq-item|被熊了怎么办？+服务器有 CorePro|#0",
+      "idx": 1
+    },
+    {
+      "sig": "section|section|如何加入 三步即可开玩 1安装游戏下载并|join#0",
+      "parent": "main||检测中… Stone Logic 纯生存|top#0",
+      "idx": 5
+    },
+    {
+      "sig": "h2|sec-title|如何加入|#0",
+      "parent": "section|section|如何加入 三步即可开玩 1安装游戏下载并|join#0",
+      "idx": 0
+    },
+    {
+      "sig": "p|sec-desc|三步即可开玩|#0",
+      "parent": "section|section|如何加入 三步即可开玩 1安装游戏下载并|join#0",
+      "idx": 1
+    },
+    {
+      "sig": "div|grid.steps|1安装游戏下载并安装对应版本的 Mine|#0",
+      "parent": "section|section|如何加入 三步即可开玩 1安装游戏下载并|join#0",
+      "idx": 2
+    },
+    {
+      "sig": "div|card|1安装游戏下载并安装对应版本的 Mine|#0",
+      "parent": "div|grid.steps|1安装游戏下载并安装对应版本的 Mine|#0",
+      "idx": 0
+    },
+    {
+      "sig": "div|step-no|1|#0",
+      "parent": "div|card|1安装游戏下载并安装对应版本的 Mine|#0",
+      "idx": 0
+    },
+    {
+      "sig": "h3||安装游戏|#0",
+      "parent": "div|card|1安装游戏下载并安装对应版本的 Mine|#0",
+      "idx": 1
+    },
+    {
+      "sig": "p||下载并安装对应版本的 Minecraft|#0",
+      "parent": "div|card|1安装游戏下载并安装对应版本的 Mine|#0",
+      "idx": 2
+    },
+    {
+      "sig": "div|card|2添加服务器多人游戏 → 添加服务器 →|#0",
+      "parent": "div|grid.steps|1安装游戏下载并安装对应版本的 Mine|#0",
+      "idx": 1
+    },
+    {
+      "sig": "div|step-no|2|#0",
+      "parent": "div|card|2添加服务器多人游戏 → 添加服务器 →|#0",
+      "idx": 0
+    },
+    {
+      "sig": "h3||添加服务器|#0",
+      "parent": "div|card|2添加服务器多人游戏 → 添加服务器 →|#0",
+      "idx": 1
+    },
+    {
+      "sig": "p||多人游戏 → 添加服务器 → 填入下面的|#0",
+      "parent": "div|card|2添加服务器多人游戏 → 添加服务器 →|#0",
+      "idx": 2
+    },
+    {
+      "sig": "div|card|3开始冒险进入服务器，按照新手引导领取礼|#0",
+      "parent": "div|grid.steps|1安装游戏下载并安装对应版本的 Mine|#0",
+      "idx": 2
+    },
+    {
+      "sig": "div|step-no|3|#0",
+      "parent": "div|card|3开始冒险进入服务器，按照新手引导领取礼|#0",
+      "idx": 0
+    },
+    {
+      "sig": "h3||开始冒险|#0",
+      "parent": "div|card|3开始冒险进入服务器，按照新手引导领取礼|#0",
+      "idx": 1
+    },
+    {
+      "sig": "p||进入服务器，按照新手引导领取礼包，开始你|#0",
+      "parent": "div|card|3开始冒险进入服务器，按照新手引导领取礼|#0",
+      "idx": 2
+    },
+    {
+      "sig": "div|join-links|💬 QQ 交流群📥 客户端下载🎧 |joinLinks#0",
+      "parent": "section|section|如何加入 三步即可开玩 1安装游戏下载并|join#0",
+      "idx": 3
+    },
+    {
+      "sig": "a||💬 QQ 交流群|#0",
+      "parent": "div|join-links|💬 QQ 交流群📥 客户端下载🎧 |joinLinks#0",
+      "idx": 0
+    },
+    {
+      "sig": "a||📥 客户端下载|#0",
+      "parent": "div|join-links|💬 QQ 交流群📥 客户端下载🎧 |joinLinks#0",
+      "idx": 1
+    },
+    {
+      "sig": "a||🎧 语音模组（Simple Voice|#0",
+      "parent": "div|join-links|💬 QQ 交流群📥 客户端下载🎧 |joinLinks#0",
+      "idx": 2
+    },
+    {
+      "sig": "a||📋 在 McLists 查看 / 投票|#0",
+      "parent": "div|join-links|💬 QQ 交流群📥 客户端下载🎧 |joinLinks#0",
+      "idx": 3
+    },
+    {
+      "sig": "div||© 2026 Stone Logic ·|footerText#0",
+      "parent": "footer|footer|© 2026 Stone Logic ·|#0",
+      "idx": 0
+    },
+    {
+      "sig": "div|foot-sub|本站为玩家自制宣传页，与 Mojang |#0",
+      "parent": "footer|footer|© 2026 Stone Logic ·|#0",
+      "idx": 1
+    }
+  ]
+}
