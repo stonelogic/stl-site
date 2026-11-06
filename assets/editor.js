@@ -6,7 +6,7 @@
   'use strict';
 
   var HASH = '8f4771942294a2d7bea850b27b57f7dfe7a66b6dfb91ffb100ba180a0c48af96';
-  var REPO = 'sjwj12517/stl-site';
+  var REPO = 'mcstl/stl-site';
   var PATH = 'assets/layout.json';
   var LS_LAYOUT = 'stl_layout_v1';
   var LS_PAT = 'stl_gh_pat';
