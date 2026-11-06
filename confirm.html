@@ -5,29 +5,73 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>网页授权登录 · Stone Logic</title>
 <style>
-  body{margin:0;min-height:100vh;background:#111418;color:#e8edf3;font-family:"PingFang SC","Microsoft YaHei",sans-serif;display:flex;align-items:center;justify-content:center;padding:20px}
-  .box{background:#171d25;border:1px solid #2a3340;border-radius:16px;padding:28px 24px;width:min(92vw,420px);box-shadow:0 20px 60px rgba(0,0,0,.5);text-align:center}
-  h1{font-size:20px;margin:0 0 10px;color:#ffd166}
-  .id{font-size:22px;color:#52d468;font-weight:700;margin:14px 0;word-break:break-all}
-  p{line-height:1.7;color:#c9d3df;font-size:14px;margin:8px 0}
-  button{width:100%;padding:12px;border:0;border-radius:10px;background:#52d468;color:#0b1209;font-size:15px;font-weight:700;cursor:pointer;margin-top:16px}
-  button:disabled{opacity:.5;cursor:not-allowed}
-  .hint{font-size:12px;opacity:.6;margin-top:14px}
-  a{color:#52d468}
+  *{box-sizing:border-box}
+  body{
+    margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;
+    font-family:"PingFang SC","Microsoft YaHei","Helvetica Neue",Arial,sans-serif;color:#eef4ff;
+    background:#0d1626 url('assets/shot1.svg') center center / cover no-repeat fixed;
+  }
+  .veil{position:fixed;inset:0;z-index:0;
+    background:linear-gradient(135deg,rgba(8,16,30,.90),rgba(14,38,72,.80));
+    backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px)}
+  .box{position:relative;z-index:1;width:min(92vw,460px);text-align:center;
+    background:rgba(17,26,42,.88);border:1px solid rgba(255,255,255,.14);border-radius:22px;
+    padding:30px 28px 26px;box-shadow:0 26px 70px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.06)}
+  .logo{width:92px;height:92px;margin:0 auto 14px;border-radius:20px;display:block;
+    image-rendering:pixelated;background:#243450;box-shadow:0 12px 30px rgba(0,0,0,.45),0 0 0 1px rgba(255,255,255,.14)}
+  .sname{margin:0;font-size:25px;font-weight:800;letter-spacing:.3px;color:#fff}
+  .sub{margin:6px 0 0;font-size:12.5px;color:#9fb4d0;line-height:1.6}
+  .rule{height:1px;margin:20px 0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.22),transparent)}
+  h1{margin:0 0 6px;font-size:17px;font-weight:700;color:#ffd166}
+  .lead{margin:0;font-size:13px;color:#a9bcd6;line-height:1.7}
+  .id{margin:14px auto 10px;padding:11px 14px;border-radius:12px;font-size:21px;font-weight:800;
+    color:#7ee39a;background:rgba(82,212,104,.10);border:1px solid rgba(82,212,104,.30);word-break:break-all}
+  .meta{margin:0 0 18px;font-size:12.5px;color:#8fa5c2;line-height:1.8}
+  .meta b{color:#ffd166}
+  button{width:100%;padding:13px;border:0;border-radius:12px;background:#52d468;color:#0b1209;
+    font-size:15px;font-weight:800;cursor:pointer;transition:.2s;font-family:inherit}
+  button:hover{background:#6ce083;transform:translateY(-1px)}
+  button:disabled{opacity:.55;cursor:not-allowed;transform:none}
+  .msg{min-height:18px;margin:12px 0 0;font-size:12.5px;color:#9fb4d0;line-height:1.6}
+  .foot{margin-top:18px;padding-top:14px;border-top:1px solid rgba(255,255,255,.10);
+    font-size:12px;color:#8298b5;line-height:1.9}
+  a{color:#7fb2ff;text-decoration:none}
+  a:hover{text-decoration:underline}
+  @media(max-width:420px){.box{padding:24px 18px}.logo{width:76px;height:76px}.sname{font-size:21px}}
 </style>
 </head>
 <body>
+<div class="veil"></div>
 <div class="box">
+  <img class="logo" id="logo" src="assets/icon.png" alt="服务器 Logo">
+  <h2 class="sname" id="sname">Stone Logic</h2>
+  <p class="sub" id="sub">Minecraft 服务器 · 网页授权登录</p>
+
+  <div class="rule"></div>
+
   <h1>网页授权登录</h1>
-  <p>即将为以下游戏 ID 授权登录服务器</p>
+  <p class="lead">即将为以下游戏 ID 授权进入服务器</p>
   <div class="id" id="player">—</div>
-  <p>授权后 <b>10 分钟</b>内进服免密码登录。</p>
+  <p class="meta">有效期 <b>10 分钟</b><br>授权成功后回到游戏，弹窗会自动关闭并进入服务器</p>
+
   <button id="ok" type="button">确认授权</button>
-  <p id="msg" class="hint"></p>
-  <p class="hint">没在群里绑定 QQ？先到 <a href="https://qm.qq.com/q/UhSK4yuLGG" target="_blank" rel="noopener">QQ 群</a> 绑定。</p>
+  <p class="msg" id="msg"></p>
+
+  <div class="foot">
+    还没绑定 QQ？先到 <a href="https://qm.qq.com/q/UhSK4yuLGG" target="_blank" rel="noopener">QQ 群</a> 绑定<br>
+    <a href="index.html">← 返回服务器官网</a>
+  </div>
 </div>
 <script>
 (function () {
+  // 与官网共用本地配置，显示真实服务器名 / Logo
+  try {
+    var cfg = JSON.parse(localStorage.getItem('mc-site-config-v2') || '{}');
+    if (cfg.serverName) document.getElementById('sname').textContent = cfg.serverName;
+    if (cfg.subtitle) document.getElementById('sub').textContent = cfg.subtitle;
+    if (cfg.icon) document.getElementById('logo').src = cfg.icon;
+  } catch (e) {}
+
   var q = new URLSearchParams(location.search);
   var topic = q.get('topic') || '';
   var player = q.get('p') || '';
@@ -36,17 +80,22 @@
   document.getElementById('player').textContent = player || '—';
   var btn = document.getElementById('ok');
   var msg = document.getElementById('msg');
-  if (!topic || !player || !ts || !sig) { btn.disabled = true; msg.textContent = '链接不完整或已过期，请回游戏重新获取。'; return; }
+  if (!topic || !player || !ts || !sig) {
+    btn.disabled = true;
+    msg.textContent = '链接不完整或已过期，请回游戏重新获取。';
+    return;
+  }
   btn.addEventListener('click', function () {
-    btn.disabled = true; msg.textContent = '提交中…';
+    btn.disabled = true;
+    msg.textContent = '提交中…';
     fetch('https://ntfy.sh/' + encodeURIComponent(topic), {
       method: 'POST',
       headers: { 'content-type': 'text/plain' },
       body: JSON.stringify({ player: player, ts: Number(ts), sig: sig })
     }).then(function (r) {
       if (!r.ok) throw new Error('HTTP ' + r.status);
-      msg.textContent = '授权成功！回到游戏即可自动进入（10 分钟内有效）。';
       btn.textContent = '已授权';
+      msg.textContent = '授权成功！回到游戏，弹窗会自动关闭并进入服务器。';
     }).catch(function (e) {
       msg.textContent = '提交失败：' + e.message + '，请重试或改用群内指令。';
       btn.disabled = false;
