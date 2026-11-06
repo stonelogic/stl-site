@@ -29,22 +29,28 @@
 <script>
 (function () {
   var q = new URLSearchParams(location.search);
-  var code = q.get('code') || '';
-  var player = q.get('player') || '';
-  var worker = q.get('w') || '';
+  var topic = q.get('topic') || '';
+  var player = q.get('p') || '';
+  var ts = q.get('t') || '';
+  var sig = q.get('s') || '';
   document.getElementById('player').textContent = player || '—';
   var btn = document.getElementById('ok');
   var msg = document.getElementById('msg');
-  if (!code || !worker) { btn.disabled = true; msg.textContent = '链接不完整，请回游戏重新获取。'; return; }
+  if (!topic || !player || !ts || !sig) { btn.disabled = true; msg.textContent = '链接不完整或已过期，请回游戏重新获取。'; return; }
   btn.addEventListener('click', function () {
     btn.disabled = true; msg.textContent = '提交中…';
-    fetch(worker.replace(/\/$/, '') + '/api/confirm', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ code: code })
-    }).then(function (r) { return r.json(); }).then(function (d) {
-      if (d.ok) { msg.textContent = '授权成功！回到游戏即可自动进入（10 分钟内有效）。'; btn.textContent = '已授权'; }
-      else { msg.textContent = '失败：' + (d.error || '链接无效或已过期'); btn.disabled = false; }
-    }).catch(function (e) { msg.textContent = '无法连接授权服务：' + e.message; btn.disabled = false; });
+    fetch('https://ntfy.sh/' + encodeURIComponent(topic), {
+      method: 'POST',
+      headers: { 'content-type': 'text/plain' },
+      body: JSON.stringify({ player: player, ts: Number(ts), sig: sig })
+    }).then(function (r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      msg.textContent = '授权成功！回到游戏即可自动进入（10 分钟内有效）。';
+      btn.textContent = '已授权';
+    }).catch(function (e) {
+      msg.textContent = '提交失败：' + e.message + '，请重试或改用群内指令。';
+      btn.disabled = false;
+    });
   });
 })();
 </script>
