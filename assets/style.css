@@ -363,3 +363,66 @@ code{font-family:ui-monospace,Consolas,Menlo,monospace}
 .ql-qr{display:flex;flex-direction:column;align-items:center;gap:6px;margin:10px 0 4px}
 .ql-qr img{border-radius:10px;background:#fff;padding:6px;box-shadow:0 2px 10px rgba(0,0,0,.15)}
 .ql-qr-tip{font-size:12px;color:var(--muted)}
+
+/* ===== 文档站排版（信息不变，仅改版式） ===== */
+:root,[data-theme="dark"]{
+  --accent:#1f6feb;--accent-2:#4a90e2;
+  --bg:#ffffff;--bg-2:#f7f9fc;--card:#ffffff;--card-2:#f2f5f9;
+  --text:#18212f;--muted:#667486;--border:#e6ebf2;
+  --shadow:0 4px 18px rgba(20,40,80,.06);--radius:14px;
+  --ok:#16a34a;--off:#dc2626;
+}
+body{background:#fff}
+.nav{background:rgba(255,255,255,.92);border-bottom:1px solid var(--border);backdrop-filter:blur(12px)}
+.nav-inner{max-width:1080px;padding:10px 24px}
+.brand-name{font-weight:700;color:#1b2b45}
+.nav-links{gap:20px;font-size:13px;color:#5b6775;margin-left:auto}
+.nav-links a{padding:4px 2px}
+.nav-links a:hover{color:var(--accent)}
+.icon-btn{width:32px;height:32px;border-radius:50%;border:1px solid var(--border);background:#fff;font-size:13px}
+.hero{padding:72px 20px 54px}
+.hero-bg{opacity:.5;background:radial-gradient(620px 340px at 74% 8%,rgba(70,130,220,.16),transparent 70%)}
+.hero-bg::after{display:none}
+.hero-inner{max-width:1080px;grid-template-columns:1.1fr .9fr;gap:48px;align-items:center}
+.hero-left{display:flex;flex-direction:column;align-items:flex-start}
+.badge{order:0;background:#f2f6fc;border:1px solid #dfe8f5;box-shadow:none;color:#5b6775}
+.hero-icon{display:none}
+.hero-sub{order:1;margin:24px 0 8px;color:var(--accent);font-size:14px;font-weight:700;letter-spacing:2px;text-transform:uppercase}
+.hero-name{order:2;margin:0 0 12px;font-size:46px;line-height:1.18;font-weight:800;letter-spacing:-1px;color:#152238}
+.hero-desc{order:3;margin:0;max-width:600px;color:#5f6c7e;font-size:16px;line-height:1.75}
+.ip-box{order:4;margin-top:22px;max-width:520px;background:#f7f9fc;border:1px solid #e8edf4;box-shadow:none;border-radius:12px}
+.btn-ghost{background:#fff}
+.hero-btns{order:5;margin-top:20px;gap:10px}
+.btn-primary{background:#173f6b;color:#fff;border-radius:999px;padding:10px 22px;font-size:14px;box-shadow:none;border:none;font-weight:600}
+.btn-primary:hover{transform:none;background:#1d4f86}
+.btn-outline{background:#f2f5f9;border:1px solid transparent;border-radius:999px;padding:10px 20px;font-size:14px;color:#41506a}
+.btn-outline:hover{border-color:#d7e3f2;color:var(--accent)}
+.btn-primary.small,.btn-outline.small{border-radius:8px;padding:8px 14px}
+.status-card{position:relative;min-height:430px;padding:190px 24px 24px;border-radius:24px;border:1px solid #e8eef6;box-shadow:0 18px 50px rgba(30,80,160,.10)}
+.status-card::before{
+  content:"";position:absolute;top:26px;left:50%;transform:translateX(-50%);
+  width:140px;height:140px;border-radius:34px;
+  background:#eef4fc url(icon.png) center/76px 76px no-repeat;
+  image-rendering:pixelated;
+  box-shadow:0 20px 46px rgba(40,110,220,.26),0 0 0 1px #dbe7f7;
+}
+.section{max-width:1080px;padding:46px 20px}
+.sec-title{font-size:24px;font-weight:800;color:#152238;letter-spacing:-.4px;padding-bottom:14px;border-bottom:1px solid var(--border)}
+.grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
+.world-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
+.card,.world-card,.faq-item{background:#f5f8fc;border:1px solid transparent;border-radius:14px;box-shadow:none;padding:18px}
+.card:hover,.world-card:hover{transform:none;border-color:#dce7f5}
+.card h3{font-size:15px;color:#1b2b45}
+.card p{font-size:13px;line-height:1.7}
+.steps{grid-template-columns:repeat(3,minmax(0,1fr))}
+.footer{border-top:1px solid var(--border);color:#8a94a3}
+@media(max-width:900px){
+  .hero-inner{grid-template-columns:1fr;gap:28px}
+  .grid,.world-grid,.steps{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .status-card{min-height:0;padding-top:24px}
+  .status-card::before{display:none}
+}
+@media(max-width:560px){
+  .grid,.world-grid,.steps{grid-template-columns:1fr}
+  .hero-name{font-size:34px}
+}
