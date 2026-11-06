@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>网页授权登录 · Stone Logic</title>
+<style>
+  body{margin:0;min-height:100vh;background:#111418;color:#e8edf3;font-family:"PingFang SC","Microsoft YaHei",sans-serif;display:flex;align-items:center;justify-content:center;padding:20px}
+  .box{background:#171d25;border:1px solid #2a3340;border-radius:16px;padding:28px 24px;width:min(92vw,420px);box-shadow:0 20px 60px rgba(0,0,0,.5);text-align:center}
+  h1{font-size:20px;margin:0 0 10px;color:#ffd166}
+  .id{font-size:22px;color:#52d468;font-weight:700;margin:14px 0;word-break:break-all}
+  p{line-height:1.7;color:#c9d3df;font-size:14px;margin:8px 0}
+  button{width:100%;padding:12px;border:0;border-radius:10px;background:#52d468;color:#0b1209;font-size:15px;font-weight:700;cursor:pointer;margin-top:16px}
+  button:disabled{opacity:.5;cursor:not-allowed}
+  .hint{font-size:12px;opacity:.6;margin-top:14px}
+  a{color:#52d468}
+</style>
+</head>
+<body>
+<div class="box">
+  <h1>网页授权登录</h1>
+  <p>即将为以下游戏 ID 授权登录服务器</p>
+  <div class="id" id="player">—</div>
+  <p>授权后 <b>10 分钟</b>内进服免密码登录。</p>
+  <button id="ok" type="button">确认授权</button>
+  <p id="msg" class="hint"></p>
+  <p class="hint">没在群里绑定 QQ？先到 <a href="https://qm.qq.com/q/UhSK4yuLGG" target="_blank" rel="noopener">QQ 群</a> 绑定。</p>
+</div>
+<script>
+(function () {
+  var q = new URLSearchParams(location.search);
+  var topic = q.get('topic') || '';
+  var player = q.get('p') || '';
+  var ts = q.get('t') || '';
+  var sig = q.get('s') || '';
+  document.getElementById('player').textContent = player || '—';
+  var btn = document.getElementById('ok');
+  var msg = document.getElementById('msg');
+  if (!topic || !player || !ts || !sig) { btn.disabled = true; msg.textContent = '链接不完整或已过期，请回游戏重新获取。'; return; }
+  btn.addEventListener('click', function () {
+    btn.disabled = true; msg.textContent = '提交中…';
+    fetch('https://ntfy.sh/' + encodeURIComponent(topic), {
+      method: 'POST',
+      headers: { 'content-type': 'text/plain' },
+      body: JSON.stringify({ player: player, ts: Number(ts), sig: sig })
+    }).then(function (r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      msg.textContent = '授权成功！回到游戏即可自动进入（10 分钟内有效）。';
+      btn.textContent = '已授权';
+    }).catch(function (e) {
+      msg.textContent = '提交失败：' + e.message + '，请重试或改用群内指令。';
+      btn.disabled = false;
+    });
+  });
+})();
+</script>
+</body>
+</html>
