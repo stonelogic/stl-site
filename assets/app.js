@@ -215,7 +215,6 @@
       '<span class="flower f1">❀</span><span class="flower f2">✿</span>' +
       '<span class="flower f3">❀</span><span class="flower f4">✿</span>' +
       '<h1 class="hero-title"><span>STONE</span><span>LOGIC</span></h1>' +
-      '<p class="hero-tagline">' + esc(SITE.tagline) + '</p>' +
       '<p class="hero-slogan">' + esc(SITE.slogan) + '</p>' +
       '<div class="hero-meta">' +
       '<a class="hero-qq" href="' + SITE.groupUrl + '" target="_blank" rel="noopener" title="加入 QQ 群" aria-label="加入 QQ 群">' + SVG.penguin + '</a>' +
@@ -370,10 +369,23 @@
     else pg.innerHTML = emptyState('🕹️', '服务器离线');
   }
 
-  /* 从 ntfy 读取本地同步脚本发布的在线玩家名单（SSE 流，since=all 取历史） */
+  /* 在线名单：读仓库里的 online.json（由 tools/export_online.py 通过 RCON 生成）
+     online.json 拿不到时才退回旧的 ntfy 中转方案。 */
   function loadOnlineInto(pg, ok, now) {
     if (!pg) return;
     pg.innerHTML = '<div class="empty"><div class="ico">⏳</div><p>正在获取在线玩家…</p></div>';
+    fetch('online.json?_=' + Date.now(), { cache: 'no-store' })
+      .then(function (r) { if (!r.ok) throw new Error('no file'); return r.json(); })
+      .then(function (d) {
+        if (!d || !Array.isArray(d.players)) throw new Error('bad json');
+        var age = d.updated ? Math.max(0, Math.round(Date.now() / 1000 - d.updated)) : -1;
+        renderPlayerGrid(pg, d.players, ok, age);
+      })
+      .catch(function () { loadOnlineFromNtfy(pg, ok, now); });
+  }
+
+  /* 旧通道：从 ntfy 主题读本地脚本发布的消息（保留作兜底） */
+  function loadOnlineFromNtfy(pg, ok, now) {
     var got = false;
     var es;
     try {
@@ -385,23 +397,31 @@
       if (msg.event !== 'message' || !msg.message) return;
       var m;
       try { m = JSON.parse(msg.message); } catch (e) { return; }
-      if (m && Array.isArray(m.players)) {
+      if (m && Array.isArray(m.players) && m.players.length) {
         got = true;
-        renderPlayerGrid(pg, m.players, ok);
+        renderPlayerGrid(pg, m.players, ok, -1);
       }
     };
     es.onerror = function () { es.close(); if (!got) renderEmpty(pg, ok, now); };
     setTimeout(function () { es.close(); if (!got) renderEmpty(pg, ok, now); }, 2500);
   }
-  function renderPlayerGrid(pg, players, ok) {
+
+  function renderPlayerGrid(pg, players, ok, age) {
     if (!players || !players.length) {
       pg.innerHTML = emptyState('🕹️', ok ? '暂无在线玩家' : '服务器离线');
       return;
     }
-    pg.innerHTML = players.map(function (name) {
+    var html = players.map(function (name) {
       var face = avatarUrl(name, 96);
       return '<div class="player-cell"><img src="' + face + '" alt="" loading="lazy" data-fb="' + identicon(name) + '" onerror="this.onerror=null;this.src=this.getAttribute(\'data-fb\')"><span class="nm">' + esc(name) + '</span></div>';
     }).join('');
+    // 名单只在同步脚本跑过之后才更新，超过 5 分钟就提示一下，免得误导
+    if (age > 300) {
+      var mins = Math.round(age / 60);
+      html += '<div style="grid-column:1/-1;margin-top:6px;font-size:12.5px;color:var(--muted-foreground)">名单更新于 ' +
+        (mins > 90 ? Math.round(mins / 60) + ' 小时前' : mins + ' 分钟前') + '</div>';
+    }
+    pg.innerHTML = html;
   }
 
   /* --- 在线状态页（在线玩家 ID + 头像） --- */
@@ -527,7 +547,7 @@
               '<div style="flex:1;min-width:0">' +
               '<div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap"><span style="font-weight:700;font-size:15px">' + esc(p.name) + '</span>' + subHtml + '</div>' +
               '<div style="margin-top:6px;height:8px;border-radius:6px;background:var(--muted);overflow:hidden">' +
-              '<div style="height:100%;width:' + pct + '%;background:linear-gradient(90deg,var(--primary),oklch(62% .14 160));border-radius:6px"></div></div>' +
+              '<div style="height:100%;width:' + pct + '%;background:linear-gradient(90deg,var(--primary),oklch(78% .10 238));border-radius:6px"></div></div>' +
               '</div>' +
               '<div style="flex:none;text-align:right;font-weight:800;font-size:15px;color:var(--primary);white-space:nowrap">' + fmtDur(p.total) + '</div>' +
               '</div>';

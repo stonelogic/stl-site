@@ -15,7 +15,7 @@
   --card-foreground: oklch(14.5% 0 0);
   --popover: oklch(100% 0 0);
   --popover-foreground: oklch(14.5% 0 0);
-  --primary: oklch(52% .14 160);
+  --primary: oklch(64% .125 238);
   --primary-foreground: oklch(98.5% 0 0);
   --secondary: oklch(97% 0 0);
   --secondary-foreground: oklch(20.5% 0 0);
@@ -27,7 +27,7 @@
   --destructive-foreground: oklch(98.5% 0 0);
   --border: oklch(92.2% 0 0);
   --input: oklch(92.2% 0 0);
-  --ring: oklch(62% .14 160 / .6);
+  --ring: oklch(64% .125 238 / .6);
   --gold: oklch(65% .14 80);
   --radius: .625rem;
   --font-sans: "Inter Variable","PingFang SC","Microsoft YaHei","Helvetica Neue",Arial,sans-serif;
@@ -43,7 +43,7 @@
   --card-foreground: oklch(98.5% 0 0);
   --popover: oklch(20.5% 0 0);
   --popover-foreground: oklch(98.5% 0 0);
-  --primary: oklch(62% .14 160);
+  --primary: oklch(72% .12 238);
   --primary-foreground: oklch(15% 0 0);
   --secondary: oklch(26.9% 0 0);
   --secondary-foreground: oklch(98.5% 0 0);
@@ -55,7 +55,7 @@
   --destructive-foreground: oklch(98.5% 0 0);
   --border: oklch(100% 0 0/.1);
   --input: oklch(100% 0 0/.1);
-  --ring: oklch(65% .14 160);
+  --ring: oklch(72% .12 238);
   --gold: oklch(70% .14 80);
   --shadow-sm: 0 1px 2px rgb(0 0 0/.3);
   --shadow: 0 4px 16px rgb(0 0 0/.35);
@@ -97,7 +97,7 @@ code{font-family:ui-monospace,Consolas,Menlo,monospace}
   display:flex;align-items:center;gap:16px;
 }
 .brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:17px;color:var(--primary);white-space:nowrap}
-.brand-icon{width:32px;height:32px;border-radius:8px;image-rendering:pixelated}
+.brand-icon{width:34px;height:34px;border-radius:9px;object-fit:cover;box-shadow:0 1px 3px rgb(0 0 0/.10)}
 .brand-name{letter-spacing:-.3px}
 .nav-main{display:flex;align-items:center;gap:4px;margin-left:8px;overflow-x:auto;scrollbar-width:none}
 .nav-main::-webkit-scrollbar{display:none}
@@ -153,19 +153,12 @@ code{font-family:ui-monospace,Consolas,Menlo,monospace}
   image-rendering:pixelated;
 }
 .hero-title span{display:block;padding-left:.06em}
-.hero-tagline{
+.hero-slogan{
   margin:18px 0 4px;
   font-size:clamp(15px,1.9vw,21px);
-  font-weight:600;letter-spacing:.02em;
+  font-weight:600;letter-spacing:.02em;line-height:1.55;
   color:var(--muted-foreground);
   text-shadow:0 1px 0 rgba(255,255,255,.4);
-}
-.hero-slogan{
-  margin:clamp(20px,3.2vw,34px) 0 22px;
-  font-size:clamp(22px,3.1vw,40px);
-  font-weight:800;letter-spacing:.03em;line-height:1.4;
-  color:var(--foreground);
-  text-shadow:0 1px 0 rgba(255,255,255,.45);
 }
 .hero-actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
 .hero-actions .btn{font-size:14.5px;padding:11px 22px}
@@ -363,8 +356,7 @@ code{font-family:ui-monospace,Consolas,Menlo,monospace}
 @keyframes stlTitleIn{from{opacity:0;transform:translateY(12px) scale(.96)}to{opacity:1;transform:none}}
 .hero-sky .hero-title{animation:stlTitleIn .6s cubic-bezier(.22,.61,.36,1) both}
 .card,.page-head{animation:stlFadeUp .55s cubic-bezier(.22,.61,.36,1) both}
-.hero-sky .hero-tagline{animation:stlFadeUp .6s .18s both}
-.hero-sky .hero-slogan{animation:stlFadeUp .6s .28s both}
+.hero-sky .hero-slogan{animation:stlFadeUp .6s .18s both}
 .hero-sky .hero-actions,.hero-sky .hero-ip{animation:stlFadeUp .6s .38s both}
 .hero-sky .flower{animation:stlFadeIn 1s .25s both}
 .grid > *{animation:stlFadeUp .5s both}
@@ -380,7 +372,7 @@ code{font-family:ui-monospace,Consolas,Menlo,monospace}
 .grid > *:nth-child(n+7){animation-delay:.3s}
 .stat-row > *{animation:stlFadeUp .5s both}
 @media (prefers-reduced-motion: reduce){
-  .card,.page-head,.hero-sky .hero-title,.hero-sky .hero-tagline,.hero-sky .hero-slogan,
+  .card,.page-head,.hero-sky .hero-title,.hero-sky .hero-slogan,
   .hero-sky .hero-actions,.hero-sky .hero-ip,.hero-sky .flower,.grid > *,
   .stat-row > *,.feat4 > *,.staff-grid > *{animation:none!important}
 }
