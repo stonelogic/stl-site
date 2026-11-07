@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>个人主页 · Stone Logic</title>
+<link rel="icon" href="assets/icon.png">
+<style>
+  :root{--green:#2f9e54;--green-bright:#57c46e;--green-deep:#1f7a3a;--ink:#16231c;--muted:#5f7268;
+    --line:#e3ede6;--card:#ffffff;--card-2:#f3f8f4;--shadow:0 12px 34px rgba(28,80,52,.09);--shadow-sm:0 6px 18px rgba(28,80,52,.07)}
+  *{box-sizing:border-box}
+  [hidden]{display:none!important}
+  body{margin:0;color:var(--ink);font-family:"PingFang SC","Microsoft YaHei","Helvetica Neue",Arial,sans-serif;
+    font-size:15px;background:#eef6f0;background:radial-gradient(900px 520px at 12% -8%,rgba(87,196,110,.18),transparent 60%),
+    radial-gradient(820px 520px at 92% 4%,rgba(120,200,150,.16),transparent 62%),linear-gradient(168deg,#e9f6ee 0%,#f1f8f1 46%,#fbf8ec 100%);
+    background-attachment:fixed;min-height:100vh;-webkit-font-smoothing:antialiased}
+  a{color:inherit;text-decoration:none}
+  img{display:block;max-width:100%}
+
+  .top{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.72);backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+  .top-inner{max-width:960px;margin:0 auto;padding:11px 20px;display:flex;align-items:center;gap:14px}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:16px;color:var(--green-deep);white-space:nowrap}
+  .brand img{width:30px;height:30px;border-radius:8px;image-rendering:pixelated}
+  .top-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+  .btn{display:inline-flex;align-items:center;gap:7px;padding:9px 16px;border-radius:999px;font-size:13px;font-weight:700;cursor:pointer;transition:.2s;border:1px solid var(--green-line);background:var(--card);color:var(--green-deep)}
+  .btn:hover{background:rgba(58,168,86,.12)}
+  .btn.ghost{border-color:var(--line);color:var(--muted)}
+  .btn.ghost:hover{color:var(--green)}
+
+  .wrap{max-width:960px;margin:0 auto;padding:30px 20px 60px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:24px;box-shadow:var(--shadow);margin-bottom:20px}
+
+  .me{display:flex;align-items:center;gap:18px}
+  .me .avatar{width:64px;height:64px;border-radius:16px;background:var(--card-2);box-shadow:var(--shadow-sm);object-fit:cover}
+  .me .avatar.initial{display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:800;color:#fff;background:linear-gradient(135deg,#57c46e,#2f9e54)}
+  .me h2{margin:0;font-size:20px;color:var(--ink)}
+  .me .qq{margin:5px 0 0;font-size:13px;color:var(--muted)}
+
+  h3.sec{margin:0 0 16px;font-size:15px;font-weight:800;color:var(--ink);display:flex;align-items:center;gap:8px}
+  h3.sec .cnt{margin-left:auto;font-size:12px;font-weight:600;color:var(--muted)}
+
+  .acc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px}
+  .acc{background:var(--card-2);border:1px solid var(--line);border-radius:16px;padding:14px;text-align:center;transition:.2s}
+  .acc:hover{border-color:var(--green-line)}
+  .acc .body{height:150px;margin:0 auto 10px;image-rendering:pixelated;object-fit:contain}
+  .acc .line{display:flex;align-items:center;justify-content:center;gap:8px;font-weight:800;font-size:14px;color:var(--ink)}
+  .acc .line img{width:24px;height:24px;border-radius:6px;image-rendering:pixelated;background:var(--card)}
+  .acc .pt{margin-top:8px;font-size:12.5px;color:var(--green-deep);font-weight:600}
+
+  .empty{padding:30px;text-align:center;color:var(--muted);font-size:14px;line-height:1.9}
+  .empty .big{font-size:40px;margin-bottom:10px}
+  .note{margin-top:10px;font-size:12px;color:var(--muted);line-height:1.7}
+</style>
+</head>
+<body>
+<div class="top">
+  <div class="top-inner">
+    <a class="brand" href="index.html"><img src="assets/icon.png" alt=""><span id="brandName">Stone Logic</span></a>
+    <div class="top-right" id="topRight">
+      <a class="btn ghost" href="index.html">← 返回官网</a>
+      <button class="btn" id="logoutBtn" type="button" hidden>退出登录</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap" id="wrap">
+  <!-- 未登录 -->
+  <div class="card" id="loginPrompt" hidden>
+    <div class="empty">
+      <div class="big">🔐</div>
+      尚未登录。<br>登录后即可在这里查看你的 QQ、绑定的游戏账号、皮肤与游戏时长。
+      <div style="margin-top:16px"><a class="btn" href="confirm.html" style="background:linear-gradient(135deg,var(--green-bright),var(--green));color:#fff;border:0">去登录</a></div>
+    </div>
+  </div>
+
+  <!-- 我的信息 -->
+  <div class="card" id="meCard" hidden>
+    <div class="me">
+      <div id="meAvatar"></div>
+      <div>
+        <h2 id="meName">—</h2>
+        <p class="qq" id="meQq"></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 我的游戏账号 -->
+  <div class="card" id="accCard" hidden>
+    <h3 class="sec">🎮 我的游戏账号 <span class="cnt" id="accCnt"></span></h3>
+    <div class="acc-grid" id="accGrid"></div>
+    <p class="note" id="accNote"></p>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var SKEY = 'stl_web_session_v1';
+  var CFG = 'mc-site-config-v2';
+  var cfg = {};
+  try { cfg = JSON.parse(localStorage.getItem(CFG) || '{}'); } catch (e) {}
+
+  if (cfg.serverName) document.getElementById('brandName').textContent = cfg.serverName;
+  if (cfg.icon) document.querySelector('.brand img').src = cfg.icon;
+
+  var session = null;
+  try { session = JSON.parse(localStorage.getItem(SKEY) || 'null'); if (!(session && session.token && session.qq && session.exp > Date.now())) session = null; } catch (e) {}
+
+  function $(id) { return document.getElementById(id); }
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function formatPlaytime(sec) {
+    sec = Math.max(0, Math.floor(Number(sec) || 0));
+    if (!sec) return '0 分钟';
+    var d = Math.floor(sec / 86400), h = Math.floor(sec % 86400 / 3600), m = Math.floor(sec % 3600 / 60);
+    var out = [];
+    if (d) out.push(d + ' 天');
+    if (h) out.push(h + ' 小时');
+    out.push(m + ' 分钟');
+    return out.join(' ');
+  }
+  function avatarUrl(qq) { return 'https://q1.qlogo.cn/g?b=qq&nk=' + encodeURIComponent(qq) + '&s=100'; }
+
+  if (!session) {
+    $('loginPrompt').hidden = false;
+    return;
+  }
+
+  $('logoutBtn').hidden = false;
+  $('meCard').hidden = false;
+  $('accCard').hidden = false;
+
+  // 我的信息
+  var meA = $('meAvatar');
+  meA.innerHTML = '<img class="avatar" src="' + avatarUrl(session.qq) + '" alt="头像" ' +
+    'onerror="this.outerHTML=\'<div class=&quot;avatar initial&quot;>' + esc(String(session.qq).slice(-2)) + '</div>\'">';
+  $('meName').textContent = 'QQ 用户';
+  $('meQq').textContent = 'QQ ' + session.qq + ' · 已登录';
+
+  // 我的游戏账号
+  var names = session.names || [];
+  $('accCnt').textContent = '共 ' + names.length + ' 个';
+  var grid = $('accGrid');
+  var statsApi = (cfg.statsApi || '').trim();
+  $('accNote').textContent = statsApi ? '' : '皮肤按游戏 ID 渲染（离线服可能显示默认皮肤）；游戏时长需接入服务器统计后才会显示真实数据。';
+
+  if (!names.length) {
+    grid.innerHTML = '<div class="empty" style="grid-column:1/-1"><div class="big">🎮</div>该 QQ 尚未绑定任何游戏账号，到 QQ 群完成绑定后即可在这里看到。</div>';
+  } else {
+    grid.innerHTML = names.map(function (n) {
+      return '<div class="acc">' +
+        '<img class="body" loading="lazy" src="https://mc-heads.net/body/' + encodeURIComponent(n) + '/right" alt="' + esc(n) + '">' +
+        '<div class="line"><img loading="lazy" src="https://minotar.net/helm/' + encodeURIComponent(n) + '/32" alt="">' +
+        '<span>' + esc(n) + '</span></div>' +
+        '<div class="pt" data-name="' + esc(n) + '">游戏时长：加载中…</div>' +
+        '</div>';
+    }).join('');
+    if (statsApi) {
+      names.forEach(function (n) {
+        var url = statsApi.indexOf('{name}') >= 0 ? statsApi.replace('{name}', encodeURIComponent(n)) : statsApi + encodeURIComponent(n);
+        fetch(url, { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (d) {
+            var v = d && (d.playtime || d.play_time || d.playTime || (d.data && (d.data.playtime || d.data.play_time)));
+            var cell = grid.querySelector('.pt[data-name="' + n + '"]');
+            if (cell) cell.textContent = '游戏时长：' + (v != null ? formatPlaytime(v) : '未接入');
+          }).catch(function () {
+            var cell = grid.querySelector('.pt[data-name="' + n + '"]');
+            if (cell) cell.textContent = '游戏时长：未接入';
+          });
+      });
+    } else {
+      Array.prototype.forEach.call(grid.querySelectorAll('.pt'), function (c) { c.textContent = '游戏时长：未接入'; });
+    }
+  }
+
+  $('logoutBtn').addEventListener('click', function () {
+    try { localStorage.removeItem(SKEY); } catch (e) {}
+    location.href = 'index.html';
+  });
+})();
+</script>
+</body>
+</html>

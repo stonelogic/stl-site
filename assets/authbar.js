@@ -1,6 +1,7 @@
-/* authbar.js —— 网站登录态头像菜单（自包含组件）
- * 功能：持久登录（localStorage token）、右上角头像、下拉菜单
- *       （退出登录 / 快速授权 / 我的信息）、自动匹配待授权登录请求。
+/* authbar.js —— 导航右侧登录态组件（浅色主题）
+ * 未登录：显示「登录」按钮 → confirm.html
+ * 已登录：显示 QQ 头像 → 点击进入个人主页 profile.html；
+ *         有登录请求时头像旁出现「⚡」快速授权入口。
  * 依赖：页面需引入本文件；ntfy topic 取 URL 参数 ?topic= 或默认值。
  */
 (function () {
@@ -9,52 +10,41 @@
   var LS_KEY = 'stl_web_session_v1';
   var DAY = 86400000;
 
-  /* ---------- 注入样式 ---------- */
+  /* ---------- 注入样式（浅色） ---------- */
   var css = [
-    '#navActions .ab-avatar-btn, #authbar-float .ab-avatar-btn{height:38px;min-width:38px;padding:0 10px 0 4px;border:0;border-radius:20px;',
-    '  background:rgba(47,158,84,.12);color:#1f7a3a;border:1px solid rgba(47,158,84,.28);cursor:pointer;display:inline-flex;align-items:center;gap:8px;font:inherit;font-size:13px;font-weight:700}',
+    '#navActions .ab-avatar-btn,#authbar-float .ab-avatar-btn{height:38px;min-width:38px;padding:0 4px;border:0;border-radius:20px;',
+    '  background:#fff;color:#1f7a3a;border:1px solid rgba(58,168,86,.28);cursor:pointer;display:inline-flex;align-items:center;gap:8px;',
+    '  font:inherit;font-size:13px;font-weight:700;text-decoration:none;box-shadow:0 2px 8px rgba(28,80,52,.08)}',
     '#authbar-float{position:fixed;top:12px;right:14px;z-index:9999}',
-    '.ab-avatar-img{width:30px;height:30px;border-radius:50%;object-fit:cover;background:#243450;display:block}',
+    '.ab-avatar-img{width:30px;height:30px;border-radius:50%;object-fit:cover;background:#f3f8f4;display:block}',
     '.ab-avatar-btn .ab-initial{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;',
     '  background:linear-gradient(135deg,#57c46e,#2f9e54);color:#fff;font-weight:800;font-size:14px}',
-    '.ab-login-btn{padding:8px 14px;border:0;border-radius:18px;background:#2f9e54;color:#fff;font:inherit;font-weight:800;cursor:pointer;text-decoration:none}',
-    '.ab-menu{position:absolute;right:0;top:46px;width:188px;background:rgba(17,26,42,.98);border:1px solid rgba(255,255,255,.16);',
-    '  border-radius:14px;padding:6px;box-shadow:0 18px 50px rgba(0,0,0,.6);text-align:left;overflow:hidden;display:none}',
-    '#authbar-float .ab-menu{top:46px}',
-    '.ab-menu.open{display:block}',
-    '.ab-menu-item{padding:10px 12px;border-radius:9px;color:#eef4ff;font-size:13.5px;cursor:pointer;display:flex;align-items:center;gap:9px}',
-    '.ab-menu-item:hover{background:rgba(255,255,255,.08)}',
-    '.ab-menu-item.danger{color:#ff9a9a}',
-    '.ab-menu-sep{height:1px;margin:4px 2px;background:rgba(255,255,255,.12)}',
-    '.ab-badge{position:absolute;top:-4px;right:-4px;min-width:18px;height:18px;border-radius:9px;background:#ff5d5d;color:#fff;',
+    '.ab-login-btn{padding:8px 16px;border:0;border-radius:18px;background:linear-gradient(135deg,#57c46e,#2f9e54);color:#fff;',
+    '  font:inherit;font-weight:800;font-size:13px;cursor:pointer;text-decoration:none;box-shadow:0 6px 16px rgba(47,158,84,.25)}',
+    '.ab-quick-btn{height:34px;min-width:34px;padding:0 8px;border:1px solid rgba(58,168,86,.28);border-radius:17px;background:#fff;',
+    '  color:#1f7a3a;cursor:pointer;font:inherit;font-size:15px;font-weight:800;position:relative;display:none}',
+    '.ab-badge{position:absolute;top:-5px;right:-5px;min-width:18px;height:18px;border-radius:9px;background:#ff5d5d;color:#fff;',
     '  font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;padding:0 4px}',
-    '.ab-modal-mask{position:fixed;inset:0;z-index:10000;background:rgba(5,10,20,.72);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;padding:20px}',
+    '.ab-modal-mask{position:fixed;inset:0;z-index:10000;background:rgba(22,35,28,.35);backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;padding:20px}',
     '.ab-modal-mask.open{display:flex}',
-    '.ab-panel{width:min(92vw,440px);max-height:84vh;overflow:auto;background:rgba(17,26,42,.98);border:1px solid rgba(255,255,255,.16);',
-    '  border-radius:18px;padding:22px;box-shadow:0 24px 70px rgba(0,0,0,.6)}',
-    '.ab-panel h3{margin:0 0 14px;font-size:17px;color:#fff;display:flex;align-items:center;gap:10px}',
-    '.ab-panel .ab-close{margin-left:auto;background:none;border:0;color:#9fb4d0;font-size:20px;cursor:pointer;line-height:1}',
-    '.ab-info-row{display:flex;align-items:center;gap:12px;margin-bottom:14px}',
-    '.ab-info-row .ab-avatar-img{width:52px;height:52px}',
-    '.ab-info-row .ab-initial{width:52px;height:52px;font-size:20px}',
-    '.ab-qq{font-size:15px;font-weight:800;color:#fff}',
-    '.ab-sub2{font-size:12px;color:#9fb4d0}',
-    '.ab-acc{margin:10px 0 0;padding:9px 12px;border-radius:10px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);font-size:14px;display:flex;justify-content:space-between}',
-    '.ab-acc small{color:#8fa5c2;font-size:11px}',
-    '.ab-req{border:1px solid rgba(255,255,255,.14);border-radius:12px;padding:12px;margin-bottom:10px;background:rgba(255,255,255,.04)}',
-    '.ab-req.match{border-color:rgba(82,212,104,.45)}',
+    '.ab-panel{width:min(92vw,440px);max-height:84vh;overflow:auto;background:#fff;border:1px solid #e3ede6;',
+    '  border-radius:18px;padding:22px;box-shadow:0 24px 70px rgba(28,80,52,.18)}',
+    '.ab-panel h3{margin:0 0 14px;font-size:17px;color:#16231c;display:flex;align-items:center;gap:10px}',
+    '.ab-panel .ab-close{margin-left:auto;background:none;border:0;color:#5f7268;font-size:20px;cursor:pointer;line-height:1}',
+    '.ab-req{border:1px solid #e3ede6;border-radius:12px;padding:12px;margin-bottom:10px;background:#f3f8f4}',
+    '.ab-req.match{border-color:rgba(47,158,84,.45)}',
     '.ab-req .ab-req-top{display:flex;justify-content:space-between;align-items:center;gap:8px}',
-    '.ab-req .ab-pname{font-size:15px;font-weight:800;color:#fff}',
+    '.ab-req .ab-pname{font-size:15px;font-weight:800;color:#16231c}',
     '.ab-req .ab-state{font-size:12px;font-weight:700;padding:3px 9px;border-radius:8px}',
-    '.ab-req .ab-state.ok{background:rgba(82,212,104,.16);color:#7ee39a}',
-    '.ab-req .ab-state.bad{background:rgba(255,93,93,.16);color:#ff9a9a}',
-    '.ab-req .ab-reason{margin:8px 0 0;font-size:12.5px;color:#ff9a9a;line-height:1.6}',
-    '.ab-req .ab-done{margin:8px 0 0;font-size:13px;color:#7ee39a;font-weight:700}',
-    '.ab-req button.ab-go{padding:8px 16px;border:0;border-radius:9px;background:#52d468;color:#0b1209;font:inherit;font-weight:800;cursor:pointer}',
+    '.ab-req .ab-state.ok{background:rgba(47,158,84,.14);color:#1f7a3a}',
+    '.ab-req .ab-state.bad{background:rgba(210,72,60,.14);color:#b23b30}',
+    '.ab-req .ab-reason{margin:8px 0 0;font-size:12.5px;color:#b23b30;line-height:1.6}',
+    '.ab-req .ab-done{margin:8px 0 0;font-size:13px;color:#1f7a3a;font-weight:700}',
+    '.ab-req button.ab-go{padding:8px 16px;border:0;border-radius:9px;background:linear-gradient(135deg,#57c46e,#2f9e54);color:#fff;font:inherit;font-weight:800;cursor:pointer}',
     '.ab-req button.ab-go:disabled{opacity:.5;cursor:not-allowed}',
-    '.ab-empty{font-size:13px;color:#9fb4d0;text-align:center;padding:18px 0}',
-    '.ab-toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);z-index:10001;background:rgba(17,26,42,.97);',
-    '  border:1px solid rgba(255,255,255,.16);color:#eef4ff;font-size:13px;padding:11px 18px;border-radius:12px;box-shadow:0 12px 30px rgba(0,0,0,.5);opacity:0;transition:opacity .25s;pointer-events:none;max-width:90vw}',
+    '.ab-empty{font-size:13px;color:#5f7268;text-align:center;padding:18px 0}',
+    '.ab-toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);z-index:10001;background:#fff;',
+    '  border:1px solid #e3ede6;color:#16231c;font-size:13px;padding:11px 18px;border-radius:12px;box-shadow:0 12px 30px rgba(28,80,52,.15);opacity:0;transition:opacity .25s;pointer-events:none;max-width:90vw}',
     '.ab-toast.show{opacity:1}'
   ].join('\n');
   var style = document.createElement('style');
@@ -112,36 +102,30 @@
     var host = buildHost();
     host.innerHTML = '';
     if (session) {
-      var btn = el('button', 'ab-avatar-btn');
-      btn.type = 'button';
-      btn.innerHTML = avatarHtml(session.qq) + '<span>' + session.qq + '</span>';
-      btn.addEventListener('click', function (e) { e.stopPropagation(); toggleMenu(); });
-      host.appendChild(btn);
-
-      var menu = el('div', 'ab-menu');
-      menu.id = 'abMenu';
-      menu.innerHTML =
-        '<div class="ab-menu-item" data-act="quick"><span>⚡</span><span>快速授权</span><span class="ab-badge" id="abBadge" style="display:none">0</span></div>' +
-        '<div class="ab-menu-item" data-act="info"><span>👤</span><span>我的信息</span></div>' +
-        '<div class="ab-menu-sep"></div>' +
-        '<div class="ab-menu-item danger" data-act="logout"><span>🚪</span><span>退出登录</span></div>';
-      menu.addEventListener('click', function (e) {
-        var it = e.target.closest('.ab-menu-item'); if (!it) return;
-        var act = it.getAttribute('data-act'); closeMenu();
-        if (act === 'quick') openQuick();
-        else if (act === 'info') openInfo();
-        else if (act === 'logout') { clearSession(); session = null; toast('已退出登录'); renderBar(); }
-      });
-      host.appendChild(menu);
-    } else {
-      var a = el('a', 'ab-login-btn'); a.href = 'confirm.html'; a.textContent = '登录';
+      var a = el('a', 'ab-avatar-btn');
+      a.href = 'profile.html';
+      a.title = '个人主页';
+      a.innerHTML = avatarHtml(session.qq);
       host.appendChild(a);
+
+      var qb = el('button', 'ab-quick-btn');
+      qb.type = 'button'; qb.id = 'abQuickBtn'; qb.title = '快速授权';
+      qb.innerHTML = '⚡<span class="ab-badge" id="abBadge" style="display:none">0</span>';
+      qb.addEventListener('click', function () { openQuick(); });
+      host.appendChild(qb);
+      updateBadge();
+    } else {
+      var l = el('a', 'ab-login-btn'); l.href = 'confirm.html'; l.textContent = '登录';
+      host.appendChild(l);
     }
   }
 
-  function toggleMenu() { var m = $('abMenu'); if (m) m.classList.toggle('open'); }
-  function closeMenu() { var m = $('abMenu'); if (m) m.classList.remove('open'); }
-  document.addEventListener('click', function () { closeMenu(); });
+  function updateBadge() {
+    var b = $('abBadge'); if (!b) return;
+    var n = Object.keys(pendingMap).length;
+    b.style.display = n ? 'flex' : 'none'; b.textContent = n;
+    var qb = $('abQuickBtn'); if (qb) qb.style.display = n ? 'inline-flex' : 'none';
+  }
 
   /* ---------- 快速授权面板 ---------- */
   function ensureModal() {
@@ -159,11 +143,6 @@
     panel.querySelector('.ab-close').addEventListener('click', function () { mask.classList.remove('open'); });
     mask.innerHTML = ''; mask.appendChild(panel); mask.classList.add('open');
     renderQuickList();
-  }
-  function updateBadge() {
-    var b = $('abBadge'); if (!b) return;
-    var n = Object.keys(pendingMap).length;
-    b.style.display = n ? 'flex' : 'none'; b.textContent = n;
   }
   function renderQuickList() {
     var list = $('abQuickList'); if (!list) return;
@@ -194,28 +173,12 @@
     post({ type: 'authReqQuick', token: session.token, player: it.player, reqId: it.reqId, rid: RID });
   }
 
-  /* ---------- 我的信息面板 ---------- */
-  function openInfo() {
-    var mask = ensureModal();
-    var panel = el('div', 'ab-panel');
-    var names = (session.names || []);
-    var accHtml = names.length ? names.map(function (n) { return '<div class="ab-acc"><span>' + n + '</span><small>已绑定</small></div>'; }).join('') : '<div class="ab-empty">该 QQ 未绑定游戏账号</div>';
-    panel.innerHTML =
-      '<h3>👤 我的信息 <button class="ab-close" type="button">✕</button></h3>' +
-      '<div class="ab-info-row">' + avatarHtml(session.qq) +
-      '<div><div class="ab-qq">QQ ' + session.qq + '</div><div class="ab-sub2">已登录 · 网站登录态</div></div></div>' +
-      '<div class="ab-sub2" style="margin-bottom:6px">已绑定的游戏账号（' + names.length + '）</div>' +
-      accHtml;
-    panel.querySelector('.ab-close').addEventListener('click', function () { mask.classList.remove('open'); });
-    mask.innerHTML = ''; mask.appendChild(panel); mask.classList.add('open');
-  }
-
   /* ---------- ntfy 收发 ---------- */
   function post(obj) {
     try { fetch(ntfyUrl(), { method: 'POST', headers: { 'content-type': 'text/plain' }, body: JSON.stringify(obj) }).catch(function () {}); } catch (e) {}
   }
   function handleJoin(player, reqId) {
-    if (!session) return;                 // 未登录不处理（登录后可在快速授权里手动刷新）
+    if (!session) return;
     if (pendingMap[player]) { pendingMap[player].reqId = reqId; }
     else { pendingMap[player] = { player: player, reqId: reqId, match: null, reason: '', done: false }; }
     updateBadge();
@@ -226,7 +189,7 @@
     var it = pendingMap[m.player]; if (!it) { it = pendingMap[m.player] = { player: m.player, reqId: m.reqId || '', match: null, reason: '', done: false }; }
     it.match = m.match; it.reason = m.reason || ''; it.reqId = m.reqId || it.reqId;
     updateBadge();
-    if (m.match) toast('✓ ' + m.player + ' 已匹配，可一键登录授权');
+    if (m.match) toast('✓ ' + m.player + ' 已匹配，可点击 ⚡ 一键授权');
     else if (m.reason) toast('⚠ ' + m.reason);
     if ($('abModal') && $('abModal').classList.contains('open')) renderQuickList();
   }
@@ -246,7 +209,7 @@
     } catch (e) {}
   }
 
-  /* ---------- 提供会话给 confirm.html 复用 ---------- */
+  /* ---------- 提供会话给 confirm.html / profile.html 复用 ---------- */
   window.__stlSession = function () { return session; };
   window.__stlSaveSession = function (s) { session = s; saveSession(s); renderBar(); };
 
