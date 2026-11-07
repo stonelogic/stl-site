@@ -71,6 +71,13 @@
   a{color:var(--primary);text-decoration:none}
   a:hover{text-decoration:underline}
   [hidden]{display:none!important}
+  .scan-entry{text-align:center;margin:2px 0 6px}
+  .scan-link{border:0;background:transparent;color:var(--primary);font-size:13px;cursor:pointer;padding:8px 6px;text-decoration:underline;text-underline-offset:3px}
+  .scan-link:hover{opacity:.75}
+  .scan-panel{text-align:center;padding:14px 0 6px}
+  .scan-panel canvas{display:block;margin:0 auto;width:220px;height:220px;background:#fff;border-radius:12px;
+    border:1px solid var(--border);padding:8px;box-sizing:border-box;image-rendering:pixelated}
+  .scan-hint{font-size:12.5px;color:var(--muted-foreground);line-height:1.7;margin:12px 0 2px}
 </style>
 </head>
 <body>
@@ -90,6 +97,16 @@
       <button id="loginBtn" type="button">登录</button></div>
   </div>
 
+  <div id="scanEntry" hidden>
+    <button id="scanBtn" type="button" class="scan-link">📱 改用扫码登录</button>
+  </div>
+
+  <div id="scanPanel" class="scan-panel" hidden>
+    <canvas id="scanQr" width="220" height="220" aria-label="登录二维码"></canvas>
+    <p id="scanHint" class="scan-hint">正在生成二维码…</p>
+    <button id="scanCancel" type="button" class="scan-link">← 返回验证码登录</button>
+  </div>
+
   <div id="authBox" hidden>
     <div id="reqWrap">
       <p class="lead" style="margin-bottom:6px">本次授权请求的游戏 ID</p>
@@ -104,8 +121,10 @@
     <a href="index.html">← 返回服务器官网</a>
   </div>
 </div>
+<script src="assets/qrcode.min.js"></script>
 <script>
 (function () {
+  'use strict';
   try {
     var saved = localStorage.getItem('stl_theme');
     if (!saved) saved = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
@@ -125,6 +144,8 @@
   // 服务端拿不到个人授权码时的兜底入口（多半是该游戏ID还没绑定 QQ）
   var isFallback = q.get('fallback') === '1';
   var fbName = q.get('player') || '';
+  // 手机扫码后若本机没登录，会先跳来这里用验证码登录；登完自动回扫码确认页
+  var scanBack = q.get('scan') || '';
   var rid = sessionStorage.getItem('stl_site_rid');
   if (!rid) { rid = Array.from(crypto.getRandomValues(new Uint8Array(16))).map(function (b) { return ('0' + b.toString(16)).slice(-2); }).join(''); sessionStorage.setItem('stl_site_rid', rid); }
   var ntfy = topic ? 'https://ntfy.sh/' + encodeURIComponent(topic) : '';
@@ -174,6 +195,92 @@
     return true;
   }
 
+  /* ---------- 扫码登录（电脑端） ----------
+     二维码里只有一个随机 sid；服务端在手机确认后把新签发的 token 走 SSE 推回来。 */
+  var scanEntry = document.getElementById('scanEntry');
+  var scanPanel = document.getElementById('scanPanel');
+  var scanHint = document.getElementById('scanHint');
+  var scanCancel = document.getElementById('scanCancel');
+  var scanSid = '', scanDeadline = 0, scanCountdown = null;
+
+  function drawQr(text) {
+    var cv = document.getElementById('scanQr');
+    var qr = qrcode(0, 'M');
+    qr.addData(text);
+    qr.make();
+    var n = qr.getModuleCount(), quiet = 3, total = n + quiet * 2;
+    var px = Math.max(2, Math.floor(440 / total));
+    var size = px * total;
+    cv.width = size; cv.height = size;
+    var ctx = cv.getContext('2d');
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, size, size);
+    ctx.fillStyle = '#0f2233';
+    for (var r = 0; r < n; r++) {
+      for (var c = 0; c < n; c++) {
+        if (qr.isDark(r, c)) ctx.fillRect((c + quiet) * px, (r + quiet) * px, px, px);
+      }
+    }
+  }
+
+  function stopScan(reason) {
+    if (scanCountdown) { clearInterval(scanCountdown); scanCountdown = null; }
+    if (scanSid) { post({ type: 'scanCancel', sid: scanSid, rid: rid }); scanSid = ''; }
+    scanDeadline = 0;
+    scanPanel.hidden = true;
+    scanEntry.hidden = false;
+    if (reason) say(reason, true);
+  }
+
+  function startScan() {
+    if (!ntfy) { say('缺少授权参数，无法扫码登录。', true); return; }
+    if (scanSid) post({ type: 'scanCancel', sid: scanSid, rid: rid });
+    scanEntry.hidden = true;
+    scanPanel.hidden = false;
+    scanHint.textContent = '正在生成二维码…';
+    scanCancel.textContent = '← 返回验证码登录';
+    var b = crypto.getRandomValues(new Uint8Array(16));
+    scanSid = Array.from(b).map(function (x) { return ('0' + x.toString(16)).slice(-2); }).join('');
+    post({ type: 'scanCreate', sid: scanSid, rid: rid });
+  }
+
+  function onScanReady(m) {
+    if (m.sid !== scanSid) return;
+    try { drawQr(m.url); } catch (e) { stopScan('二维码生成失败，请用验证码登录。'); return; }
+    scanDeadline = Date.now() + (Number(m.seconds) || 180) * 1000;
+    if (scanCountdown) clearInterval(scanCountdown);
+    function tick() {
+      var left = Math.max(0, Math.ceil((scanDeadline - Date.now()) / 1000));
+      if (!left) {
+        scanHint.innerHTML = '二维码已过期，点下方按钮刷新';
+        scanCancel.textContent = '刷新二维码';
+        if (scanCountdown) { clearInterval(scanCountdown); scanCountdown = null; }
+        return;
+      }
+      scanHint.innerHTML = '用手机扫码 → 在手机上点「确认登录」<br>二维码 ' + left + ' 秒内有效';
+    }
+    tick();
+    scanCountdown = setInterval(tick, 1000);
+  }
+
+  function onScanOk(m) {
+    if (m.sid && m.sid !== scanSid) return;
+    scanSid = ''; scanDeadline = 0;
+    if (scanCountdown) { clearInterval(scanCountdown); scanCountdown = null; }
+    scanPanel.hidden = true;
+    scanEntry.hidden = true;
+    saveSession(m);
+    if (code) { say('扫码登录成功（QQ ' + m.qq + '），正在授权…'); tryAutoAuth(); return; }
+    countdownHome('扫码登录成功（QQ ' + m.qq + '）', 5);
+  }
+
+  document.getElementById('scanBtn').addEventListener('click', startScan);
+  scanCancel.addEventListener('click', function () {
+    if (scanDeadline && Date.now() >= scanDeadline) startScan();
+    else stopScan('');
+  });
+  // 只有从官网「账号登录」入口进来（没有授权码、没有票、也没登录）才显示扫码入口
+  if (!pses && !scanBack && !lt && !code) scanEntry.hidden = false;
+
   /* 票不可用时恢复成手动登录的样子 */
   function showLoginBox(reason) {
     var lb = document.getElementById('loginBox');
@@ -213,6 +320,8 @@
     authBox.hidden = true;
     if (isFallback) {
       say('游戏账号「' + fbName + '」还没有绑定 QQ。请先在 QQ 群发送「登录 ' + fbName + '」完成绑定，再回游戏重新进入即可。', true);
+    } else if (scanBack) {
+      say('登录后会自动回到扫码确认页');
     } else if (pses) countdownHome('已登录（QQ ' + pses.qq + '）', 5);
     else say('登录后会直接返回首页');
   }
@@ -241,8 +350,13 @@
     }
     if (m.type === 'loginSent') { say(m.ok ? '验证码已发送到 QQ 私聊，请注意查收' : '该 QQ 没有绑定任何游戏账号', !m.ok); return; }
     if (m.type === 'loginFail') { say('登录失败：' + m.reason, true); return; }
+    // 扫码登录：二维码已生成 / 手机确认完毕
+    if (m.type === 'scanReady') { onScanReady(m); return; }
+    if (m.type === 'scanOk') { onScanOk(m); return; }
     if (m.type === 'loginOk') {
       saveSession(m);   // 关键修复：刷新内存与本地缓存中的令牌，否则会带空令牌被判「未登录」
+      // 手机扫码流程：这台设备刚用验证码登录完，回扫码确认页继续
+      if (scanBack) { location.href = 'scan.html?sid=' + encodeURIComponent(scanBack); return; }
       // 游戏内的授权请求：不展示选号页，直接自动授权
       if (code) { say('登录成功（QQ ' + m.qq + '），正在验证…'); tryAutoAuth(); return; }
       // 官网登录入口：登录完就回首页
@@ -252,6 +366,7 @@
     // 免登录票据换登录态成功：绑过 QQ 的玩家直接就是已登录
     if (m.type === 'ticketOk') {
       saveSession(m);
+      if (scanBack) { location.href = 'scan.html?sid=' + encodeURIComponent(scanBack); return; }
       say('已自动登录（QQ ' + m.qq + '），正在验证…');
       var pb = document.getElementById('pageTitle'), pl = document.getElementById('pageLead');
       if (pb) pb.textContent = '已自动登录';
