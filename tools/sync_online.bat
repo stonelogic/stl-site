@@ -32,7 +32,7 @@ if errorlevel 1 (
 
 "%PY%" "%~dp0export_online.py" >nul 2>&1
 if errorlevel 1 (
-  echo [%date% %time%] export_online.py 失败 errorlevel=%errorlevel%>>"%LOG%"
+  echo [%date% %time%] export_online.py 失败（RCON 连不上，服务端可能没启动）>>"%LOG%"
   exit /b 0
 )
 

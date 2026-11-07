@@ -32,10 +32,10 @@ if errorlevel 1 (
 )
 
 "%PY%" "%~dp0export_playtime.py" >>"%OUT%" 2>&1
-if errorlevel 1 echo [%date% %time%] export_playtime.py 失败 errorlevel=%errorlevel%>>"%LOG%"
+if errorlevel 1 echo [%date% %time%] export_playtime.py 失败（读不到 cyutime 数据库）>>"%LOG%"
 
 "%PY%" "%~dp0export_bedwars.py" >>"%OUT%" 2>&1
-if errorlevel 1 echo [%date% %time%] export_bedwars.py 失败 errorlevel=%errorlevel%>>"%LOG%"
+if errorlevel 1 echo [%date% %time%] export_bedwars.py 失败（读不到 BedWars 统计文件）>>"%LOG%"
 
 echo [%date% %time%] 完成>>"%LOG%"
 exit /b 0
