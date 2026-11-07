@@ -55,15 +55,6 @@
       '地皮与领地内请互相尊重，长期不在线的建筑可能被回收。',
       '尊重管理员与其他玩家，有问题先在群内反馈，服从管理最终裁定。'
     ],
-    faq: [
-      { q: '服务器是什么版本？支持哪些客户端？', a: '服务端为 Paper 26.2。装了 ViaVersion / ViaBackwards / ViaRewind，1.21.x 及更低版本客户端也能进，推荐用与你常用版本一致的客户端。' },
-      { q: '是正版验证服吗？需要注册吗？', a: '本服为离线模式，无需正版账号即可进入。首次进服需要用 AuthMe 注册并设置密码（/register），之后每次进服 /login 登录。' },
-      { q: '新手有什么福利？', a: '进服会收到一本《服务器游玩指南》，在聊天框输入「同意」即可领取全套铁装备、32 个牛排和 500 货币。' },
-      { q: '怎么去地皮 / 资源世界 / 小游戏？', a: '主城 spawn 有传送菜单与地标传送（/warp），也可直接输入 /warp plot、/warp end 等地标名。小游戏在世界 lobby 的菜单里进入。' },
-      { q: '主世界会删档吗？', a: '主世界、地皮、公会建筑长期不删档；资源世界会定期轮换重置，便于大家持续获取资源。' },
-      { q: '需要装模组或材质包吗？', a: '基础玩法不需要任何模组。想用语音聊天请安装 Simple Voice Chat 客户端模组；服务器已配置 ForcePack，进服会自动加载材质包。' },
-      { q: '被熊了怎么办？', a: '服务器有 CoreProtect 全程记录，联系管理员即可精准回滚并封禁对方；请提前用木牌锁、领地保护好自己的箱子。' }
-    ],
     events: [
       { icon: '🌸', title: '四季轮转', desc: 'AeternumSeasons 跟随现实季节变化：春华秋实、夏炎冬雪，不同季节有专属作物、生物与氛围。' },
       { icon: '🌍', title: '世界事件', desc: 'WorldEvents 不定期触发全服事件——钓鱼大赛、丰收节、怪物潮等，参与就能拿限定奖励。' },
@@ -84,7 +75,7 @@
       note: '任何问题、BUG 反馈或商务合作，欢迎加 QQ 群找管理；被封禁的玩家也可在页面底部提交申诉。'
     },
     footer: '© 2026 Stone Logic · 由玩家自建运营 · 与 Mojang / Microsoft 无隶属关系',
-    layout: { order: ['hero', 'features', 'worlds', 'events', 'status', 'profile', 'rules', 'faq', 'appeal', 'owner', 'join', 'gallery'] }
+    layout: { order: ['hero', 'features', 'worlds', 'events', 'status', 'profile', 'rules', 'appeal', 'owner', 'join', 'gallery'] }
   };
 
   /* ---------- 工具 ---------- */
@@ -172,19 +163,6 @@
     $('#ruleList').innerHTML = (cfg.rules || []).map(function (r, i) {
       return '<li><b>' + String(i + 1).padStart(2, '0') + '</b><span>' + esc(r) + '</span></li>';
     }).join('');
-
-    // FAQ
-    $('#faqList').innerHTML = (cfg.faq || []).map(function (f) {
-      return '<div class="faq-item"><div class="faq-q"><span>' + esc(f.q) +
-        '</span><span>+</span></div><div class="faq-a">' + esc(f.a) + '</div></div>';
-    }).join('');
-    $$('.faq-q').forEach(function (q) {
-      q.addEventListener('click', function () {
-        var item = q.parentElement;
-        var open = item.classList.toggle('open');
-        q.lastElementChild.textContent = open ? '−' : '+';
-      });
-    });
 
     // 链接
     var links = (cfg.links || []).slice();
@@ -796,9 +774,6 @@
     html += '<div class="group"><div class="g-title">服务器规则（一行一条）</div>' +
       '<textarea data-k="rules" style="min-height:120px">' + esc((d.rules || []).join('\n')) + '</textarea></div>';
 
-    html += '<div class="group"><div class="g-title">常见问题</div><div id="faqWrap"></div>' +
-      '<button type="button" class="add-btn" data-add="faq">+ 添加问答</button></div>';
-
     html += '<div class="group"><div class="g-title">社群 / 下载链接</div><div id="linkWrap"></div>' +
       '<button type="button" class="add-btn" data-add="links">+ 添加链接</button></div>';
 
@@ -820,7 +795,6 @@
         var item = key === 'features' ? { icon: '⭐', title: '新特色', desc: '描述' }
           : key === 'screenshots' ? { url: '', cap: '新截图' }
           : key === 'worlds' ? { name: 'world_name', tag: '分类', desc: '一句话说明' }
-          : key === 'faq' ? { q: '问题？', a: '回答' }
           : { label: '🔗 链接名称', url: '#' };
         draft[key].push(item);
         renderLists();
@@ -857,14 +831,6 @@
         '<button type="button" class="btn-outline small shot-pick">上传</button></div>' +
         '<div class="rowauto"><input type="text" data-f="cap" value="' + esc(s.cap) + '" placeholder="说明">' +
         '<img class="thumb" src="' + esc(s.url) + '" alt=""></div>' +
-        '<button type="button" class="mini-del">删除</button></div>';
-    }).join('');
-
-    // FAQ
-    $('#faqWrap').innerHTML = draft.faq.map(function (f, i) {
-      return '<div class="item-row" data-key="faq" data-i="' + i + '">' +
-        '<input type="text" data-f="q" value="' + esc(f.q) + '" placeholder="问题">' +
-        '<textarea data-f="a" placeholder="回答">' + esc(f.a) + '</textarea>' +
         '<button type="button" class="mini-del">删除</button></div>';
     }).join('');
 
