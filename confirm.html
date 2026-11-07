@@ -3,16 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>网页授权登录 · Stone Logic</title>
+<title>网页一键授权 · Stone Logic</title>
 <style>
   *{box-sizing:border-box}
-  body{
-    margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;
+  body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;
     font-family:"PingFang SC","Microsoft YaHei","Helvetica Neue",Arial,sans-serif;color:#eef4ff;
-    background:#0d1626 url('assets/shot1.svg') center center / cover no-repeat fixed;
-  }
-  .veil{position:fixed;inset:0;z-index:0;
-    background:linear-gradient(135deg,rgba(8,16,30,.90),rgba(14,38,72,.80));
+    background:#0d1626 url('assets/shot1.svg') center center / cover no-repeat fixed}
+  .veil{position:fixed;inset:0;z-index:0;background:linear-gradient(135deg,rgba(8,16,30,.90),rgba(14,38,72,.80));
     backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px)}
   .box{position:relative;z-index:1;width:min(92vw,460px);text-align:center;
     background:rgba(17,26,42,.88);border:1px solid rgba(255,255,255,.14);border-radius:22px;
@@ -26,12 +23,17 @@
   .lead{margin:0;font-size:13px;color:#a9bcd6;line-height:1.7}
   .id{margin:14px auto 10px;padding:11px 14px;border-radius:12px;font-size:21px;font-weight:800;
     color:#7ee39a;background:rgba(82,212,104,.10);border:1px solid rgba(82,212,104,.30);word-break:break-all}
-  .meta{margin:0 0 18px;font-size:12.5px;color:#8fa5c2;line-height:1.8}
+  .meta{margin:0 0 16px;font-size:12.5px;color:#8fa5c2;line-height:1.8}
   .meta b{color:#ffd166}
-  button{width:100%;padding:13px;border:0;border-radius:12px;background:#52d468;color:#0b1209;
+  input{width:100%;padding:12px;text-align:center;letter-spacing:8px;font-size:20px;font-weight:800;
+    border:1px solid rgba(255,255,255,.20);border-radius:12px;background:rgba(255,255,255,.07);
+    color:#fff;outline:none;font-family:inherit}
+  input:focus{border-color:#52d468}
+  input:disabled{opacity:.4}
+  button{width:100%;padding:13px;margin-top:12px;border:0;border-radius:12px;background:#52d468;color:#0b1209;
     font-size:15px;font-weight:800;cursor:pointer;transition:.2s;font-family:inherit}
   button:hover{background:#6ce083;transform:translateY(-1px)}
-  button:disabled{opacity:.55;cursor:not-allowed;transform:none}
+  button:disabled{opacity:.5;cursor:not-allowed;transform:none}
   .msg{min-height:18px;margin:12px 0 0;font-size:12.5px;color:#9fb4d0;line-height:1.6}
   .foot{margin-top:18px;padding-top:14px;border-top:1px solid rgba(255,255,255,.10);
     font-size:12px;color:#8298b5;line-height:1.9}
@@ -45,26 +47,27 @@
 <div class="box">
   <img class="logo" id="logo" src="assets/icon.png" alt="服务器 Logo">
   <h2 class="sname" id="sname">Stone Logic</h2>
-  <p class="sub" id="sub">Minecraft 服务器 · 网页授权登录</p>
-
+  <p class="sub" id="sub">Minecraft 服务器 · 网页一键授权</p>
   <div class="rule"></div>
 
-  <h1>网页授权登录</h1>
+  <h1>网页一键授权</h1>
   <p class="lead">即将为以下游戏 ID 授权进入服务器</p>
-  <div class="id" id="player">—</div>
-  <p class="meta">有效期 <b>10 分钟</b><br>授权成功后回到游戏，弹窗会自动关闭并进入服务器<br>授权对象由服务端校验，修改链接无效</p>
+  <div class="id" id="player">正在核验…</div>
+  <p class="meta">有效期 <b>5 分钟</b> · 链接<b>一次性</b><br>
+     6 位验证码已发送至该游戏 ID <b>绑定的 QQ 私聊</b><br>
+     授权对象由服务端确认，修改链接内容无效</p>
 
-  <button id="ok" type="button">确认授权</button>
-  <p class="msg" id="msg"></p>
+  <input id="otp" type="text" inputmode="numeric" maxlength="6" placeholder="QQ 私聊验证码" disabled>
+  <button id="ok" type="button" disabled>确认授权</button>
+  <p class="msg" id="msg">正在核验链接有效性…</p>
 
   <div class="foot">
-    还没绑定 QQ？先到 <a href="https://qm.qq.com/q/UhSK4yuLGG" target="_blank" rel="noopener">QQ 群</a> 绑定<br>
+    未收到验证码？可在 QQ 群发送 <b>登陆 你的游戏ID</b><br>
     <a href="index.html">← 返回服务器官网</a>
   </div>
 </div>
 <script>
 (function () {
-  // 与官网共用本地配置，显示真实服务器名 / Logo
   try {
     var cfg = JSON.parse(localStorage.getItem('mc-site-config-v2') || '{}');
     if (cfg.serverName) document.getElementById('sname').textContent = cfg.serverName;
@@ -75,30 +78,69 @@
   var q = new URLSearchParams(location.search);
   var code = q.get('c') || '';
   var topic = q.get('topic') || '';
-  var name = q.get('n') || '';
-  document.getElementById('player').textContent = name || '—';
+  var playerEl = document.getElementById('player');
+  var otpEl = document.getElementById('otp');
   var btn = document.getElementById('ok');
   var msg = document.getElementById('msg');
-  if (!code || !topic) {
-    btn.disabled = true;
-    msg.textContent = '链接不完整或已过期，请回游戏重新获取。';
-    return;
+  var done = false;
+
+  function fail(text) {
+    done = true;
+    playerEl.textContent = '—';
+    otpEl.disabled = true; btn.disabled = true;
+    msg.textContent = text;
   }
+  if (!code || !topic) { fail('链接不完整，请回游戏重新获取。'); return; }
+
+  var ntfy = 'https://ntfy.sh/' + encodeURIComponent(topic);
+  // 订阅服务端回执；页面不读取 URL 里的任何玩家名
+  var es = null;
+  try {
+    es = new EventSource(ntfy + '/sse');
+    es.onmessage = function (ev) {
+      if (done) return;
+      var d; try { d = JSON.parse(ev.data); } catch (e) { return; }
+      if (d.event !== 'message' || !d.message) return;
+      var m; try { m = JSON.parse(d.message); } catch (e) { return; }
+      if (m.type !== 'probeAck' || m.code !== code) return;
+      if (!m.valid) { fail('链接已使用或已过期，请回到游戏重新获取。'); return; }
+      done = true;
+      playerEl.textContent = m.name;   // 只显示服务端登记的真实名字
+      otpEl.disabled = false; btn.disabled = false;
+      msg.textContent = '请输入绑定 QQ 收到的 6 位验证码';
+      otpEl.focus();
+      if (es) es.close();
+    };
+    es.onerror = function () { /* 网络抖动，继续等服务端回执 */ };
+  } catch (e) {}
+
+  function probe() {
+    fetch(ntfy, { method: 'POST', headers: { 'content-type': 'text/plain' },
+      body: JSON.stringify({ probe: code }) }).catch(function () {});
+  }
+  probe();
+  var tries = 0;
+  var timer = setInterval(function () {
+    if (done || tries++ > 8) { clearInterval(timer); return; }
+    probe();
+  }, 2000);
+  setTimeout(function () {
+    if (!done) fail('核验超时，请回到游戏重新获取授权链接。');
+  }, 20000);
+
   btn.addEventListener('click', function () {
+    var otp = (otpEl.value || '').replace(/\D/g, '');
+    if (otp.length !== 6) { msg.textContent = '请输入 6 位数字验证码'; return; }
     btn.disabled = true;
     msg.textContent = '提交中…';
-    fetch('https://ntfy.sh/' + encodeURIComponent(topic), {
-      method: 'POST',
-      headers: { 'content-type': 'text/plain' },
-      body: JSON.stringify({ code: code, name: name })
-    }).then(function (r) {
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      btn.textContent = '已授权';
-      msg.textContent = '授权成功！回到游戏，弹窗会自动关闭并进入服务器。';
-    }).catch(function (e) {
-      msg.textContent = '提交失败：' + e.message + '，请重试或改用群内指令。';
-      btn.disabled = false;
-    });
+    fetch(ntfy, { method: 'POST', headers: { 'content-type': 'text/plain' },
+      body: JSON.stringify({ code: code, otp: otp }) }).then(function (r) {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        msg.textContent = '已提交，请回到游戏确认是否进入；未进入说明验证码有误。';
+      }).catch(function (e) {
+        msg.textContent = '提交失败：' + e.message;
+        btn.disabled = false;
+      });
   });
 })();
 </script>
