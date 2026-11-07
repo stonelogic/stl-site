@@ -6,22 +6,78 @@
   "javaPort": "44558",
   "groupUrl": "https://qm.qq.com/q/UhSK4yuLGG",
   "features": [
-    { "icon": "⚔️", "title": "起床战争", "desc": "独立 BedWars 竞技场，自动排队开局，输赢都不影响生存进度。" },
-    { "icon": "🫥", "title": "方块躲猫猫", "desc": "BlockHideAndSeek：伪装成方块藏好，别被猎人抓到。" },
-    { "icon": "🏹", "title": "PVP 竞技场", "desc": "多个 PVP 世界加决斗系统，约架公平对战，不爆装备。" },
-    { "icon": "🏡", "title": "地皮与建筑", "desc": "PlotSquared 地皮，配 WorldEdit 和建筑权杖，随便造。" },
-    { "icon": "👥", "title": "公会系统", "desc": "PlayerGuild 公会、好友、TPA、地标传送，和朋友一起发展。" },
-    { "icon": "💰", "title": "自由经济", "desc": "QuickShop 摆摊、市场交易、点券、抽奖红包，经济全靠自己经营。" },
-    { "icon": "⭐", "title": "技能与职业", "desc": "mcMMO 技能、Jobs 职业、每日任务和签到，边玩边成长。" },
-    { "icon": "🎁", "title": "节日活动", "desc": "AeternumSeasons 四季轮转 + 节日活动，登录礼包拿到手软。" }
+    {
+      "icon": "⚔️",
+      "title": "起床战争",
+      "desc": "独立 BedWars 竞技场，自动排队开局，输赢都不影响生存进度。"
+    },
+    {
+      "icon": "🫥",
+      "title": "方块躲猫猫",
+      "desc": "BlockHideAndSeek：伪装成方块藏好，别被猎人抓到。"
+    },
+    {
+      "icon": "🏹",
+      "title": "PVP 竞技场",
+      "desc": "多个 PVP 世界加决斗系统，约架公平对战，不爆装备。"
+    },
+    {
+      "icon": "🏡",
+      "title": "地皮与建筑",
+      "desc": "PlotSquared 地皮，配 WorldEdit 和建筑权杖，随便造。"
+    },
+    {
+      "icon": "👥",
+      "title": "公会系统",
+      "desc": "PlayerGuild 公会、好友、TPA、地标传送，和朋友一起发展。"
+    },
+    {
+      "icon": "💰",
+      "title": "自由经济",
+      "desc": "QuickShop 摆摊、市场交易、点券、抽奖红包，经济全靠自己经营。"
+    },
+    {
+      "icon": "⭐",
+      "title": "技能与职业",
+      "desc": "mcMMO 技能、Jobs 职业、每日任务和签到，边玩边成长。"
+    },
+    {
+      "icon": "🎁",
+      "title": "节日活动",
+      "desc": "AeternumSeasons 四季轮转 + 节日活动，登录礼包拿到手软。"
+    }
   ],
   "worlds": [
-    { "name": "world", "tag": "主世界", "desc": "不删档，长期保存你的建筑与家园" },
-    { "name": "world_nether", "tag": "地狱", "desc": "资源采集与快速交通" },
-    { "name": "world_the_end", "tag": "末地", "desc": "主末地，通过传送门进入，不重置" },
-    { "name": "resource", "tag": "资源世界", "desc": "定期轮换重置，持续获取资源" },
-    { "name": "plot", "tag": "地皮", "desc": "PlotSquared 地皮世界，安心造家" },
-    { "name": "bedwars", "tag": "起床战争", "desc": "独立小游戏竞技场" }
+    {
+      "name": "world",
+      "tag": "主世界",
+      "desc": "不删档，长期保存你的建筑与家园"
+    },
+    {
+      "name": "world_nether",
+      "tag": "地狱",
+      "desc": "资源采集与快速交通"
+    },
+    {
+      "name": "world_the_end",
+      "tag": "末地",
+      "desc": "主末地，通过传送门进入，不重置"
+    },
+    {
+      "name": "resource",
+      "tag": "资源世界",
+      "desc": "定期轮换重置，持续获取资源"
+    },
+    {
+      "name": "plot",
+      "tag": "地皮",
+      "desc": "PlotSquared 地皮世界，安心造家"
+    },
+    {
+      "name": "bedwars",
+      "tag": "起床战争",
+      "desc": "独立小游戏竞技场"
+    }
   ],
   "rules": [
     "禁止使用外挂、作弊客户端（矿透、自动挖矿、加速等），一经查实永久封禁。",
@@ -31,10 +87,25 @@
     "尊重管理员与其他玩家，有问题先在群内反馈，服从管理最终裁定。"
   ],
   "guide": [
-    { "t": "注册与登录", "c": "首次进服输入 /register 设置密码（需先在 QQ 群绑定账号），之后每次进服 /login 登录。" },
-    { "t": "领取新手礼包", "c": "进服会收到一本《服务器游玩指南》，在聊天框输入「同意」即可领取全套铁装备、32 个牛排和 500 货币。" },
-    { "t": "传送与地皮", "c": "主城 spawn 有传送菜单与地标传送（/warp），也可输入 /warp plot 去地皮世界圈地造家。" },
-    { "t": "语音聊天", "c": "想语音请安装 Simple Voice Chat 客户端模组；服务器已配置 ForcePack，进服自动加载材质包。" },
-    { "t": "小游戏", "c": "起床战争、方块躲猫猫、PVP 等小游戏在世界 lobby 的菜单里进入，不影响生存进度。" }
+    {
+      "t": "注册与登录",
+      "c": "首次进服输入 /register 设置密码（需先在 QQ 群绑定账号），之后每次进服 /login 登录。"
+    },
+    {
+      "t": "领取新手礼包",
+      "c": "进服会收到一本《服务器游玩指南》，在聊天框输入「同意」即可领取全套铁装备、32 个牛排和 500 货币。"
+    },
+    {
+      "t": "传送与地皮",
+      "c": "主城 spawn 有传送菜单与地标传送（/warp），也可输入 /warp plot 去地皮世界圈地造家。"
+    },
+    {
+      "t": "语音聊天",
+      "c": "想语音请安装 Simple Voice Chat 客户端模组；服务器已配置 ForcePack，进服自动加载材质包。"
+    },
+    {
+      "t": "小游戏",
+      "c": "起床战争、方块躲猫猫、PVP 等小游戏在世界 lobby 的菜单里进入，不影响生存进度。"
+    }
   ]
 }
