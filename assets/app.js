@@ -130,8 +130,8 @@
     hero.innerHTML = '<div class="hero-sky">' +
       '<span class="flower f1">❀</span><span class="flower f2">✿</span>' +
       '<span class="flower f3">❀</span><span class="flower f4">✿</span>' +
-      '<h1 class="mc-logo">STONE LOGIC</h1>' +
-      '<p class="hero-tag">' + esc(SITE.tagline) + '</p>' +
+      '<img class="hero-logo" src="assets/title-logo.png" alt="STONE LOGIC">' +
+      '<p class="hero-slogan">生存 or 小游戏 你想要的，都在STL！</p>' +
       '<div class="hero-actions">' +
       '<a class="btn btn-primary" href="' + SITE.groupUrl + '" target="_blank" rel="noopener">加入 QQ 群</a>' +
       '<a class="btn btn-outline" href="#/players">查玩家皮肤</a>' +
