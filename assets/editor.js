@@ -220,7 +220,8 @@
     var headers = { 'Authorization': 'Bearer ' + pat, 'Accept': 'application/vnd.github+json' };
     try {
       toast('读取仓库配置…');
-      var cur = await fetch(api, { headers: headers, cache: 'no-store' });
+      // 必须指定 ref=master：默认分支是 main，不带 ref 会取到 main 上不存在的文件 → 404 → sha 缺失 → PUT 报 422
+      var cur = await fetch(api + '?ref=' + encodeURIComponent(BRANCH), { headers: headers, cache: 'no-store' });
       var sha = null;
       if (cur.ok) { var j = await cur.json(); sha = j.sha; }
       else if (cur.status !== 404) throw new Error('读取失败 HTTP ' + cur.status);
