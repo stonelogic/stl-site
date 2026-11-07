@@ -84,6 +84,165 @@
     return Math.floor(sec / 86400) + ' 天 ' + Math.floor((sec % 86400) / 3600) + ' 小时';
   }
 
+  /* ===========================================================
+     实时服务器状态（地址旁的绿点 / 红点）
+     -----------------------------------------------------------
+     数据源只用 mclists：它从国内节点真的能连上 frp 隧道做 SLP 探测。
+     mcstatus.io / mcsrvstat.us 的探测机在国外，连不进隧道，一律返回 offline，
+     拿它们判断会永远显示「离线」，所以不用。
+     在线/离线与人数都取它的实时结果；玩家名单仍取仓库里的 online.json
+     （名单必须靠 RCON 导出，天生慢 1~2 分钟）。
+     连续失败不立刻判离线——先按指数退避重试，避免把网络抖动误报成服务器挂了。
+     =========================================================== */
+  var TICK = 5000;    // 状态刷新间隔（5 秒）
+  var LIVE = {
+    known: false,     // 是否拿到过可信结果（false = 显示"检测中/状态未知"）
+    ok: false,        // 服务器是否在线
+    now: 0,           // 当前在线人数
+    max: 0,           // 人数上限（取自 online.json，接口给的是脏值）
+    ping: null,
+    ver: '',
+    motd: '',
+    fail: 0,          // 连续失败次数
+    off: 0,           // 连续"离线"采样次数（≥2 才判定离线）
+    at: 0,            // 最近一次成功时间
+    busy: false,      // 有没有正在飞的请求（避免重复打接口）
+    timer: null,
+    onUpdate: null    // 当前页面注册的额外刷新函数
+  };
+
+  function liveUrl() {
+    return STATUS_API.replace('{host}', JAVA_HOST).replace('{port}', JAVA_PORT);
+  }
+
+  function setBadge(node, state, text) {
+    if (!node) return;
+    node.classList.remove('is-on', 'is-off');
+    if (state === 'on') node.classList.add('is-on');
+    else if (state === 'off') node.classList.add('is-off');
+    var t = node.querySelector('.live-txt');
+    if (t) t.textContent = text;
+    node.setAttribute('title', text);
+  }
+
+  /* 把 LIVE 状态刷到所有徽标 / 胶囊 / 人数上（页面切换后元素不存在就自动跳过） */
+  function renderLive() {
+    var state = !LIVE.known ? 'unk' : (LIVE.ok ? 'on' : 'off');
+    var full;
+    if (!LIVE.known) full = '状态检测中…';
+    else if (LIVE.ok) full = LIVE.now > 0 ? ('在线 · ' + LIVE.now + ' 人') : '在线 · 空闲';
+    else full = '离线';
+
+    setBadge($id('heroLive'), state, full);
+    setBadge($id('navLive'), state,
+      !LIVE.known ? '—' : (LIVE.ok ? (LIVE.now > 0 ? LIVE.now + ' 人' : '在线') : '离线'));
+
+    var pillClass = 'status-pill ' + (LIVE.known ? (LIVE.ok ? 'on' : 'off') : '');
+    var pillText = !LIVE.known ? '检测中…' : (LIVE.ok ? '● 在线' : '● 离线');
+    var sp = $id('stPill');
+    if (sp) { sp.className = pillClass; sp.textContent = pillText; }
+    var op = $id('olPill');
+    if (op) { op.className = pillClass; op.textContent = pillText; }
+
+    // 大数字：在线时显示实时人数，离线归零，未知显示 —
+    var so = $id('stOnline');
+    if (so) so.textContent = !LIVE.known ? '—' : (LIVE.ok ? String(LIVE.now) : '0');
+    var oc = $id('olCount');
+    if (oc) {
+      oc.textContent = !LIVE.known ? '—'
+        : (LIVE.ok ? ('在线 ' + LIVE.now + ' / ' + (LIVE.max || '—') + ' 人') : '在线 0 / ' + (LIVE.max || '—') + ' 人');
+    }
+    // 首页那条链接固定文案（人数已经显示在旁边的徽标里，不重复报数）
+    var ho = $id('heroOnline');
+    if (ho) {
+      ho.innerHTML = '查看在线玩家 <span class="ho-arrow">→</span>';
+    }
+  }
+
+  function applyLive(d) {
+    var isOn = !!d.online;
+    if (isOn) {
+      LIVE.ok = true;
+      LIVE.off = 0;
+    } else {
+      // 单次「离线」采样先按住不翻红：第三方探测偶尔抖一下，
+      // 误报离线会让玩家以为服务器挂了直接走人。连续两次才确认离线。
+      LIVE.off = (LIVE.off || 0) + 1;
+      if (!LIVE.known || LIVE.ok === false || LIVE.off >= 2) LIVE.ok = false;
+    }
+    LIVE.known = true;
+    // 已经确定在线时，别让一次「离线」采样把人数清掉
+    if (isOn || LIVE.ok === false) {
+      var p = d.players || {};
+      LIVE.now = Number(p.now) || 0;
+    }
+    LIVE.ping = (typeof d.latency === 'number' && d.latency > 0) ? d.latency : LIVE.ping;
+    LIVE.ver = d.version || d.name || LIVE.ver;
+    LIVE.motd = typeof d.description === 'string' ? d.description
+      : (d.description && d.description.text ? d.description.text : LIVE.motd);
+    LIVE.fail = 0;
+    LIVE.at = Date.now();
+    renderLive();
+    if (typeof LIVE.onUpdate === 'function') LIVE.onUpdate();
+  }
+
+  function pollLive() {
+    if (LIVE.busy) return;            // 上一个还飞着就别再发一个
+    LIVE.busy = true;
+    var ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+    var to = setTimeout(function () { if (ctrl) ctrl.abort(); }, 8000);
+    var opts = ctrl ? { signal: ctrl.signal, cache: 'no-store' } : { cache: 'no-store' };
+    fetch(liveUrl() + '&_=' + Date.now(), opts)
+      .then(function (r) {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json();
+      })
+      .then(function (x) {
+        var d = (x && x.data) ? x.data : null;
+        if (!d || typeof d.online !== 'boolean') throw new Error('bad payload');
+        applyLive(d);
+      })
+      .catch(function () {
+        // 拿不到数据 ≠ 服务器离线：连续 3 次失败才把徽标降级成"状态未知"
+        LIVE.fail++;
+        if (LIVE.fail >= 3 && LIVE.known) {
+          LIVE.known = false;
+          renderLive();
+          if (typeof LIVE.onUpdate === 'function') LIVE.onUpdate();
+        }
+      })
+      .then(function () {
+        clearTimeout(to);
+        LIVE.busy = false;
+      });
+  }
+
+  /* 单一心跳：5 秒一次；失败次数越多间隔越长（最多 60 秒），页面隐藏时停手 */
+  function startLiveTicker() {
+    if (LIVE.timer) clearTimeout(LIVE.timer);
+    function step() {
+      if (!document.hidden) pollLive();
+      var delay = LIVE.fail >= 3 ? Math.min(60000, TICK * Math.pow(2, LIVE.fail - 2)) : TICK;
+      LIVE.timer = setTimeout(step, delay);
+    }
+    step();
+    document.addEventListener('visibilitychange', function () {
+      if (!document.hidden) pollLive();   // 切回前台立刻补一次，不用等下一个 5 秒
+    });
+  }
+
+  /* 顶部导航里的迷你状态徽标（全站可见，点进在线状态页） */
+  function mountNavLive() {
+    var right = document.querySelector('.nav-right');
+    if (!right || $id('navLive')) return;
+    var a = document.createElement('a');
+    a.id = 'navLive';
+    a.className = 'live-badge nav-live';
+    a.href = '#/online';
+    a.innerHTML = '<i class="live-dot"></i><span class="live-txt">—</span>';
+    right.insertBefore(a, right.firstChild);
+  }
+
   /* ---------- 内联线描图标（24x24，随 currentColor） ---------- */
   var SVG = {
     penguin: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.8c-3.1 0-5.2 2.3-5.2 5.6v5.4c0 3.4 2.1 5.8 5.2 5.8s5.2-2.4 5.2-5.8V8.4c0-3.3-2.1-5.6-5.2-5.6Z"/><path d="M9.6 9.2h.01M14.4 9.2h.01"/><path d="M10.4 11.2h3.2L12 13l-1.6-1.8Z"/><path d="M6.9 12.2c-1.2.5-1.9 1.4-1.9 2.5 0 1 .8 1.7 1.9 1.7M17.1 12.2c1.2.5 1.9 1.4 1.9 2.5 0 1-.8 1.7-1.9 1.7"/><path d="M9.4 20.4l.5-2M14.6 20.4l-.5-2"/></svg>',
@@ -220,6 +379,7 @@
       '<a class="hero-qq" href="' + SITE.groupUrl + '" target="_blank" rel="noopener" title="加入 QQ 群" aria-label="加入 QQ 群">' + SVG.penguin + '</a>' +
       '<span class="hero-addr"><span class="hero-ip">' + esc(SITE.javaIp) + '</span>' +
       '<button class="hero-copy" id="heroCopy" type="button" title="复制服务器地址" aria-label="复制服务器地址">' + SVG.copy + '</button></span>' +
+      '<span class="live-badge" id="heroLive" title="服务器状态"><i class="live-dot"></i><span class="live-txt">状态检测中…</span></span>' +
       '</div>' +
       '<a class="hero-online" id="heroOnline" href="#/online">查看在线玩家 <span class="ho-arrow">→</span></a>' +
       '</div>' +
@@ -272,18 +432,12 @@
     container.appendChild(stf);
   }
 
-  /* 首页在线人数：进入首页时拉取，显示「当前在线 X 名玩家」 */
+  /* 首页：地址旁的徽标与「查看在线玩家」文字都交给统一的 LIVE 心跳渲染，
+     这里只负责在页面刚渲染出来时先把当前值铺上去（避免闪一下空白） */
   function loadHeroOnline() {
     clearInterval(window.__stlHeroTimer);
-    function upd() {
-      fetchLocalOnline(function (d, err) {
-        var e = $id('heroOnline'); if (!e) return;
-        if (!err && d && d.online) e.innerHTML = '当前在线 <strong>' + (d.now || 0) + '</strong> 名玩家 <span class="ho-arrow">→</span>';
-        else e.innerHTML = '查看在线玩家 <span class="ho-arrow">→</span>';
-      });
-    }
-    upd();
-    window.__stlHeroTimer = setInterval(upd, 60000);
+    renderLive();
+    if (!LIVE.at) pollLive();   // 首次进入还没拿到过数据就立刻问一次
   }
 
   function fallbackCopy(text) {
@@ -309,7 +463,7 @@
 
   /* --- 状态页 --- */
   function renderStatus(container) {
-    container.innerHTML = pageHead('首页', '服务器状态', '实时在线人数与延迟，每 60 秒自动刷新');
+    container.innerHTML = pageHead('首页', '服务器状态', '每 5 秒自动刷新；在线玩家名单由服务端每 1 分钟同步');
     var card = el('div', 'card');
     card.innerHTML = '<div class="status-hero">' +
       '<div><div class="online-count" id="stOnline">—</div><div style="font-size:13px;color:var(--muted-foreground);margin-top:4px">当前在线玩家</div></div>' +
@@ -319,10 +473,9 @@
       '<div class="motd" id="stMotd">正在获取服务器 MOTD…</div>' +
       '<div style="margin-top:20px"><div style="font-size:14px;font-weight:700;margin-bottom:12px">在线玩家</div><div class="player-grid" id="stPlayers"></div></div>';
     container.appendChild(card);
+    renderLive();               // 先把已知状态铺上去，别等接口
     loadStatus();
-    // 60 秒自动刷新
-    clearInterval(loadStatus._t);
-    loadStatus._t = setInterval(loadStatus, 60000);
+    LIVE.onUpdate = loadStatus;  // 跟着 5 秒心跳刷（不再单独 setInterval）
   }
   var ONLINE_TOPIC = 'stl-online-6bd1ae0f4e7e7968';
 
@@ -336,39 +489,41 @@
   }
 
   function loadStatus() {
-    // 人数 / 名单以本地 online.json 为准；第三方接口只用来补延迟、版本、MOTD
+    // 人数 / 在线判定已由 LIVE（实时接口）负责，这里只补两样东西：
+    //   1) 人数上限（第三方接口给的上限是脏值，用 online.json 的 server.properties 真实值）
+    //   2) 在线玩家名单（只能靠 RCON 导出的 online.json，天生滞后 1 分钟）
     fetchLocalOnline(function (d) {
-      var ok = !!(d && d.online);
-      var now = (d && d.now) || 0;
-      var max = (d && d.max) || 0;
-      var pill = $id('stPill'), on = $id('stOnline');
-      if (pill) { pill.textContent = ok ? '● 在线' : '● 离线'; pill.className = 'status-pill ' + (ok ? 'on' : 'off'); }
-      if (on) on.textContent = ok ? now : '0';
+      if (d && Number(d.max)) LIVE.max = Number(d.max);
+      // 首次进入、接口还没回来时，先用 online.json 兜个底，别让页面空着
+      if (!LIVE.at && d && typeof d.online === 'boolean') {
+        LIVE.known = true;
+        LIVE.ok = !!d.online;
+        LIVE.now = Number(d.now) || 0;
+      }
+      var ok = LIVE.known ? LIVE.ok : !!(d && d.online);
       var pg = $id('stPlayers');
       if (pg) {
         var age = (d && d.updated) ? Math.max(0, Math.round(Date.now() / 1000 - d.updated)) : -1;
         renderPlayerGrid(pg, (d && d.players) || [], ok, age);
       }
-      var url = STATUS_API.replace('{host}', JAVA_HOST).replace('{port}', JAVA_PORT);
-      fetch(url).then(function (r) { return r.json(); }).then(function (x) {
-        fillStatusStats(now, max, (x && x.data) ? x.data : x, ok);
-      }).catch(function () { fillStatusStats(now, max, null, ok); });
+      fillStatusStats(ok);
+      renderLive();
     });
   }
 
-  /* 延迟 / 版本 / MOTD 只有第三方接口有，拿不到就显示 — */
-  function fillStatusStats(now, max, data, ok) {
-    var ping = (data && data.latency != null) ? data.latency : '—';
-    var ver = (data && (data.version || data.name)) || '—';
+  /* 延迟 / 版本 / MOTD 来自实时接口，拿不到就显示 — */
+  function fillStatusStats(ok) {
+    var ping = LIVE.ping;
     var stats = $id('stStats');
     if (stats) {
-      stats.innerHTML = '<div class="stat-box"><div class="k">在线/最大</div><div class="v">' + now + ' / ' + max + '</div></div>' +
-        '<div class="stat-box"><div class="k">延迟</div><div class="v">' + (ping === '—' ? '—' : ping + 'ms') + '</div></div>' +
-        '<div class="stat-box"><div class="k">版本</div><div class="v">' + esc(ver || '—') + '</div></div>' +
+      stats.innerHTML = '<div class="stat-box"><div class="k">在线/最大</div><div class="v">' +
+        ((LIVE.known && LIVE.ok) ? LIVE.now : 0) + ' / ' + (LIVE.max || '—') + '</div></div>' +
+        '<div class="stat-box"><div class="k">延迟</div><div class="v">' + ((ping == null || ping <= 0) ? '—' : ping + 'ms') + '</div></div>' +
+        '<div class="stat-box"><div class="k">版本</div><div class="v">' + esc(LIVE.ver || '—') + '</div></div>' +
         '<div class="stat-box"><div class="k">地址</div><div class="v" style="font-size:14px">' + esc(SITE.javaIp) + '</div></div>';
     }
     var motd = $id('stMotd');
-    if (motd) motd.textContent = (data && data.description) || (ok ? 'MOTD 未返回' : '服务器离线或不可达');
+    if (motd) motd.textContent = LIVE.motd || (ok ? 'MOTD 未返回' : '服务器离线或不可达');
   }
 
   function renderEmpty(pg, ok, now) {
@@ -415,6 +570,12 @@
   }
 
   function renderPlayerGrid(pg, players, ok, age) {
+    // 实时接口说现在 0 人，名单里却还有名字 —— 那只是 online.json 滞后，
+    // 以实时为准，否则会出现「显示 0 人在线却挂着 1 个头像」的自相矛盾
+    if (LIVE.known && LIVE.ok && LIVE.now === 0) {
+      pg.innerHTML = emptyState('🕹️', '暂无在线玩家');
+      return;
+    }
     if (!players || !players.length) {
       pg.innerHTML = emptyState('🕹️', ok ? '暂无在线玩家' : '服务器离线');
       return;
@@ -423,11 +584,16 @@
       var face = avatarUrl(name, 96);
       return '<div class="player-cell"><img src="' + face + '" alt="" loading="lazy" data-fb="' + identicon(name) + '" onerror="this.onerror=null;this.src=this.getAttribute(\'data-fb\')"><span class="nm">' + esc(name) + '</span></div>';
     }).join('');
+    // 实时人数和名单条数对不上时说明原因（名单靠 RCON 导出，慢约 1 分钟），
+    // 否则又会被当成「显示 3 人却只有 2 个头像」的 bug
+    if (LIVE.known && LIVE.ok && LIVE.now !== players.length) {
+      html += '<div class="list-note">实时在线 ' + LIVE.now + ' 人，名单同步约有 1 分钟延迟</div>';
+    }
     // updated = 本地脚本最后一次成功同步的时间（名单没变时也会每 20 分钟刷新一次心跳），
     // 超过 30 分钟没动才说明同步真的停了，这时提示一下免得误导
     if (age > 1800) {
       var mins = Math.round(age / 60);
-      html += '<div style="grid-column:1/-1;margin-top:6px;font-size:12.5px;color:var(--muted-foreground)">自动同步已 ' +
+      html += '<div class="list-note">自动同步已 ' +
         (mins > 90 ? Math.round(mins / 60) + ' 小时' : mins + ' 分钟') + ' 没运行，以下名单可能不是最新的</div>';
     }
     pg.innerHTML = html;
@@ -435,31 +601,32 @@
 
   /* --- 在线状态页（在线玩家 ID + 头像） --- */
   function renderOnline(container) {
-    container.innerHTML = pageHead('在线', '在线状态', '当前在线玩家列表，每 30 秒自动刷新');
+    container.innerHTML = pageHead('在线', '在线状态', '状态每 5 秒刷新；玩家名单由服务端每 1 分钟同步');
     var card = el('div', 'card'); container.appendChild(card);
     card.innerHTML = '<div style="display:flex;align-items:center;gap:14px;margin-bottom:16px;flex-wrap:wrap">' +
       '<span class="status-pill" id="olPill">检测中…</span>' +
       '<span style="font-size:15px;font-weight:700" id="olCount">—</span>' +
       '</div>' +
       '<div class="player-grid" id="olPlayers"></div>';
+    renderLive();
     loadOnline();
-    clearInterval(loadOnline._t);
-    loadOnline._t = setInterval(loadOnline, 30000);
+    LIVE.onUpdate = loadOnline;   // 人数/胶囊由 renderLive 写，这里只负责名单
   }
   function loadOnline() {
     fetchLocalOnline(function (d, err) {
-      var pill = $id('olPill'), cnt = $id('olCount');
+      var pg = $id('olPlayers');
       if (err || !d) {
-        if (pill) { pill.textContent = '● 离线'; pill.className = 'status-pill off'; }
-        if (cnt) cnt.textContent = '在线 0 / 0 人';
-        var pg0 = $id('olPlayers'); if (pg0) pg0.innerHTML = emptyState('🕹️', '服务器离线或不可达');
+        // 实时接口说在线、但名单文件取不到：如实说明，别直接报"离线"
+        if (pg) pg.innerHTML = emptyState('🕹️',
+          (LIVE.known && LIVE.ok) ? ('在线 ' + LIVE.now + ' 人，名单同步中…') : '服务器离线或不可达');
+        renderLive();
         return;
       }
-      var ok = !!d.online;
-      if (pill) { pill.textContent = ok ? '● 在线' : '● 离线'; pill.className = 'status-pill ' + (ok ? 'on' : 'off'); }
-      if (cnt) cnt.textContent = '在线 ' + (d.now || 0) + ' / ' + (d.max || 0) + ' 人';
+      if (Number(d.max)) LIVE.max = Number(d.max);
+      var ok = LIVE.known ? LIVE.ok : !!d.online;
       var age = d.updated ? Math.max(0, Math.round(Date.now() / 1000 - d.updated)) : -1;
-      renderPlayerGrid($id('olPlayers'), d.players || [], ok, age);
+      renderPlayerGrid(pg, d.players || [], ok, age);
+      renderLive();
     });
   }
 
@@ -629,6 +796,7 @@
 
   function render() {
     clearInterval(window.__stlHeroTimer);
+    LIVE.onUpdate = null;   // 换页了，别再把上一页的刷新函数带着跑
     var r = resolve(location.hash);
     var main = $id('main');
     if (!main) return;
@@ -692,7 +860,14 @@
     syncFooter();
     $id('footerYear').textContent = new Date().getFullYear();
     window.addEventListener('hashchange', render);
-    loadAvatars(function () { loadConfig(render); });
+    // 配置加载完再起实时心跳：config.json 可能改掉服务器地址，避免第一次探测打错地址
+    loadAvatars(function () {
+      loadConfig(function () {
+        mountNavLive();
+        render();
+        startLiveTicker();
+      });
+    });
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();

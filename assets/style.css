@@ -376,3 +376,66 @@ code{font-family:ui-monospace,Consolas,Menlo,monospace}
   .hero-sky .hero-actions,.hero-sky .hero-ip,.hero-sky .flower,.grid > *,
   .stat-row > *,.feat4 > *,.staff-grid > *{animation:none!important}
 }
+
+/* ===== 实时状态徽标（地址旁：绿点=在线 / 红点=离线） ===== */
+.live-badge{
+  display:inline-flex;align-items:center;gap:7px;
+  padding:6px 13px;border-radius:999px;white-space:nowrap;
+  font-size:13.5px;font-weight:700;line-height:1;letter-spacing:.01em;
+  color:var(--muted-foreground);
+  background:color-mix(in oklab,var(--card) 62%,transparent);
+  border:1px solid var(--border);
+  transition:color .2s,border-color .2s,background .2s
+}
+.live-dot{
+  width:9px;height:9px;border-radius:50%;flex:none;
+  background:var(--muted-foreground);
+  box-shadow:0 0 0 3px color-mix(in oklab,var(--muted-foreground) 20%,transparent);
+  transition:background .2s,box-shadow .2s
+}
+/* 在线：绿点 + 呼吸光晕 */
+.live-badge.is-on{
+  color:#15803d;border-color:rgba(34,197,94,.42);
+  background:color-mix(in oklab,#22c55e 12%,transparent)
+}
+.live-badge.is-on .live-dot{
+  background:#22c55e;box-shadow:0 0 0 3px rgba(34,197,94,.24);
+  animation:livePulse 2s ease-in-out infinite
+}
+/* 离线：红点 */
+.live-badge.is-off{
+  color:var(--destructive);border-color:color-mix(in oklab,var(--destructive) 45%,transparent);
+  background:color-mix(in oklab,var(--destructive) 12%,transparent)
+}
+.live-badge.is-off .live-dot{background:#ef4444;box-shadow:0 0 0 3px rgba(239,68,68,.24)}
+@keyframes livePulse{
+  0%,100%{box-shadow:0 0 0 3px rgba(34,197,94,.24)}
+  50%{box-shadow:0 0 0 6px rgba(34,197,94,.07)}
+}
+/* 深色主题下调亮文字，保证对比度 */
+[data-theme="dark"] .live-badge.is-on{color:#4ade80}
+/* 首页：跟地址一起淡入，别突兀地蹦出来 */
+.hero-sky .live-badge{animation:stlFadeUp .6s .38s both}
+@media (prefers-reduced-motion: reduce){
+  .hero-sky .live-badge{animation:none!important}
+  .live-badge.is-on .live-dot{animation:none!important}
+}
+/* 状态胶囊的"在线"也改成绿色，跟地址旁的绿点统一语义（原来跟主色走是蓝的） */
+.status-pill.on{
+  background:color-mix(in oklab,#22c55e 15%,transparent);
+  color:#15803d
+}
+[data-theme="dark"] .status-pill.on{color:#4ade80}
+/* 顶部导航里的迷你版（全站可见，点进在线状态页） */
+.nav-live{padding:4px 10px;font-size:12.5px;text-decoration:none;gap:6px}
+.nav-live .live-dot{width:8px;height:8px}
+.nav-live:hover{background:var(--accent)}
+/* 名单为空时的占位：铺满整行居中，别缩成左边一个小方块 */
+.player-grid > .empty{grid-column:1/-1;justify-self:center}
+/* 名单同步说明（比实时人数略滞后的提示） */
+.list-note{grid-column:1/-1;margin-top:8px;font-size:12.5px;color:var(--muted-foreground)}
+@media (max-width:600px){
+  .live-badge{font-size:12.5px;padding:5px 11px}
+  /* 手机窄屏导航本来就挤，这里只保留状态点，不占文字宽度 */
+  .nav-live{display:none}
+}
