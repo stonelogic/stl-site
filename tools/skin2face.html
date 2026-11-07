@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>皮肤 → 正脸头像</title>
+<style>
+  :root{
+    --bg:#f6f8f7; --card:#fff; --fg:#1d2b24; --muted:#6b7d74;
+    --line:#e2e8e5; --primary:#2f9e5f; --primary-dk:#237a49;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;min-height:100vh;padding:32px 20px 56px;
+    font:15px/1.6 -apple-system,"Segoe UI","Microsoft YaHei",sans-serif;
+    background:radial-gradient(1200px 500px at 50% -10%,#e7f5ec,#f6f8f7 60%);
+    color:var(--fg);
+  }
+  .wrap{max-width:880px;margin:0 auto}
+  h1{font-size:22px;margin:0 0 6px;letter-spacing:.3px}
+  .sub{color:var(--muted);font-size:13.5px;margin:0 0 22px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:720px){.grid{grid-template-columns:1fr}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px}
+  .card h2{font-size:13px;margin:0 0 12px;color:var(--muted);font-weight:600;letter-spacing:.5px}
+  #drop{
+    border:2px dashed #c9d8d0;border-radius:14px;padding:26px 16px;text-align:center;
+    cursor:pointer;transition:.18s;background:#fbfdfc;
+  }
+  #drop:hover,#drop.over{border-color:var(--primary);background:#effaf3}
+  #drop .big{font-size:30px;line-height:1;margin-bottom:8px}
+  #drop .t{font-weight:600}
+  #drop .d{color:var(--muted);font-size:12.5px;margin-top:4px}
+  .prev{margin-top:14px;min-height:64px;display:flex;align-items:center;justify-content:center;
+        background:#f4f7f5;border-radius:12px;padding:8px}
+  .prev canvas{image-rendering:pixelated;max-width:100%;background:
+     repeating-conic-gradient(#e9eeeb 0 25%,#fff 0 50%) 0 0/16px 16px;border-radius:8px}
+  .outwrap{display:flex;flex-direction:column;align-items:center;justify-content:center;
+           height:100%;min-height:210px;gap:12px}
+  #out{width:160px;height:160px;image-rendering:pixelated;border-radius:18px;
+       background:repeating-conic-gradient(#e9eeeb 0 25%,#fff 0 50%) 0 0/16px 16px;
+       box-shadow:0 6px 18px rgba(28,60,45,.10)}
+  .row{display:flex;gap:8px;align-items:center;margin-top:14px;flex-wrap:wrap}
+  label{font-size:12.5px;color:var(--muted)}
+  input[type=text]{
+    flex:1;min-width:140px;padding:9px 11px;border:1px solid var(--line);border-radius:10px;
+    font:inherit;font-size:13.5px;outline:none;background:#fbfdfc
+  }
+  input[type=text]:focus{border-color:var(--primary);background:#fff}
+  button{
+    padding:10px 16px;border:0;border-radius:10px;font:inherit;font-size:13.5px;font-weight:600;
+    cursor:pointer;transition:.16s;background:var(--primary);color:#fff
+  }
+  button:hover{background:var(--primary-dk)}
+  button:disabled{background:#cfdad4;cursor:not-allowed}
+  button.ghost{background:#eef4f0;color:var(--fg)}
+  button.ghost:hover{background:#e2ebe6}
+  .tip{margin-top:22px;padding:14px 16px;border-radius:14px;background:#fff;
+       border:1px solid var(--line);font-size:13px;color:#3b4f45}
+  .tip b{color:var(--fg)}
+  .tip code{background:#eef4f0;padding:1px 6px;border-radius:6px;font-size:12.5px}
+  .err{color:#c0392b;font-size:13px;margin-top:10px;min-height:18px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>皮肤图 → 128×128 正脸头像</h1>
+  <p class="sub">拖入一张 Minecraft 皮肤 PNG（64×64 或老版 64×32），自动裁出正脸并叠好帽子层，放大到 128×128。全程在本地跑，不上传任何东西。</p>
+
+  <div class="grid">
+    <div class="card">
+      <h2>① 选择皮肤文件</h2>
+      <div id="drop">
+        <div class="big">🧱</div>
+        <div class="t">把皮肤 PNG 拖到这里</div>
+        <div class="d">或点击选择 · 也支持直接 Ctrl+V 粘贴</div>
+      </div>
+      <div class="prev" id="prev">还没选文件</div>
+      <input type="file" id="file" accept="image/png,image/*" hidden>
+    </div>
+
+    <div class="card">
+      <h2>② 导出正脸</h2>
+      <div class="outwrap">
+        <canvas id="out" width="128" height="128"></canvas>
+        <div class="row" style="width:100%">
+          <label for="name">存成</label>
+          <input type="text" id="name" placeholder="填玩家 ID，如 sjwj12517">
+        </div>
+        <div class="row" style="width:100%;margin-top:0">
+          <button id="dl" disabled>下载 PNG</button>
+          <button class="ghost" id="reset" disabled>重选</button>
+        </div>
+      </div>
+      <div class="err" id="err"></div>
+    </div>
+  </div>
+
+  <div class="tip">
+    <b>下载完放哪：</b>丢进 <code>github-site/assets/avatars/</code>，文件名用玩家 ID（如 <code>sjwj12517.png</code>），
+    推到 GitHub 后人员卡会自动用上——不用跑任何脚本。<br>
+    <b>想在游戏里也变成这个皮肤：</b>把同一张皮肤 PNG 上传到图床拿到直链，然后进服执行
+    <code>/skin url &lt;直链&gt;</code>。
+  </div>
+</div>
+
+<script>
+(function () {
+  var S = 128;
+  var drop = document.getElementById('drop');
+  var file = document.getElementById('file');
+  var prev = document.getElementById('prev');
+  var out = document.getElementById('out');
+  var nameIn = document.getElementById('name');
+  var dlBtn = document.getElementById('dl');
+  var resetBtn = document.getElementById('reset');
+  var err = document.getElementById('err');
+
+  var hasFace = false;
+
+  function setErr(msg) { err.textContent = msg || ''; }
+
+  function buildFace(img) {
+    var w = img.naturalWidth || img.width;
+    var h = img.naturalHeight || img.height;
+    if (!w || !h) throw new Error('图片没读出来，换一张试试');
+    if (w !== 64 || (h !== 64 && h !== 32)) {
+      throw new Error('这不是标准皮肤图：当前 ' + w + '×' + h + '，需要 64×64 或 64×32');
+    }
+    // 8×8 合成：正脸 (8,8) + 帽子/头发层 (40,8)
+    var tmp = document.createElement('canvas');
+    tmp.width = 8; tmp.height = 8;
+    var c = tmp.getContext('2d');
+    c.imageSmoothingEnabled = false;
+    c.clearRect(0, 0, 8, 8);
+    c.drawImage(img, 8, 8, 8, 8, 0, 0, 8, 8);
+    if (h >= 64) c.drawImage(img, 40, 8, 8, 8, 0, 0, 8, 8);
+
+    var oc = out.getContext('2d');
+    oc.imageSmoothingEnabled = false;
+    oc.clearRect(0, 0, S, S);
+    oc.drawImage(tmp, 0, 0, 8, 8, 0, 0, S, S);
+    return tmp;
+  }
+
+  function loadImage(src) {
+    var img = new Image();
+    img.onload = function () {
+      try {
+        buildFace(img);
+        // 原图预览
+        prev.innerHTML = '';
+        var pv = document.createElement('canvas');
+        pv.width = img.naturalWidth; pv.height = img.naturalHeight;
+        pv.getContext('2d').drawImage(img, 0, 0);
+        pv.style.width = '96px';
+        pv.style.height = 'auto';
+        prev.appendChild(pv);
+        hasFace = true;
+        dlBtn.disabled = false;
+        resetBtn.disabled = false;
+        setErr('');
+      } catch (e) {
+        hasFace = false; dlBtn.disabled = true;
+        setErr(e.message || String(e));
+      }
+    };
+    img.onerror = function () { setErr('这张图打不开，可能不是 PNG'); };
+    img.src = src;
+  }
+
+  function fromFile(f) {
+    if (!f) return;
+    if (nameIn.value.trim() === '') {
+      nameIn.value = (f.name || '').replace(/\.[^.]+$/, '');
+    }
+    var r = new FileReader();
+    r.onload = function () { loadImage(r.result); };
+    r.readAsDataURL(f);
+  }
+
+  drop.addEventListener('click', function () { file.click(); });
+  file.addEventListener('change', function () { fromFile(file.files[0]); });
+
+  ['dragenter', 'dragover'].forEach(function (t) {
+    drop.addEventListener(t, function (e) { e.preventDefault(); drop.classList.add('over'); });
+  });
+  ['dragleave', 'drop'].forEach(function (t) {
+    drop.addEventListener(t, function (e) { e.preventDefault(); drop.classList.remove('over'); });
+  });
+  drop.addEventListener('drop', function (e) {
+    if (e.dataTransfer && e.dataTransfer.files.length) fromFile(e.dataTransfer.files[0]);
+  });
+
+  document.addEventListener('paste', function (e) {
+    var items = (e.clipboardData || {}).items || [];
+    for (var i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf('image') === 0) {
+        fromFile(items[i].getAsFile());
+        break;
+      }
+    }
+  });
+
+  dlBtn.addEventListener('click', function () {
+    if (!hasFace) return;
+    var nm = nameIn.value.trim().replace(/[\\/:*?"<>|]/g, '') || 'avatar';
+    out.toBlob(function (blob) {
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = nm + '.png';
+      a.click();
+      setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000);
+    }, 'image/png');
+  });
+
+  resetBtn.addEventListener('click', function () {
+    file.value = '';
+    hasFace = false;
+    dlBtn.disabled = true;
+    resetBtn.disabled = true;
+    prev.textContent = '还没选文件';
+    var oc = out.getContext('2d');
+    oc.clearRect(0, 0, S, S);
+    setErr('');
+  });
+})();
+</script>
+</body>
+</html>
