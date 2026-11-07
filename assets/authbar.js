@@ -12,12 +12,12 @@
   /* ---------- 注入样式 ---------- */
   var css = [
     '#navActions .ab-avatar-btn, #authbar-float .ab-avatar-btn{height:38px;min-width:38px;padding:0 10px 0 4px;border:0;border-radius:20px;',
-    '  background:rgba(255,255,255,.10);color:#eef4ff;cursor:pointer;display:inline-flex;align-items:center;gap:8px;font:inherit;font-size:13px;font-weight:700}',
+    '  background:rgba(47,158,84,.12);color:#1f7a3a;border:1px solid rgba(47,158,84,.28);cursor:pointer;display:inline-flex;align-items:center;gap:8px;font:inherit;font-size:13px;font-weight:700}',
     '#authbar-float{position:fixed;top:12px;right:14px;z-index:9999}',
     '.ab-avatar-img{width:30px;height:30px;border-radius:50%;object-fit:cover;background:#243450;display:block}',
     '.ab-avatar-btn .ab-initial{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;',
-    '  background:linear-gradient(135deg,#52d468,#2f9e54);color:#0b1209;font-weight:800;font-size:14px}',
-    '.ab-login-btn{padding:8px 14px;border:0;border-radius:18px;background:#52d468;color:#0b1209;font:inherit;font-weight:800;cursor:pointer;text-decoration:none}',
+    '  background:linear-gradient(135deg,#57c46e,#2f9e54);color:#fff;font-weight:800;font-size:14px}',
+    '.ab-login-btn{padding:8px 14px;border:0;border-radius:18px;background:#2f9e54;color:#fff;font:inherit;font-weight:800;cursor:pointer;text-decoration:none}',
     '.ab-menu{position:absolute;right:0;top:46px;width:188px;background:rgba(17,26,42,.98);border:1px solid rgba(255,255,255,.16);',
     '  border-radius:14px;padding:6px;box-shadow:0 18px 50px rgba(0,0,0,.6);text-align:left;overflow:hidden;display:none}',
     '#authbar-float .ab-menu{top:46px}',

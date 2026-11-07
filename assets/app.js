@@ -1,42 +1,41 @@
 /* ===========================================================
-   MC 服务器宣传页 · 逻辑
-   配置保存在 localStorage，可通过右上角齿轮自定义
+   Stone Logic 官网 · 页面逻辑
+   配置取自 DEFAULT_CONFIG（已固定为当前服务器信息）
    =========================================================== */
 (function () {
   'use strict';
 
   var STORE_KEY = 'mc-site-config-v2';
-  var THEME_KEY = 'mc-site-theme';
 
   /* ---------- 默认配置 ---------- */
   var DEFAULT_CONFIG = {
     serverName: 'Stone Logic',
-    subtitle: '纯生存 · Paper 26.2 · 起床战争 · 地皮 · 公会',
-    description: '主世界长期不删档，资源世界定期轮换；离线服带账号登录保护，100+ 插件打造的完整生存玩法。\n小游戏与生存互不干扰：想打就进竞技场，想种田就回自己的地皮。',
+    subtitle: '纯生存 · 起床战争 · 地皮 · 公会 · 与朋友一起慢慢发展',
+    description: '长期稳定的纯生存服，主世界不删档，小游戏随时能玩。',
     javaIp: 'frp-top.com:44558',
     altIp: '',
     bedrockIp: '',
     statusApi: 'https://www.mclists.cn/api/server-status/?host={host}&port={port}',
     mclistUrl: 'https://www.mclists.cn/',
     icon: 'assets/icon.png',
-    accent: '#52d468',
+    accent: '#3aa856',
     features: [
-      { icon: '⚔️', title: '起床战争', desc: 'BedWars 独立竞技场 + 自动大厅，开局即战，胜负不影响生存档。' },
-      { icon: '🫥', title: '方块躲猫猫', desc: 'BlockHideAndSeek：伪装成方块藏起来，别被猎人一眼认出。' },
-      { icon: '🏹', title: 'PVP 竞技场', desc: '多个 PVP 世界 + 决斗系统，随时约架、公平对战不爆装备。' },
-      { icon: '🏡', title: '地皮与建筑', desc: 'PlotSquared 地皮世界 + WorldEdit + 建筑权杖，想怎么造就怎么造。' },
-      { icon: '👥', title: '公会系统', desc: 'PlayerGuild 公会、好友、TPA、地标传送，和熟人一起长期发展。' },
-      { icon: '💰', title: '自由经济', desc: 'QuickShop 摆摊开店、市场交易、点券、抽奖与红包，全靠自己赚。' },
-      { icon: '⭐', title: '技能与职业', desc: 'mcMMO 技能 + Jobs 职业 + 每日任务 + 签到，边玩边变强。' },
-      { icon: '🎁', title: '新手礼包', desc: '进服输入「同意」即领全套铁装 + 500 货币启动资金。' },
-      { icon: '🛡️', title: '双重反作弊', desc: 'GrimAC + Vulcan 双重拦截，CoreProtect 一键回滚，建筑绝不被熊。' },
-      { icon: '🌸', title: '季节与世界事件', desc: 'AeternumSeasons 四季变换、WorldEvents 世界大事、钓鱼与种田玩法。' }
+      { icon: '⚔️', title: '起床战争', desc: '独立 BedWars 竞技场，自动排队开局，输赢都不影响生存进度。' },
+      { icon: '🫥', title: '方块躲猫猫', desc: 'BlockHideAndSeek：伪装成方块藏好，别被猎人抓到。' },
+      { icon: '🏹', title: 'PVP 竞技场', desc: '多个 PVP 世界加决斗系统，约架公平对战，不爆装备。' },
+      { icon: '🏡', title: '地皮与建筑', desc: 'PlotSquared 地皮，配 WorldEdit 和建筑权杖，随便造。' },
+      { icon: '👥', title: '公会系统', desc: 'PlayerGuild 公会、好友、TPA、地标传送，和朋友一起发展。' },
+      { icon: '💰', title: '自由经济', desc: 'QuickShop 摆摊、市场交易、点券、抽奖红包，经济全靠自己经营。' },
+      { icon: '⭐', title: '技能与职业', desc: 'mcMMO 技能、Jobs 职业、每日任务和签到，边玩边成长。' },
+      { icon: '🎁', title: '新手礼包', desc: '进服输入「同意」领全套铁装加 500 货币启动资金。' },
+      { icon: '🛡️', title: '反作弊', desc: 'GrimAC 加 Vulcan 双重拦截，CoreProtect 一键回滚，建筑安全。' },
+      { icon: '🌸', title: '季节与事件', desc: 'AeternumSeasons 四季轮转，WorldEvents 世界事件，钓鱼种田都有。' }
     ],
     worlds: [
       { name: 'spawn / lobby', tag: '主城 · 大厅', desc: '传送枢纽与新手引导，回到这里永远安全。' },
       { name: 'overworld', tag: '主世界', desc: '长期不删档的生存主世界，你的家在这里。' },
       { name: 'the_nether / the_end', tag: '地狱 · 末地', desc: '原版维度，刷材料打末影龙。' },
-      { name: 'world_resource', tag: '资源世界', desc: '随便挖、随便拆，定期轮换重置，主世界永不被挖空。' },
+      { name: 'world_resource', tag: '资源世界', desc: '随便挖随便拆，定期轮换重置，主世界永不被挖空。' },
       { name: 'plot', tag: '地皮世界', desc: 'PlotSquared 地皮，一人一块，安心搞建筑。' },
       { name: 'community', tag: '社区共建', desc: '大家一起造的公共建筑区。' },
       { name: 'bwsp', tag: '起床战争', desc: 'BedWars 竞技场，自动排队开局。' },
@@ -46,31 +45,31 @@
     ],
     screenshots: [],
     rules: [
-      '禁止任何形式的外挂、脚本、宏与 bug 利用，一经发现永久封禁。',
+      '禁止使用任何外挂、脚本、宏和 bug 利用，一经发现永久封禁。',
       '禁止恶意破坏他人建筑、偷窃、骗取物品（CoreProtect 全程可追溯并回滚）。',
       '禁止在公共频道刷屏、人身攻击、发布违规或引战内容。',
-      '禁止恶意 PVP：PVP 请移步竞技场世界，主世界偷袭他人将按恶意击杀处理。',
+      '禁止恶意 PVP：PVP 请移步竞技场世界，主世界偷袭他人按恶意击杀处理。',
       '禁止利用漏洞刷物品、刷经验、刷货币，发现漏洞请主动上报。',
       '本服为离线服，请妥善保管自己的 AuthMe 账号密码，账号问题自行负责。',
       '地皮与领地内请互相尊重，长期不在线的建筑可能被回收。',
       '尊重管理员与其他玩家，有问题先在群内反馈，服从管理最终裁定。'
     ],
     faq: [
-      { q: '服务器是什么版本？支持哪些客户端？', a: '服务端为 Purpur 26.2。装了 ViaVersion / ViaBackwards / ViaRewind，1.21.x 及更低版本客户端也能进，推荐用与你常用版本一致的客户端。' },
+      { q: '服务器是什么版本？支持哪些客户端？', a: '服务端为 Paper 26.2。装了 ViaVersion / ViaBackwards / ViaRewind，1.21.x 及更低版本客户端也能进，推荐用与你常用版本一致的客户端。' },
       { q: '是正版验证服吗？需要注册吗？', a: '本服为离线模式，无需正版账号即可进入。首次进服需要用 AuthMe 注册并设置密码（/register），之后每次进服 /login 登录。' },
-      { q: '新手有什么福利？', a: '进服会收到一本《服务器游玩指南》，在聊天框输入「同意」即可领取全套铁装备 + 32 个牛排 + 500 货币。' },
+      { q: '新手有什么福利？', a: '进服会收到一本《服务器游玩指南》，在聊天框输入「同意」即可领取全套铁装备、32 个牛排和 500 货币。' },
       { q: '怎么去地皮 / 资源世界 / 小游戏？', a: '主城 spawn 有传送菜单与地标传送（/warp），也可直接输入 /warp plot、/warp end 等地标名。小游戏在世界 lobby 的菜单里进入。' },
       { q: '主世界会删档吗？', a: '主世界、地皮、公会建筑长期不删档；资源世界会定期轮换重置，便于大家持续获取资源。' },
       { q: '需要装模组或材质包吗？', a: '基础玩法不需要任何模组。想用语音聊天请安装 Simple Voice Chat 客户端模组；服务器已配置 ForcePack，进服会自动加载材质包。' },
-      { q: '被熊了怎么办？', a: '服务器有 CoreProtect 全程记录，联系管理员即可精准回滚并封禁对方；请提前用木牌锁 / 领地保护好自己的箱子。' }
+      { q: '被熊了怎么办？', a: '服务器有 CoreProtect 全程记录，联系管理员即可精准回滚并封禁对方；请提前用木牌锁、领地保护好自己的箱子。' }
     ],
     links: [
-      { label: '💬 QQ 交流群', url: 'https://qm.qq.com/q/UhSK4yuLGG' },
-      { label: '📥 客户端下载', url: 'https://www.minecraft.net/zh-hans/download' },
-      { label: '🎧 语音模组（Simple Voice Chat）', url: 'https://modrinth.com/plugin/simple-voice-chat' }
+      { label: 'QQ 交流群', url: 'https://qm.qq.com/q/UhSK4yuLGG' },
+      { label: '客户端下载', url: 'https://www.minecraft.net/zh-hans/download' },
+      { label: '语音模组（Simple Voice Chat）', url: 'https://modrinth.com/plugin/simple-voice-chat' }
     ],
-    footer: '© 2026 Stone Logic · 由玩家自建运营 · 与 Mojang / Microsoft 无关',
-    layout: { order: ['hero', 'features', 'worlds', 'gallery', 'rules', 'faq', 'join'] }
+    footer: '© 2026 Stone Logic · 由玩家自建运营 · 与 Mojang / Microsoft 无隶属关系',
+    layout: { order: ['hero', 'features', 'worlds', 'status', 'rules', 'faq', 'appeal', 'join'] }
   };
 
   /* ---------- 工具 ---------- */
@@ -111,26 +110,6 @@
     catch (e) { toast('配置过大，无法保存到本地'); }
   }
 
-  /* ---------- 主题 ---------- */
-  function applyTheme(mode) {
-    document.documentElement.setAttribute('data-theme', mode);
-    $('#themeIcon').textContent = mode === 'dark' ? '🌙' : '☀️';
-    try { localStorage.setItem(THEME_KEY, mode); } catch (e) {}
-  }
-  (function initTheme() {
-    var saved = null;
-    try { saved = localStorage.getItem(THEME_KEY); } catch (e) {}
-    if (!saved) {
-      saved = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
-    }
-    applyTheme(saved);
-  })();
-
-  $('#themeBtn').addEventListener('click', function () {
-    var cur = document.documentElement.getAttribute('data-theme');
-    applyTheme(cur === 'dark' ? 'light' : 'dark');
-  });
-
   /* ---------- 渲染页面 ---------- */
   function renderAll() {
     document.title = cfg.serverName + ' · Minecraft 服务器';
@@ -151,8 +130,10 @@
     $('#favicon').href = cfg.icon || DEFAULT_CONFIG.icon;
 
     var br = $('#bedrockRow');
-    if (cfg.bedrockIp) { br.hidden = false; $('#bedrockIp').textContent = cfg.bedrockIp; }
-    else { br.hidden = true; }
+    if (br) {
+      if (cfg.bedrockIp) { br.hidden = false; var bi = $('#bedrockIp'); if (bi) bi.textContent = cfg.bedrockIp; }
+      else { br.hidden = true; }
+    }
 
     var dl = (cfg.links || []).filter(function (l) { return /下载|客户端/.test(l.label); })[0];
     $('#downloadBtn').href = dl ? dl.url : 'https://www.minecraft.net/zh-hans/download';
@@ -453,6 +434,7 @@
     $('#statusPill').textContent = '在线';
 
     $('#playersOnline').textContent = data.players.online;
+    var ho = $('#heroOnline'); if (ho) ho.textContent = data.players.online;
     $('#playersMax').textContent = data.players.max;
     var pct = data.players.max > 0 ? Math.min(100, data.players.online / data.players.max * 100) : 0;
     $('#playersBar').style.width = pct.toFixed(1) + '%';
@@ -481,6 +463,7 @@
     $('#statusPill').className = 'status-pill off';
     $('#statusPill').textContent = '离线';
     $('#playersOnline').textContent = '0';
+    var ho = $('#heroOnline'); if (ho) ho.textContent = '0';
     $('#playersMax').textContent = '0';
     $('#playersBar').style.width = '0%';
     $('#metaVersion').textContent = '—';
@@ -503,10 +486,7 @@
     $('#drawer').classList.add('open');
     $('#drawerMask').hidden = false;
   }
-  function closeDrawer() { $('#drawer').classList.remove('open'); $('#drawerMask').hidden = true; }
-  $('#settingsBtn').addEventListener('click', openDrawer);
-  $('#closeDrawer').addEventListener('click', closeDrawer);
-  $('#drawerMask').addEventListener('click', closeDrawer);
+  function closeDrawer() { var d = $('#drawer'); if (d) d.classList.remove('open'); var m = $('#drawerMask'); if (m) m.hidden = true; }
 
   function pickImage(cb, prefix) {
     var inp = document.createElement('input');
@@ -848,7 +828,8 @@
     return draft;
   }
 
-  $('#saveBtn').addEventListener('click', function () {
+  var saveBtn = $('#saveBtn');
+  if (saveBtn) saveBtn.addEventListener('click', function () {
     cfg = clone(collectForm());
     saveCfg();
     renderAll();
@@ -858,7 +839,8 @@
     toast('已保存并应用');
   });
 
-  $('#exportBtn').addEventListener('click', function () {
+  var exportBtn = $('#exportBtn');
+  if (exportBtn) exportBtn.addEventListener('click', function () {
     var blob = new Blob([JSON.stringify(cfg, null, 2)], { type: 'application/json' });
     var a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
@@ -868,7 +850,8 @@
     toast('配置已导出');
   });
 
-  $('#importInput').addEventListener('change', function (e) {
+  var importInput = $('#importInput');
+  if (importInput) importInput.addEventListener('change', function (e) {
     var f = e.target.files[0];
     if (!f) return;
     var r = new FileReader();
@@ -888,7 +871,8 @@
     e.target.value = '';
   });
 
-  $('#resetBtn').addEventListener('click', function () {
+  var resetBtn = $('#resetBtn');
+  if (resetBtn) resetBtn.addEventListener('click', function () {
     if (!confirm('确定恢复默认配置？当前自定义内容将被覆盖。')) return;
     cfg = clone(DEFAULT_CONFIG);
     saveCfg();
@@ -1043,17 +1027,10 @@
     }).catch(function () { toast('当前环境不支持密码校验（需 https）'); });
   }
 
-  var editBtn = document.getElementById('editLayoutBtn');
-  if (editBtn) editBtn.addEventListener('click', function () { closeDrawer(); requestEdit(); });
-  document.addEventListener('keydown', function (e) {
-    if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'l' || e.key === 'L')) {
-      e.preventDefault(); requestEdit();
-    }
-  });
+  /* 布局编辑仅保留快捷键 Ctrl+Shift+E（见 editor.js），此处不再暴露任何入口 */
 
   /* ---------- 启动 ---------- */
   renderAll();
   checkStatus();
   startPolling();
-  bootCloud();
 })();

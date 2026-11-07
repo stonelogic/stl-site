@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-theme="dark">
+<html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="Minecraft 服务器宣传页">
-<title>我的 Minecraft 服务器</title>
-<link rel="icon" id="favicon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' fill='%235b8c3a'/><rect x='2' y='2' width='12' height='12' fill='%237cc35b'/></svg>">
+<meta name="description" content="Stone Logic —— 长期稳定的 Minecraft 纯生存服务器，主世界不删档，含起床战争、地皮、公会等玩法。">
+<title>Stone Logic · Minecraft 服务器</title>
+<link rel="icon" id="favicon" href="assets/icon.png">
 <link rel="stylesheet" href="assets/style.css">
 </head>
 <body>
@@ -14,97 +14,106 @@
 <header class="nav" id="nav">
   <div class="nav-inner">
     <a class="brand" href="#top">
-      <img id="navIcon" class="brand-icon" alt="服务器图标" src="">
-      <span id="navName" class="brand-name">服务器名称</span>
+      <img id="navIcon" class="brand-icon" alt="服务器图标" src="assets/icon.png">
+      <span id="navName" class="brand-name">Stone Logic</span>
     </a>
     <nav class="nav-links">
       <a href="#features">玩法</a>
       <a href="#worlds">世界</a>
-      <a href="#gallery" id="navGallery" hidden>截图</a>
+      <a href="#status">状态</a>
       <a href="#rules">规则</a>
       <a href="#faq">问答</a>
+      <a href="#appeal">申诉</a>
       <a href="#join">加入</a>
-      <a href="confirm.html">账号登录</a>
+      <a href="confirm.html" class="nav-login">账号登录</a>
     </nav>
-    <div class="nav-actions" id="navActions">
-      <button class="icon-btn" id="themeBtn" title="切换深色/浅色主题" aria-label="切换主题">
-        <span id="themeIcon">🌙</span>
-      </button>
-      <button class="icon-btn" id="settingsBtn" title="自定义设置" aria-label="打开设置">⚙️</button>
+    <div class="nav-search">
+      <input id="navSearch" type="search" placeholder="搜索玩法、规则…" aria-label="搜索">
     </div>
+    <div class="nav-actions" id="navActions"></div>
   </div>
 </header>
 
 <main id="top">
+
   <!-- ===== HERO ===== -->
   <section class="hero" id="hero">
     <div class="hero-bg"></div>
     <div class="hero-inner">
-      <div class="hero-left">
-        <span class="badge" id="statusBadge"><i class="dot"></i><span id="statusText">检测中…</span></span>
-        <img id="heroIcon" class="hero-icon" alt="服务器图标" src="">
-        <h1 id="heroName" class="hero-name">服务器名称</h1>
-        <p id="heroSubtitle" class="hero-sub">一句话介绍你的服务器</p>
-        <p id="heroDesc" class="hero-desc"></p>
-
-        <div class="ip-box" id="ipBox">
-          <div class="ip-row">
-            <span class="ip-label">Java 版地址</span>
-            <code id="javaIp" class="ip-value">play.example.com</code>
-            <button class="btn-ghost" data-copy="javaIp">复制</button>
-          </div>
-          <div class="ip-row" id="bedrockRow" hidden>
-            <span class="ip-label">基岩版地址</span>
-            <code id="bedrockIp" class="ip-value"></code>
-            <button class="btn-ghost" data-copy="bedrockIp">复制</button>
-          </div>
-        </div>
-
-        <div class="hero-btns">
-          <a class="btn-primary" id="joinBtn" href="#join">立即加入</a>
-          <a class="btn-outline" id="downloadBtn" href="#" target="_blank" rel="noopener">下载客户端</a>
-          <button class="btn-outline" id="quickLoginBtn" type="button">⚡ 快速登陆</button>
+      <div class="announce">
+        <span class="ann-tag">🟢 公告</span>
+        <div class="ann-body">
+          <h3>进服前先绑定 QQ，官网一键授权登录</h3>
+          <p>在 QQ 群完成游戏账号绑定后，打开「账号登录」即可免密码进服；被封禁的玩家可到本页底部提交申诉。</p>
         </div>
       </div>
 
-      <aside class="status-card" id="statusCard">
-        <div class="status-head">
-          <div>
-            <div class="status-title">服务器状态</div>
-            <div class="status-sub" id="statusAddr">—</div>
-          </div>
-          <div class="status-pill" id="statusPill">检测中</div>
+      <img id="heroIcon" class="hero-icon" src="assets/icon.png" alt="服务器图标">
+      <span class="pill-badge">Minecraft 服务器</span>
+      <h1 class="hero-name" id="heroName">Stone Logic</h1>
+      <p class="hero-sub" id="heroSubtitle">纯生存 · 起床战争 · 地皮 · 公会</p>
+      <p class="hero-desc" id="heroDesc"></p>
+
+      <div class="hero-cta">
+        <a class="cta-pill cta-online" id="statusPillInline" href="#status">当前在线 <b id="heroOnline">0</b> 名玩家 →</a>
+        <div class="cta-pill cta-addr">
+          <span class="addr-ico">🌐</span>
+          <code id="javaIp">frp-top.com:44558</code>
+          <button class="pill-ico" data-copy="javaIp" title="复制地址" aria-label="复制地址">⧉</button>
+        </div>
+        <a class="btn-primary" href="confirm.html">账号登录</a>
+        <a class="btn-outline" href="#features">查看玩法</a>
+      </div>
+
+      <p class="hero-note">
+        <span class="badge" id="statusBadge"><i class="dot"></i><span id="statusText">检测中…</span></span>
+        绑定 QQ 后可在官网「账号登录」一键授权进服，免去游戏内输密码。
+      </p>
+      <a class="scroll-down" href="#features" aria-label="向下滚动">↓</a>
+    </div>
+  </section>
+
+  <!-- ===== 在线状态 ===== -->
+  <section class="section" id="status">
+    <h2 class="sec-title">在线状态</h2>
+    <p class="sec-desc">数据每 60 秒自动刷新</p>
+    <div class="status-card" id="statusCard">
+      <div class="status-head">
+        <div>
+          <div class="status-title">服务器状态</div>
+          <div class="status-sub" id="statusAddr">—</div>
+        </div>
+        <div class="status-pill" id="statusPill">检测中</div>
+      </div>
+
+      <div class="status-body">
+        <div class="players-line">
+          <span class="players-now" id="playersOnline">0</span>
+          <span class="players-sep">/</span>
+          <span class="players-max" id="playersMax">0</span>
+          <span class="players-label">在线玩家</span>
+        </div>
+        <div class="bar"><i id="playersBar" style="width:0%"></i></div>
+
+        <div class="meta-grid">
+          <div class="meta"><span>版本</span><b id="metaVersion">—</b></div>
+          <div class="meta"><span>延迟</span><b id="metaPing">—</b></div>
+          <div class="meta"><span>更新</span><b id="metaTime">—</b></div>
         </div>
 
-        <div class="status-body">
-          <div class="players-line">
-            <span class="players-now" id="playersOnline">0</span>
-            <span class="players-sep">/</span>
-            <span class="players-max" id="playersMax">0</span>
-            <span class="players-label">在线玩家</span>
-          </div>
-          <div class="bar"><i id="playersBar" style="width:0%"></i></div>
+        <div class="motd" id="motd">正在获取服务器 MOTD…</div>
+        <div class="player-heads" id="playerHeads"></div>
+      </div>
 
-          <div class="meta-grid">
-            <div class="meta"><span>版本</span><b id="metaVersion">—</b></div>
-            <div class="meta"><span>延迟</span><b id="metaPing">—</b></div>
-            <div class="meta"><span>上次更新</span><b id="metaTime">—</b></div>
-          </div>
-
-          <div class="motd" id="motd">正在获取服务器 MOTD…</div>
-          <div class="player-heads" id="playerHeads"></div>
-        </div>
-
-        <button class="refresh-btn" id="refreshBtn">重新检测</button>
-        <div class="api-note" id="apiNote"></div>
-      </aside>
+      <button class="refresh-btn" id="refreshBtn">重新检测</button>
+      <div class="api-note" id="apiNote"></div>
     </div>
   </section>
 
   <!-- ===== 玩法特色 ===== -->
   <section class="section" id="features">
-    <h2 class="sec-title">服务器特色</h2>
-    <p class="sec-desc">我们提供的内容</p>
+    <h2 class="sec-title">玩法特色</h2>
+    <p class="sec-desc">生存为主，小游戏为辅，慢慢玩</p>
     <div class="grid" id="featureGrid"></div>
   </section>
 
@@ -115,23 +124,10 @@
     <div class="world-grid" id="worldGrid"></div>
   </section>
 
-  <!-- ===== 截图 ===== -->
-  <!-- 默认隐藏：没有截图时由 app.js 的 renderGallery 决定是否显示 -->
-  <section class="section" id="gallery" hidden>
-    <h2 class="sec-title">服务器截图</h2>
-    <p class="sec-desc">点击查看大图</p>
-    <div class="gallery-wrap">
-      <button class="gal-arrow left" id="galLeft" aria-label="上一张">‹</button>
-      <div class="gallery" id="galleryList"></div>
-      <button class="gal-arrow right" id="galRight" aria-label="下一张">›</button>
-    </div>
-    <div class="gal-dots" id="galDots"></div>
-  </section>
-
   <!-- ===== 规则 ===== -->
   <section class="section" id="rules">
     <h2 class="sec-title">服务器规则</h2>
-    <p class="sec-desc">请务必遵守</p>
+    <p class="sec-desc">进服前请先了解，遵守是对所有人的保护</p>
     <ul class="rule-list" id="ruleList"></ul>
   </section>
 
@@ -141,6 +137,34 @@
     <div class="faq" id="faqList"></div>
   </section>
 
+  <!-- ===== 封禁申诉 ===== -->
+  <section class="section" id="appeal">
+    <h2 class="sec-title">封禁申诉</h2>
+    <p class="sec-desc">认为被误封或想申请解封？填好下面的信息，腐竹会通过临时会话联系你</p>
+    <form class="appeal-form" id="appealForm" novalidate>
+      <div class="row2">
+        <div class="field">
+          <label for="apPlayer">游戏 ID</label>
+          <input id="apPlayer" type="text" placeholder="你在服务器里的名字" required>
+        </div>
+        <div class="field">
+          <label for="apQq">绑定 QQ</label>
+          <input id="apQq" type="text" inputmode="numeric" placeholder="申诉用的 QQ 号" required>
+        </div>
+      </div>
+      <div class="field">
+        <label for="apReason">申诉说明</label>
+        <textarea id="apReason" placeholder="发生了什么、为什么认为应该解封" required></textarea>
+      </div>
+      <div class="field">
+        <label for="apContact">联系方式（选填）</label>
+        <input id="apContact" type="text" placeholder="微信 / QQ / 邮箱，方便腐竹找到你">
+      </div>
+      <div class="appeal-msg" id="appealMsg"></div>
+      <button class="btn-primary" id="appealSubmit" type="submit">提交申诉</button>
+    </form>
+  </section>
+
   <!-- ===== 加入方式 ===== -->
   <section class="section" id="join">
     <h2 class="sec-title">如何加入</h2>
@@ -148,9 +172,12 @@
     <div class="grid steps">
       <div class="card"><div class="step-no">1</div><h3>安装游戏</h3><p>下载并安装对应版本的 Minecraft（Java 版）。</p></div>
       <div class="card"><div class="step-no">2</div><h3>添加服务器</h3><p>多人游戏 → 添加服务器 → 填入下面的地址。</p></div>
-      <div class="card"><div class="step-no">3</div><h3>开始冒险</h3><p>进入服务器，按照新手引导领取礼包，开始你的旅程。</p></div>
+      <div class="card"><div class="step-no">3</div><h3>开始冒险</h3><p>进服按新手引导领取礼包，开始你的旅程。</p></div>
     </div>
     <div class="join-links" id="joinLinks"></div>
+    <div class="join-extra">
+      <a class="btn-outline" id="downloadBtn" href="https://www.minecraft.net/zh-hans/download" target="_blank" rel="noopener">下载客户端</a>
+    </div>
   </section>
 </main>
 
@@ -159,7 +186,7 @@
   <div class="foot-sub">本站为玩家自制宣传页，与 Mojang / Microsoft 无隶属关系。</div>
 </footer>
 
-<!-- ===== 灯箱 ===== -->
+<!-- ===== 灯箱（截图用，当前无截图时隐藏） ===== -->
 <div class="lightbox" id="lightbox" hidden>
   <button class="lb-close" id="lbClose" aria-label="关闭">✕</button>
   <button class="lb-nav prev" id="lbPrev" aria-label="上一张">‹</button>
@@ -168,41 +195,17 @@
   <div class="lb-cap" id="lbCap"></div>
 </div>
 
-<!-- ===== 设置抽屉 ===== -->
-<div class="drawer-mask" id="drawerMask" hidden></div>
-<aside class="drawer" id="drawer" aria-label="自定义设置">
-  <div class="drawer-head">
-    <h3>自定义设置</h3>
-    <button class="icon-btn" id="closeDrawer" aria-label="关闭">✕</button>
+<!-- 画廊元素保留接口（无截图时整体隐藏） -->
+<section class="section" id="gallery" hidden>
+  <h2 class="sec-title">服务器截图</h2>
+  <div class="gallery-wrap">
+    <button class="gal-arrow left" id="galLeft" aria-label="上一张">‹</button>
+    <div class="gallery" id="galleryList"></div>
+    <button class="gal-arrow right" id="galRight" aria-label="下一张">›</button>
   </div>
-  <div class="drawer-body" id="drawerBody"></div>
-  <div class="drawer-foot">
-    <button class="btn-outline small" id="exportBtn">导出配置</button>
-    <label class="btn-outline small" style="cursor:pointer">导入配置
-      <input type="file" id="importInput" accept="application/json" hidden>
-    </label>
-    <button class="btn-outline small danger" id="resetBtn">恢复默认</button>
-    <button class="btn-outline small" id="editLayoutBtn" title="需输入密码">🔒 编辑布局</button>
-    <button class="btn-primary small" id="saveBtn">保存并应用</button>
-  </div>
-</aside>
-
-<!-- 快速登陆弹窗 -->
-<div class="ql-mask" id="qlMask" hidden>
-  <div class="ql-box">
-    <button class="ql-close" id="qlClose" aria-label="关闭">✕</button>
-    <h3>⚡ 快速登陆</h3>
-    <p class="ql-tip">在 QQ 群发送下面这条指令，机器人确认后 <b>10 分钟内</b>进服免密码。</p>
-    <div class="ql-qr"><img src="assets/qq-group-qr.png" alt="QQ群二维码" width="132" height="132"><div class="ql-qr-tip">QQ 扫码进群 → 发送下方指令</div></div>
-    <div class="ql-row"><input id="qlName" type="text" placeholder="输入你的游戏ID（如 Steve）"></div>
-    <div class="ql-code" id="qlCode">登陆 你的游戏ID</div>
-    <div class="ql-actions">
-      <button class="btn-primary" id="qlCopy" type="button">复制指令</button>
-      <a class="btn-outline" id="qlGroup" href="https://qm.qq.com/q/UhSK4yuLGG" target="_blank" rel="noopener">打开 QQ 群</a>
-    </div>
-    <p class="ql-note">确认后直接启动游戏连服即可，无需在游戏内再输密码。</p>
-  </div>
-</div>
+  <div class="gal-dots" id="galDots"></div>
+</section>
+<nav class="nav-links" id="navGallery" hidden></nav>
 
 <div class="toast" id="toast"></div>
 
@@ -211,24 +214,37 @@
 <script src="assets/editor.js"></script>
 <script src="assets/authbar.js"></script>
 <script>
-(function(){
-  var mask=document.getElementById('qlMask'); if(!mask) return;
-  var btn=document.getElementById('quickLoginBtn');
-  var close=document.getElementById('qlClose');
-  var name=document.getElementById('qlName');
-  var code=document.getElementById('qlCode');
-  var copy=document.getElementById('qlCopy');
-  function upd(){ code.textContent='登陆 '+(name.value.trim()||'你的游戏ID'); }
-  if(btn) btn.addEventListener('click',function(){ mask.hidden=false; setTimeout(function(){ if(name) name.focus(); },60); });
-  if(close) close.addEventListener('click',function(){ mask.hidden=true; });
-  mask.addEventListener('click',function(e){ if(e.target===mask) mask.hidden=true; });
-  if(name) name.addEventListener('input',upd); upd();
-  if(copy) copy.addEventListener('click',function(){
-    var txt=code.textContent;
-    function done(){ copy.textContent='已复制'; setTimeout(function(){ copy.textContent='复制指令'; },1500); }
-    if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(txt).then(done).catch(fallback); }
-    else fallback();
-    function fallback(){ var ta=document.createElement('textarea'); ta.value=txt; document.body.appendChild(ta); ta.select(); try{ document.execCommand('copy'); done(); }catch(e){} document.body.removeChild(ta); }
+(function () {
+  // 封禁申诉：发到消息总线，服务端转发给腐竹（临时会话）
+  var form = document.getElementById('appealForm');
+  if (form) form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var player = document.getElementById('apPlayer').value.trim();
+    var qq = document.getElementById('apQq').value.replace(/\D/g, '');
+    var reason = document.getElementById('apReason').value.trim();
+    var contact = document.getElementById('apContact').value.trim();
+    var msg = document.getElementById('appealMsg');
+    if (!player || !qq || !reason) { msg.textContent = '请把游戏 ID、绑定 QQ 和申诉说明都填好。'; msg.className = 'appeal-msg err'; return; }
+    if (qq.length < 5) { msg.textContent = 'QQ 号格式不对。'; msg.className = 'appeal-msg err'; return; }
+    msg.textContent = '正在提交…'; msg.className = 'appeal-msg';
+    var payload = { type: 'appeal', player: player, qq: qq, reason: reason, contact: contact, ts: Date.now() };
+    fetch('https://ntfy.sh/stl-ql-6bd1ae0f4e7e7968', {
+      method: 'POST', headers: { 'content-type': 'text/plain' }, body: JSON.stringify(payload)
+    }).then(function () {
+      msg.textContent = '已提交，腐竹会通过临时会话联系你。'; msg.className = 'appeal-msg ok'; form.reset();
+    }).catch(function () {
+      msg.textContent = '提交失败，请稍后重试，或直接在 QQ 群联系腐竹。'; msg.className = 'appeal-msg err';
+    });
+  });
+
+  // 顶栏搜索：实时过滤玩法卡片
+  var search = document.getElementById('navSearch');
+  if (search) search.addEventListener('input', function () {
+    var q = search.value.trim().toLowerCase();
+    Array.prototype.forEach.call(document.querySelectorAll('#featureGrid .card'), function (c) {
+      var t = c.textContent.toLowerCase();
+      c.hidden = !!(q && t.indexOf(q) < 0);
+    });
   });
 })();
 </script>
