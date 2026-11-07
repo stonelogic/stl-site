@@ -1,2 +1,7 @@
 push.bat
 repo.json
+*.bak
+*.bak-*
+*.log
+*.tmp
+_tmp/

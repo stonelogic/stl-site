@@ -70,8 +70,8 @@
   <p class="sub" id="sub">Minecraft 服务器 · 账号登录</p>
   <div class="rule"></div>
 
-  <h1>账号登录</h1>
-  <p class="lead">输入绑定的 QQ 号，验证码将发送到该 QQ 私聊<br>本站不收集、也无法验证 QQ 密码</p>
+  <h1 id="pageTitle">账号登录</h1>
+  <p class="lead" id="pageLead">输入绑定的 QQ 号，验证码将发送到该 QQ 私聊<br>本站不收集、也无法验证 QQ 密码</p>
 
   <div id="loginBox">
     <div class="row"><input id="qq" type="text" inputmode="numeric" placeholder="QQ 号" maxlength="14">
@@ -110,6 +110,7 @@
 
   var q = new URLSearchParams(location.search);
   var code = q.get('c') || '';
+  var lt = q.get('lt') || '';          // 一次性登录票（游戏内链接自带，用来免验证码登录）
   var topic = q.get('topic') || 'stl-ql-6bd1ae0f4e7e7968';
   // 服务端拿不到个人授权码时的兜底入口（多半是该游戏ID还没绑定 QQ）
   var isFallback = q.get('fallback') === '1';
@@ -122,6 +123,8 @@
   var pses = null, token = '', myNames = [];
   try { pses = JSON.parse(localStorage.getItem(SKEY) || 'null'); if (!(pses && pses.token && pses.qq && pses.exp > Date.now())) pses = null; } catch (e) {}
   if (pses) { logged = true; token = pses.token || ''; myNames = pses.names || []; document.getElementById('loginBox').hidden = true; }
+  // 带着票据来（游戏内链接）就别先闪一下登录框，等 onopen 后直接换登录态
+  else if (lt) { document.getElementById('loginBox').hidden = true; }
   var msg = document.getElementById('msg');
   var authBox = document.getElementById('authBox');
 
@@ -129,6 +132,46 @@
   function post(obj) {
     if (!ntfy) { say('缺少授权参数，请回游戏重新获取链接。', true); return; }
     fetch(ntfy, { method: 'POST', headers: { 'content-type': 'text/plain' }, body: JSON.stringify(obj) }).catch(function (e) { say('网络错误：' + e.message, true); });
+  }
+
+  /* 登录成功后统一落盘：有效期按服务端给的 days（默认 30 天） */
+  function saveSession(m) {
+    logged = true;
+    token = m.token || '';
+    myNames = m.names || [];
+    var days = Number(m.days) > 0 ? Number(m.days) : 30;
+    try {
+      localStorage.setItem(SKEY, JSON.stringify({
+        token: token, qq: m.qq, names: myNames, exp: Date.now() + days * 86400000
+      }));
+    } catch (e) {}
+    var lb = document.getElementById('loginBox');
+    if (lb) lb.hidden = true;
+  }
+
+  var ticketTried = false;
+  /* 游戏内链接自带一次性票：直接换登录态，绑过 QQ 的玩家不用再收验证码 */
+  function tryTicketLogin() {
+    if (!lt || ticketTried) return false;
+    ticketTried = true;
+    var lb = document.getElementById('loginBox');
+    if (lb) lb.hidden = true;
+    var t1 = document.getElementById('pageTitle'), l1 = document.getElementById('pageLead');
+    if (t1) t1.textContent = '正在自动登录';
+    if (l1) l1.textContent = '本次登录由游戏内链接自动完成，无需输入验证码';
+    say('正在自动登录…');
+    post({ type: 'ticketLogin', ticket: lt, rid: rid });
+    return true;
+  }
+
+  /* 票不可用时恢复成手动登录的样子 */
+  function showLoginBox(reason) {
+    var lb = document.getElementById('loginBox');
+    if (lb) lb.hidden = false;
+    var t1 = document.getElementById('pageTitle'), l1 = document.getElementById('pageLead');
+    if (t1) t1.textContent = '账号登录';
+    if (l1) l1.innerHTML = '输入绑定的 QQ 号，验证码将发送到该 QQ 私聊<br>本站不收集、也无法验证 QQ 密码';
+    if (reason) say(reason, true);
   }
 
   /* 办完事就倒计时回首页，不再停在中间页 */
@@ -164,7 +207,12 @@
     else say('登录后会直接返回首页');
   }
 
-  var es = new EventSource(ntfy + '/sse');
+  /* since=30s 让订阅补发半分钟内的缓存消息：避免服务端回包比 SSE 建连更快时被丢掉 */
+  var es = new EventSource(ntfy + '/sse?since=30s');
+  es.onopen = function () {
+    // 游戏内授权链接：本地没有登录态、但链接里有票 → 等通道通了再换登录态，否则回包会丢
+    if (code && !pses) tryTicketLogin();
+  };
   es.onmessage = function (ev) {
     var d; try { d = JSON.parse(ev.data); } catch (e) { return; }
     if (d.event !== 'message' || !d.message) return;
@@ -184,15 +232,26 @@
     if (m.type === 'loginSent') { say(m.ok ? '验证码已发送到 QQ 私聊，请注意查收' : '该 QQ 没有绑定任何游戏账号', !m.ok); return; }
     if (m.type === 'loginFail') { say('登录失败：' + m.reason, true); return; }
     if (m.type === 'loginOk') {
-      logged = true;
-      token = m.token || '';            // 关键修复：刷新内存中的令牌，否则 authReq 会带空令牌被服务端判「未登录或登录已过期」
-      myNames = m.names || [];
-      document.getElementById('loginBox').hidden = true;
-      try { localStorage.setItem(SKEY, JSON.stringify({ token: m.token, qq: m.qq, names: m.names || [], exp: Date.now() + 7 * 86400000 })); } catch (e) {}
+      saveSession(m);   // 关键修复：刷新内存与本地缓存中的令牌，否则会带空令牌被判「未登录」
       // 游戏内的授权请求：不展示选号页，直接自动授权
       if (code) { say('登录成功（QQ ' + m.qq + '），正在验证…'); tryAutoAuth(); return; }
       // 官网登录入口：登录完就回首页
       countdownHome('登录成功（QQ ' + m.qq + '）', 5);
+      return;
+    }
+    // 免登录票据换登录态成功：绑过 QQ 的玩家直接就是已登录
+    if (m.type === 'ticketOk') {
+      saveSession(m);
+      say('已自动登录（QQ ' + m.qq + '），正在验证…');
+      var pb = document.getElementById('pageTitle'), pl = document.getElementById('pageLead');
+      if (pb) pb.textContent = '已自动登录';
+      if (pl) pl.textContent = '绑定 QQ 后无需再输入验证码，正在完成授权…';
+      if (code) { tryAutoAuth(); return; }
+      countdownHome('已登录（QQ ' + m.qq + '）', 5);
+      return;
+    }
+    if (m.type === 'ticketFail') {
+      showLoginBox('自动登录没成功：' + m.reason + '。请在下面用 QQ + 验证码登录');
       return;
     }
     if (m.type === 'authOk') { countdownHome('授权成功，回到游戏即可进入服务器', 5); return; }
