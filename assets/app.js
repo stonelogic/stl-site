@@ -57,12 +57,9 @@
       { icon: 'wifi', title: '跨版本互通', desc: '1.21.X 版本均可进入，无需担心版本问题', tint: 'pink' }
     ],
     staff: [
-      { name: 'Xiaoye_Hutao', roles: [{ t: '服主', c: 'gold' }] },
-      { name: 'zjls6', roles: [{ t: '管理', c: 'red' }, { t: '技术', c: 'blue' }] },
-      { name: 'AnmandoWendi', roles: [{ t: '小技术', c: 'blue' }] },
-      { name: 'xhj9210', roles: [{ t: '前服主', c: 'blue' }] },
-      { name: '_WOOHOU_', roles: [{ t: '志愿者', c: 'cyan' }] },
-      { name: 'Furry', roles: [{ t: '建筑师', c: 'green' }] }
+      { name: 'sjwj12517', roles: [{ t: '服主', c: 'gold' }] },
+      { name: 'xiaoran8083', roles: [{ t: '管理', c: 'red' }] },
+      { name: 'feng_56', roles: [{ t: '管理', c: 'red' }] }
     ]
   };
 
