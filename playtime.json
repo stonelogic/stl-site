@@ -1,7 +1,7 @@
 {
-  "generatedAt": 1794040888,
+  "generatedAt": 1794057800,
   "source": "cyutime",
-  "count": 24,
+  "count": 25,
   "players": [
     {
       "name": "mnbhjk",
@@ -14,50 +14,50 @@
     {
       "name": "sjwj12517",
       "rank": 2,
-      "total": 387172,
-      "month": 9210,
-      "week": 4744,
-      "year": 387172
+      "total": 397488,
+      "month": 19526,
+      "week": 15060,
+      "year": 397488
     },
     {
       "name": "feng_56",
       "rank": 3,
-      "total": 103838,
-      "month": 13337,
-      "week": 13337,
-      "year": 103838
+      "total": 107045,
+      "month": 16544,
+      "week": 16544,
+      "year": 107045
     },
     {
       "name": "sjwj",
       "rank": 4,
-      "total": 85821,
-      "month": 19214,
-      "week": 14493,
-      "year": 85821
+      "total": 86578,
+      "month": 19971,
+      "week": 15250,
+      "year": 86578
     },
     {
       "name": "xiaoran8083",
       "rank": 5,
-      "total": 70082,
-      "month": 0,
-      "week": 0,
-      "year": 70082
+      "total": 71052,
+      "month": 970,
+      "week": 970,
+      "year": 71052
+    },
+    {
+      "name": "qrnb",
+      "rank": 6,
+      "total": 13452,
+      "month": 1002,
+      "week": 1002,
+      "year": 13452
     },
     {
       "name": "lijidan",
-      "rank": 6,
+      "rank": 7,
       "total": 12998,
       "month": 0,
       "week": 0,
       "year": 12998
-    },
-    {
-      "name": "qrnb",
-      "rank": 7,
-      "total": 12450,
-      "month": 0,
-      "week": 0,
-      "year": 12450
     },
     {
       "name": "GreatBreak5858",
@@ -78,10 +78,10 @@
     {
       "name": "played",
       "rank": 10,
-      "total": 7412,
-      "month": 0,
-      "week": 0,
-      "year": 7412
+      "total": 7761,
+      "month": 349,
+      "week": 349,
+      "year": 7761
     },
     {
       "name": "Mmm",
@@ -180,8 +180,16 @@
       "year": 264
     },
     {
-      "name": "stmtxm",
+      "name": "Ganjing",
       "rank": 23,
+      "total": 181,
+      "month": 181,
+      "week": 181,
+      "year": 181
+    },
+    {
+      "name": "stmtxm",
+      "rank": 24,
       "total": 88,
       "month": 0,
       "week": 0,
@@ -189,7 +197,7 @@
     },
     {
       "name": "sjwj12517_1",
-      "rank": 24,
+      "rank": 25,
       "total": 60,
       "month": 0,
       "week": 0,
