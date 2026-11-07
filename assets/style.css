@@ -2,6 +2,11 @@
    Stone Logic 官网样式 · mcnova 风格
    青绿主色 + 深色/浅色双主题 · shadcn 式卡片圆角
    =========================================================== */
+@font-face{
+  font-family:"StlPixel";
+  src:url("fonts/silkscreen-700.woff2") format("woff2");
+  font-weight:700;font-style:normal;font-display:swap;
+}
 :root{
   /* 浅色主题 */
   --background: oklch(100% 0 0);
@@ -132,15 +137,21 @@ code{font-family:ui-monospace,Consolas,Menlo,monospace}
   background:radial-gradient(circle, rgba(255,255,255,.5) 0%, rgba(170,225,255,.22) 38%, transparent 68%);
   mix-blend-mode:screen;transform:translate(-50%,-50%);transition:opacity .25s;
 }
-.hero-logo{
-  display:block;margin:0 auto;
-  width:min(94%,860px);height:auto;
+.hero-title{
+  margin:0 auto;
+  display:flex;flex-direction:column;align-items:center;
+  gap:clamp(6px,1.1vw,14px);
+  font-family:"StlPixel","Silkscreen","Courier New",monospace;
+  font-weight:700;
+  font-size:clamp(36px,8.4vw,92px);
+  line-height:1;letter-spacing:.06em;text-transform:uppercase;
+  color:#f4fbf6;
+  -webkit-text-stroke:2px #1f3b28;
+  paint-order:stroke fill;
+  text-shadow:0 2px 0 #3a7a52,0 3px 0 #2f6343,0 4px 0 #254d33,0 7px 16px rgba(0,0,0,.40);
   image-rendering:pixelated;
-  filter:drop-shadow(0 12px 26px rgba(0,0,0,.22));
-  opacity:0;transition:opacity .7s ease;
 }
-.hero-logo.loaded{opacity:1}
-.hero-sky picture{display:block}
+.hero-title span{display:block;padding-left:.06em}
 .hero-tagline{
   margin:18px 0 4px;
   font-size:clamp(13px,1.7vw,17px);
@@ -288,6 +299,8 @@ code{font-family:ui-monospace,Consolas,Menlo,monospace}
 /* ===== 入场动画 ===== */
 @keyframes stlFadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
 @keyframes stlFadeIn{from{opacity:0}to{opacity:1}}
+@keyframes stlTitleIn{from{opacity:0;transform:translateY(12px) scale(.96)}to{opacity:1;transform:none}}
+.hero-sky .hero-title{animation:stlTitleIn .6s cubic-bezier(.22,.61,.36,1) both}
 .card,.page-head{animation:stlFadeUp .55s cubic-bezier(.22,.61,.36,1) both}
 .hero-sky .hero-tagline{animation:stlFadeUp .6s .18s both}
 .hero-sky .hero-slogan{animation:stlFadeUp .6s .28s both}
@@ -302,7 +315,7 @@ code{font-family:ui-monospace,Consolas,Menlo,monospace}
 .grid > *:nth-child(n+7){animation-delay:.3s}
 .stat-row > *{animation:stlFadeUp .5s both}
 @media (prefers-reduced-motion: reduce){
-  .card,.page-head,.hero-sky .hero-logo,.hero-sky .hero-tagline,.hero-sky .hero-slogan,
+  .card,.page-head,.hero-sky .hero-title,.hero-sky .hero-tagline,.hero-sky .hero-slogan,
   .hero-sky .hero-actions,.hero-sky .hero-ip,.hero-sky .flower,.grid > *,
   .stat-row > *{animation:none!important}
 }

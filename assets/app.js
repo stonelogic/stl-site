@@ -132,7 +132,7 @@
     hero.innerHTML = '<div class="hero-sky">' +
       '<span class="flower f1">❀</span><span class="flower f2">✿</span>' +
       '<span class="flower f3">❀</span><span class="flower f4">✿</span>' +
-      '<picture><source srcset="assets/title-logo.webp" type="image/webp"><img class="hero-logo" src="assets/title-logo.png" alt="STONE LOGIC"></picture>' +
+      '<h1 class="hero-title"><span>STONE</span><span>LOGIC</span></h1>' +
       '<p class="hero-tagline">' + esc(SITE.tagline) + '</p>' +
       '<p class="hero-slogan">' + esc(SITE.slogan) + '</p>' +
       '<div class="hero-actions">' +
@@ -142,12 +142,6 @@
       '<div><span class="hero-ip">' + esc(SITE.javaIp) + '</span></div>' +
       '</div><div class="hero-glow"></div>';
     container.appendChild(hero);
-    // logo 加载完成后渐显（避免首屏先出文字、logo 空白迟迟不出现）
-    var logo = hero.querySelector('.hero-logo');
-    if (logo) {
-      if (logo.complete) logo.classList.add('loaded');
-      else logo.addEventListener('load', function () { logo.classList.add('loaded'); });
-    }
     // 鼠标跟随光晕
     var glow = hero.querySelector('.hero-glow');
     hero.addEventListener('mousemove', function (e) {
