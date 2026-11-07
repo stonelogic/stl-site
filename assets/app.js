@@ -423,11 +423,12 @@
       var face = avatarUrl(name, 96);
       return '<div class="player-cell"><img src="' + face + '" alt="" loading="lazy" data-fb="' + identicon(name) + '" onerror="this.onerror=null;this.src=this.getAttribute(\'data-fb\')"><span class="nm">' + esc(name) + '</span></div>';
     }).join('');
-    // 名单由本地脚本定时同步，半小时没动过说明同步大概率停了，提示一下免得误导
+    // updated = 本地脚本最后一次成功同步的时间（名单没变时也会每 20 分钟刷新一次心跳），
+    // 超过 30 分钟没动才说明同步真的停了，这时提示一下免得误导
     if (age > 1800) {
       var mins = Math.round(age / 60);
-      html += '<div style="grid-column:1/-1;margin-top:6px;font-size:12.5px;color:var(--muted-foreground)">名单最后更新于 ' +
-        (mins > 90 ? Math.round(mins / 60) + ' 小时前' : mins + ' 分钟前') + '，同步可能已停止</div>';
+      html += '<div style="grid-column:1/-1;margin-top:6px;font-size:12.5px;color:var(--muted-foreground)">自动同步已 ' +
+        (mins > 90 ? Math.round(mins / 60) + ' 小时' : mins + ' 分钟') + ' 没运行，以下名单可能不是最新的</div>';
     }
     pg.innerHTML = html;
   }

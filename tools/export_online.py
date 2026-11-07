@@ -28,6 +28,11 @@ PORT = 25575
 PASSWORD = "MCServer2026RCON"
 OUT = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "online.json")
 
+# 名单没变时不重写文件（否则每 2 分钟一个无意义提交），但时间戳必须定期刷新：
+# 否则网页算出的「同步多久没跑」会一直涨，玩家挂机不动的名单会被误判成「同步已停止」。
+# 每 HEARTBEAT 秒强制刷一次时间戳（顺带提交），网页的 30 分钟告警就只会真出问题时出现。
+HEARTBEAT = 1200
+
 AUTH = 3
 EXEC = 2
 RESP_VALUE = 0
@@ -156,11 +161,17 @@ def main():
         return 0
 
     # 名单没变就不重写，否则定时同步会每分钟产生一个无意义的提交
+    # 例外：距上次写入超过 HEARTBEAT 秒就刷新一次时间戳，避免网页误判「同步已停止」
     try:
         old = json.load(open(OUT, encoding="utf-8"))
-        if old.get("players") == players and old.get("now") == now and old.get("max") == mx:
+        same = (old.get("players") == players and old.get("now") == now
+                and old.get("max") == mx and old.get("online") == True)
+        last = int(old.get("updated") or 0)
+        if same and (time.time() - last) < HEARTBEAT:
             print("[=] 名单没有变化，跳过写入")
             return 0
+        if same:
+            print("[~] 名单没有变化，仅刷新同步时间戳（心跳）")
     except Exception:
         pass
 
