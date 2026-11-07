@@ -85,9 +85,7 @@
       <p class="lead" style="margin-bottom:6px">本次授权请求的游戏 ID</p>
       <div class="req" id="reqName">核验中…</div>
     </div>
-    <p class="lead" style="margin-bottom:6px">该 QQ 已绑定的游戏账号（点击选择）</p>
-    <div class="list" id="accList"></div>
-    <button class="wide" id="authBtn" type="button" disabled>授权登录</button>
+    <p class="lead" style="margin-top:12px">验证通过后会自动完成授权并返回首页，无需操作</p>
   </div>
 
   <p class="msg" id="msg"></p>
@@ -116,37 +114,49 @@
   var rid = sessionStorage.getItem('stl_site_rid');
   if (!rid) { rid = Array.from(crypto.getRandomValues(new Uint8Array(16))).map(function (b) { return ('0' + b.toString(16)).slice(-2); }).join(''); sessionStorage.setItem('stl_site_rid', rid); }
   var ntfy = topic ? 'https://ntfy.sh/' + encodeURIComponent(topic) : '';
-  var reqName = '', chosen = '', logged = false;
+  var reqName = '', logged = false, authing = false;
   var SKEY = 'stl_web_session_v1';
   var pses = null, token = '', myNames = [];
   try { pses = JSON.parse(localStorage.getItem(SKEY) || 'null'); if (!(pses && pses.token && pses.qq && pses.exp > Date.now())) pses = null; } catch (e) {}
   if (pses) { logged = true; token = pses.token || ''; myNames = pses.names || []; document.getElementById('loginBox').hidden = true; }
   var msg = document.getElementById('msg');
   var authBox = document.getElementById('authBox');
-  var authBtn = document.getElementById('authBtn');
-  var accList = document.getElementById('accList');
 
   function say(t, err) { msg.textContent = t; msg.className = 'msg' + (err ? ' err' : ''); }
   function post(obj) {
     if (!ntfy) { say('缺少授权参数，请回游戏重新获取链接。', true); return; }
     fetch(ntfy, { method: 'POST', headers: { 'content-type': 'text/plain' }, body: JSON.stringify(obj) }).catch(function (e) { say('网络错误：' + e.message, true); });
   }
-  function failAndGoHome(reason) {
-    var left = 10;
-    say('授权失败：' + reason + '。' + left + ' 秒后自动返回首页…', true);
+
+  /* 办完事就倒计时回首页，不再停在中间页 */
+  function countdownHome(prefix, secs) {
+    var left = secs || 5;
+    say(prefix + '，' + left + ' 秒后返回首页…');
     var t = setInterval(function () {
       left--;
       if (left <= 0) { clearInterval(t); location.href = 'index.html'; return; }
-      say('授权失败：' + reason + '。' + left + ' 秒后自动返回首页…', true);
+      say(prefix + '，' + left + ' 秒后返回首页…');
     }, 1000);
+  }
+  function failAndGoHome(reason) { countdownHome('授权失败：' + reason, 5); }
+
+  /* 登录态 + 请求账号都齐了就自动授权，取代原来「点选账号再点授权」的两步 */
+  function tryAutoAuth() {
+    if (!code || !logged || !token || !reqName || authing) return;
+    if (myNames.indexOf(reqName) < 0) {
+      say('本次请求的账号「' + reqName + '」不在这个 QQ 绑定的账号里，请回游戏重新获取链接。', true);
+      return;
+    }
+    authing = true;
+    say('正在为「' + reqName + '」授权…');
+    post({ type: 'authReq', code: code, rid: rid, name: reqName, token: token });
   }
 
   if (!code) {
-    // 从官网「账号登录」入口进入：只登录并查看绑定账号，不做授权
-    document.getElementById('reqWrap').hidden = true;
-    authBtn.hidden = true;
-    if (pses) { authBox.hidden = false; renderList(myNames); say('已登录（QQ ' + pses.qq + '），以下是你绑定的游戏账号'); }
-    else say('登录后即可查看该 QQ 绑定的所有游戏账号');
+    // 从官网「账号登录」入口进入：只登录，不显示任何授权/选号界面，登完直接回首页
+    authBox.hidden = true;
+    if (pses) countdownHome('已登录（QQ ' + pses.qq + '）', 5);
+    else say('登录后会直接返回首页');
   }
 
   var es = new EventSource(ntfy + '/sse');
@@ -162,39 +172,31 @@
       reqName = m.name;
       document.getElementById('reqName').textContent = m.name;
       authBox.hidden = false;
-      if (pses) {
-        renderList(myNames);
-        var hit = myNames.indexOf(m.name) >= 0;
-        chosen = hit ? m.name : '';
-        authBtn.disabled = !hit;
-        if (hit) say('已自动匹配你的账号，点击「授权登录」即可直接授权');
-        else say('本次请求的账号「' + m.name + '」不在你绑定的账号列表中', true);
-      } else {
-        say('请登录并选择一个游戏账号');
-      }
+      if (!logged) { say('请用绑定的 QQ 登录，验证通过后自动授权'); return; }
+      tryAutoAuth();
       return;
     }
     if (m.type === 'loginSent') { say(m.ok ? '验证码已发送到 QQ 私聊，请注意查收' : '该 QQ 没有绑定任何游戏账号', !m.ok); return; }
     if (m.type === 'loginFail') { say('登录失败：' + m.reason, true); return; }
     if (m.type === 'loginOk') {
       logged = true;
-      token = m.token || '';            // 关键修复：刷新内存中的令牌，否则下方 authReq 会带空令牌被服务端判「未登录或登录已过期」
+      token = m.token || '';            // 关键修复：刷新内存中的令牌，否则 authReq 会带空令牌被服务端判「未登录或登录已过期」
       myNames = m.names || [];
       document.getElementById('loginBox').hidden = true;
-      authBox.hidden = false;
-      renderList(m.names || []);
       try { localStorage.setItem(SKEY, JSON.stringify({ token: m.token, qq: m.qq, names: m.names || [], exp: Date.now() + 7 * 86400000 })); } catch (e) {}
-      say('登录成功（QQ ' + m.qq + '），请选择账号授权');
+      // 游戏内的授权请求：不展示选号页，直接自动授权
+      if (code) { say('登录成功（QQ ' + m.qq + '），正在验证…'); tryAutoAuth(); return; }
+      // 官网登录入口：登录完就回首页
+      countdownHome('登录成功（QQ ' + m.qq + '）', 5);
       return;
     }
-    if (m.type === 'authOk') { say('授权成功！请回到游戏，弹窗会自动关闭并进入服务器。'); authBtn.disabled = true; return; }
+    if (m.type === 'authOk') { countdownHome('授权成功，回到游戏即可进入服务器', 5); return; }
     if (m.type === 'authFail') {
       if (m.code === code) {
         // 令牌失效 / 登录过期属于可恢复：展示登录框让用户重新登录刷新令牌，而不是倒计时踢回首页
         if (/未登录|登录.*过期|过期/.test(m.reason || '')) {
-          logged = false; chosen = ''; token = '';
+          logged = false; authing = false; token = '';
           document.getElementById('loginBox').hidden = false;
-          authBtn.disabled = true;
           say('授权失败：' + m.reason + '。请在上方用 QQ + 验证码重新登录（会刷新授权令牌），或在游戏内重新获取登录链接后再试。', true);
         } else {
           failAndGoHome(m.reason);
@@ -203,25 +205,6 @@
       return;
     }
   };
-
-  function renderList(names) {
-    accList.innerHTML = '';
-    if (!names.length) { accList.innerHTML = '<div class="item"><span>该 QQ 未绑定游戏账号</span></div>'; return; }
-    names.forEach(function (n) {
-      var el = document.createElement('div');
-      el.className = 'item' + (n === reqName ? ' on' : '');
-      el.innerHTML = '<span>' + n + '</span><small>' + (n === reqName ? '本次请求' : '已绑定') + '</small>';
-      if (n === reqName) chosen = n;
-      el.addEventListener('click', function () {
-        chosen = n;
-        Array.prototype.forEach.call(accList.children, function (c) { c.classList.remove('on'); });
-        el.classList.add('on');
-        authBtn.disabled = !logged;
-      });
-      accList.appendChild(el);
-    });
-    authBtn.disabled = !logged || !chosen;
-  }
 
   document.getElementById('sendBtn').addEventListener('click', function () {
     var qq = (document.getElementById('qq').value || '').replace(/\D/g, '');
@@ -235,12 +218,6 @@
     if (qq.length < 5 || otp.length !== 6) { say('请填写 QQ 号和 6 位验证码', true); return; }
     say('正在登录…');
     post({ type: 'loginCheck', qq: qq, otp: otp, rid: rid });
-  });
-  authBtn.addEventListener('click', function () {
-    if (!logged || !chosen) { say('请先登录并选择账号', true); return; }
-    if (chosen !== reqName) { failAndGoHome('所选账号与本次登录请求不一致'); return; }
-    say('正在授权…');
-    post({ type: 'authReq', code: code, rid: rid, name: chosen, token: token });
   });
 
   // 有授权请求时才核验链接
