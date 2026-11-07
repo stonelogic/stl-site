@@ -137,7 +137,10 @@ code{font-family:ui-monospace,Consolas,Menlo,monospace}
   width:min(94%,860px);height:auto;
   image-rendering:pixelated;
   filter:drop-shadow(0 12px 26px rgba(0,0,0,.22));
+  opacity:0;transition:opacity .7s ease;
 }
+.hero-logo.loaded{opacity:1}
+.hero-sky picture{display:block}
 .hero-tagline{
   margin:18px 0 4px;
   font-size:clamp(13px,1.7vw,17px);
@@ -269,7 +272,7 @@ code{font-family:ui-monospace,Consolas,Menlo,monospace}
 /* ===== 空态 ===== */
 .empty{padding:40px 20px;text-align:center;color:var(--muted-foreground);border:1px dashed var(--border);border-radius:14px}
 .empty .ico{font-size:38px;margin-bottom:8px}
-.empty p{margin:0;font-size:14px}
+.empty p{margin:0;font-size:14px;white-space:nowrap}
 
 /* ===== 响应式 ===== */
 @media(max-width:860px){
@@ -286,7 +289,6 @@ code{font-family:ui-monospace,Consolas,Menlo,monospace}
 @keyframes stlFadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
 @keyframes stlFadeIn{from{opacity:0}to{opacity:1}}
 .card,.page-head{animation:stlFadeUp .55s cubic-bezier(.22,.61,.36,1) both}
-.hero-sky .hero-logo{animation:stlFadeUp .7s .05s both}
 .hero-sky .hero-tagline{animation:stlFadeUp .6s .18s both}
 .hero-sky .hero-slogan{animation:stlFadeUp .6s .28s both}
 .hero-sky .hero-actions,.hero-sky .hero-ip{animation:stlFadeUp .6s .38s both}

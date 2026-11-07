@@ -95,8 +95,7 @@
   var NAV = [
     { label: '状态', href: '#/status' },
     { label: '在线', href: '#/online' },
-    { label: '榜单', href: '#/rank' },
-    { label: '起床', href: '#/bw' },
+    { label: '排行榜', href: '#/rank' },
     { label: '指南', href: '#/guide' },
     { label: '规则', href: '#/rules' },
     { label: '申诉', href: '#/appeal' }
@@ -133,7 +132,7 @@
     hero.innerHTML = '<div class="hero-sky">' +
       '<span class="flower f1">❀</span><span class="flower f2">✿</span>' +
       '<span class="flower f3">❀</span><span class="flower f4">✿</span>' +
-      '<img class="hero-logo" src="assets/title-logo.png" alt="STONE LOGIC">' +
+      '<picture><source srcset="assets/title-logo.webp" type="image/webp"><img class="hero-logo" src="assets/title-logo.png" alt="STONE LOGIC"></picture>' +
       '<p class="hero-tagline">' + esc(SITE.tagline) + '</p>' +
       '<p class="hero-slogan">' + esc(SITE.slogan) + '</p>' +
       '<div class="hero-actions">' +
@@ -143,6 +142,12 @@
       '<div><span class="hero-ip">' + esc(SITE.javaIp) + '</span></div>' +
       '</div><div class="hero-glow"></div>';
     container.appendChild(hero);
+    // logo 加载完成后渐显（避免首屏先出文字、logo 空白迟迟不出现）
+    var logo = hero.querySelector('.hero-logo');
+    if (logo) {
+      if (logo.complete) logo.classList.add('loaded');
+      else logo.addEventListener('load', function () { logo.classList.add('loaded'); });
+    }
     // 鼠标跟随光晕
     var glow = hero.querySelector('.hero-glow');
     hero.addEventListener('mousemove', function (e) {
@@ -223,7 +228,7 @@
       var motd = $id('stMotd');
       if (motd) motd.textContent = data.description || (ok ? 'MOTD 未返回' : '服务器离线或不可达');
       var pg = $id('stPlayers');
-      if (pg) loadOnlineInto(pg, ok);
+      if (pg) loadOnlineInto(pg, ok, p.now);
     }).catch(function () {
       var pill = $id('stPill'); if (pill) { pill.textContent = '● 离线'; pill.className = 'status-pill off'; }
       var on = $id('stOnline'); if (on) on.textContent = '0';
@@ -232,15 +237,21 @@
     });
   }
 
+  function renderEmpty(pg, ok, now) {
+    if (now > 0) pg.innerHTML = emptyState('🕹️', '在线 ' + now + ' 人，名单同步中…');
+    else if (ok) pg.innerHTML = emptyState('🕹️', '暂无在线玩家');
+    else pg.innerHTML = emptyState('🕹️', '服务器离线');
+  }
+
   /* 从 ntfy 读取本地同步脚本发布的在线玩家名单（SSE 流，since=all 取历史） */
-  function loadOnlineInto(pg, ok) {
+  function loadOnlineInto(pg, ok, now) {
     if (!pg) return;
     pg.innerHTML = '<div class="empty"><div class="ico">⏳</div><p>正在获取在线玩家…</p></div>';
     var got = false;
     var es;
     try {
       es = new EventSource('https://ntfy.sh/' + ONLINE_TOPIC + '/json?since=all');
-    } catch (e) { renderPlayerGrid(pg, [], ok); return; }
+    } catch (e) { renderEmpty(pg, ok, now); return; }
     es.onmessage = function (ev) {
       var msg;
       try { msg = JSON.parse(ev.data); } catch (e) { return; }
@@ -252,8 +263,8 @@
         renderPlayerGrid(pg, m.players, ok);
       }
     };
-    es.onerror = function () { es.close(); if (!got) renderPlayerGrid(pg, [], ok); };
-    setTimeout(function () { es.close(); if (!got) renderPlayerGrid(pg, [], ok); }, 2500);
+    es.onerror = function () { es.close(); if (!got) renderEmpty(pg, ok, now); };
+    setTimeout(function () { es.close(); if (!got) renderEmpty(pg, ok, now); }, 2500);
   }
   function renderPlayerGrid(pg, players, ok) {
     if (!players || !players.length) {
@@ -288,7 +299,7 @@
       var pill = $id('olPill'), cnt = $id('olCount');
       if (pill) { pill.textContent = ok ? '● 在线' : '● 离线'; pill.className = 'status-pill ' + (ok ? 'on' : 'off'); }
       if (cnt) cnt.textContent = '在线 ' + (p.now || 0) + ' / ' + (p.max || 0) + ' 人';
-      loadOnlineInto($id('olPlayers'), ok);
+      loadOnlineInto($id('olPlayers'), ok, p.now);
     }).catch(function () {
       var pill = $id('olPill'); if (pill) { pill.textContent = '● 离线'; pill.className = 'status-pill off'; }
       var cnt = $id('olCount'); if (cnt) cnt.textContent = '在线 0 / 0 人';
@@ -348,95 +359,99 @@
 
   /* ================= 路由 ================= */
 
-  /* --- 在线时长榜单（cyutime 导出，playtime.json） --- */
+  /* --- 排行榜（在线时长 + 起床战绩，两个子榜切换） --- */
   function renderRank(container) {
-    container.innerHTML = pageHead('首页', '在线时长榜',
-      '统计自服务器 cyutime 插件，由本地脚本定时导出，每数分钟更新一次（略滞后于实时）');
+    container.innerHTML = pageHead('首页', '排行榜',
+      '在线时长来自 cyutime，起床战绩来自小游戏服 BedWars；均由本地脚本定时导出，每数分钟更新（略滞后实时）');
     var box = el('div', 'card'); container.appendChild(box);
-    box.innerHTML = '<div id="rankMeta" style="font-size:13px;color:var(--muted-foreground);margin-bottom:14px">加载中…</div>' +
-      '<div id="rankList"></div>';
-    var list = box.querySelector('#rankList');
-    list.innerHTML = '<div class="empty"><div class="ico">⏳</div><p>正在加载榜单…</p></div>';
-    fetch('playtime.json?_=' + Date.now(), { cache: 'no-store' })
-      .then(function (r) { return r.ok ? r.json() : null; })
-      .then(function (d) {
-        if (!d || !Array.isArray(d.players) || !d.players.length) {
-          list.innerHTML = emptyState('🏆', '暂无任何在线时长记录');
-          box.querySelector('#rankMeta').textContent = '';
-          return;
-        }
-        var meta = box.querySelector('#rankMeta');
-        var gt = d.generatedAt ? new Date(d.generatedAt * 1000) : null;
-        meta.textContent = '共 ' + d.count + ' 名玩家 · 数据更新于 ' + (gt ? gt.toLocaleString('zh-CN') : '未知');
-        var top = d.players[0].total || 1;
-        var medals = { 1: '🥇', 2: '🥈', 3: '🥉' };
-        list.innerHTML = d.players.map(function (p) {
-          var m = medals[p.rank] || ('#' + p.rank);
-          var pct = Math.max(4, Math.round(p.total / top * 100));
-          var sub = [];
-          if (p.month) sub.push('本月 ' + fmtDur(p.month));
-          if (p.week) sub.push('本周 ' + fmtDur(p.week));
-          var subHtml = sub.length ? '<span style="color:var(--muted-foreground);font-weight:500">· ' + sub.join(' · ') + '</span>' : '';
-          return '<div style="display:flex;align-items:center;gap:14px;padding:12px 4px;border-bottom:1px solid var(--border)">' +
-            '<div style="width:34px;text-align:center;font-size:18px;font-weight:800;flex:none">' + m + '</div>' +
-            '<img src="https://minotar.net/helm/' + encodeURIComponent(p.name) + '/40.png" alt="" loading="lazy" ' +
-            'style="width:36px;height:36px;border-radius:8px;background:var(--muted);flex:none" onerror="this.src=\'assets/icon.png\'">' +
-            '<div style="flex:1;min-width:0">' +
-            '<div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap"><span style="font-weight:700;font-size:15px">' + esc(p.name) + '</span>' + subHtml + '</div>' +
-            '<div style="margin-top:6px;height:8px;border-radius:6px;background:var(--muted);overflow:hidden">' +
-            '<div style="height:100%;width:' + pct + '%;background:linear-gradient(90deg,var(--primary),oklch(62% .14 160));border-radius:6px"></div></div>' +
-            '</div>' +
-            '<div style="flex:none;text-align:right;font-weight:800;font-size:15px;color:var(--primary);white-space:nowrap">' + fmtDur(p.total) + '</div>' +
-            '</div>';
-        }).join('');
-      })
-      .catch(function () {
-        list.innerHTML = emptyState('📡', '榜单加载失败，请稍后刷新');
-      });
-  }
+    box.innerHTML = '<div class="rank-tabs" style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">' +
+      '<button class="btn btn-sm rank-tab btn-primary" data-tab="play" type="button">🕒 在线时长</button>' +
+      '<button class="btn btn-sm rank-tab" data-tab="bw" type="button">⚔️ 起床战绩</button>' +
+      '</div><div id="rankBody"></div>';
+    var body = box.querySelector('#rankBody');
 
-  /* --- 起床战争战绩榜（小游戏服 BedWars 插件导出，bedwars.json） --- */
-  function renderBedwars(container) {
-    container.innerHTML = pageHead('首页', '起床战争战绩榜',
-      '统计自小游戏服 BedWars 插件，由本地脚本定时导出，每数分钟更新一次（略滞后于实时）');
-    var box = el('div', 'card'); container.appendChild(box);
-    box.innerHTML = '<div id="bwMeta" style="font-size:13px;color:var(--muted-foreground);margin-bottom:14px">加载中…</div>' +
-      '<div style="overflow-x:auto"><table class="table" id="bwTable"><thead><tr>' +
-      '<th>#</th><th>玩家</th><th>积分</th><th>胜 / 负</th><th>胜率</th><th>击杀</th><th>死亡</th><th>破床</th>' +
-      '</tr></thead><tbody id="bwBody"></tbody></table></div>';
-    var body = box.querySelector('#bwBody');
-    body.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--muted-foreground)">加载中…</td></tr>';
-    fetch('bedwars.json?_=' + Date.now(), { cache: 'no-store' })
-      .then(function (r) { return r.ok ? r.json() : null; })
-      .then(function (d) {
-        if (!d || !Array.isArray(d.players) || !d.players.length) {
-          body.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--muted-foreground)">暂无起床战争战绩记录</td></tr>';
-          box.querySelector('#bwMeta').textContent = '';
-          return;
-        }
-        var meta = box.querySelector('#bwMeta');
-        var gt = d.generatedAt ? new Date(d.generatedAt * 1000) : null;
-        meta.textContent = '共 ' + d.count + ' 名玩家 · 数据更新于 ' + (gt ? gt.toLocaleString('zh-CN') : '未知');
-        var medals = { 1: '🥇', 2: '🥈', 3: '🥉' };
-        body.innerHTML = d.players.map(function (p) {
-          var m = medals[p.rank] || p.rank;
-          var kd = (typeof p.kd === 'number') ? (Number.isInteger(p.kd) ? p.kd : p.kd.toFixed(2)) : p.kd;
-          return '<tr>' +
-            '<td class="rank' + (p.rank === 1 ? ' top1' : '') + '">' + m + '</td>' +
-            '<td><div style="display:flex;align-items:center;gap:8px"><img src="https://minotar.net/helm/' + encodeURIComponent(p.name) + '/32.png" alt="" loading="lazy" ' +
-            'style="width:26px;height:26px;border-radius:6px;background:var(--muted)" onerror="this.src=\'assets/icon.png\'"><span style="font-weight:700">' + esc(p.name) + '</span></div></td>' +
-            '<td style="font-weight:800;color:var(--primary)">' + (p.score || 0) + '</td>' +
-            '<td>' + (p.wins || 0) + ' / ' + (p.loses || 0) + '</td>' +
-            '<td>' + (p.winRate || 0) + '%</td>' +
-            '<td>' + (p.kills || 0) + ' <span style="color:var(--muted-foreground);font-size:12px">KD ' + kd + '</span></td>' +
-            '<td>' + (p.deaths || 0) + '</td>' +
-            '<td>' + (p.destroyedBeds || 0) + '</td>' +
-            '</tr>';
-        }).join('');
-      })
-      .catch(function () {
-        body.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--destructive)">战绩加载失败，请稍后刷新</td></tr>';
+    function showPlay() {
+      body.innerHTML = '<div id="rankMeta" style="font-size:13px;color:var(--muted-foreground);margin-bottom:14px">加载中…</div><div id="rankList"></div>';
+      var list = body.querySelector('#rankList');
+      list.innerHTML = '<div class="empty"><div class="ico">⏳</div><p>正在加载榜单…</p></div>';
+      fetch('playtime.json?_=' + Date.now(), { cache: 'no-store' })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (d) {
+          if (!d || !Array.isArray(d.players) || !d.players.length) {
+            list.innerHTML = emptyState('🏆', '暂无任何在线时长记录');
+            body.querySelector('#rankMeta').textContent = '';
+            return;
+          }
+          var meta = body.querySelector('#rankMeta');
+          var gt = d.generatedAt ? new Date(d.generatedAt * 1000) : null;
+          meta.textContent = '共 ' + d.count + ' 名玩家 · 数据更新于 ' + (gt ? gt.toLocaleString('zh-CN') : '未知');
+          var top = d.players[0].total || 1;
+          var medals = { 1: '🥇', 2: '🥈', 3: '🥉' };
+          list.innerHTML = d.players.map(function (p) {
+            var m = medals[p.rank] || ('#' + p.rank);
+            var pct = Math.max(4, Math.round(p.total / top * 100));
+            var sub = [];
+            if (p.month) sub.push('本月 ' + fmtDur(p.month));
+            if (p.week) sub.push('本周 ' + fmtDur(p.week));
+            var subHtml = sub.length ? '<span style="color:var(--muted-foreground);font-weight:500">· ' + sub.join(' · ') + '</span>' : '';
+            return '<div style="display:flex;align-items:center;gap:14px;padding:12px 4px;border-bottom:1px solid var(--border)">' +
+              '<div style="width:34px;text-align:center;font-size:18px;font-weight:800;flex:none">' + m + '</div>' +
+              '<img src="https://minotar.net/helm/' + encodeURIComponent(p.name) + '/40.png" alt="" loading="lazy" style="width:36px;height:36px;border-radius:8px;background:var(--muted);flex:none" onerror="this.src=\'assets/icon.png\'">' +
+              '<div style="flex:1;min-width:0">' +
+              '<div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap"><span style="font-weight:700;font-size:15px">' + esc(p.name) + '</span>' + subHtml + '</div>' +
+              '<div style="margin-top:6px;height:8px;border-radius:6px;background:var(--muted);overflow:hidden">' +
+              '<div style="height:100%;width:' + pct + '%;background:linear-gradient(90deg,var(--primary),oklch(62% .14 160));border-radius:6px"></div></div>' +
+              '</div>' +
+              '<div style="flex:none;text-align:right;font-weight:800;font-size:15px;color:var(--primary);white-space:nowrap">' + fmtDur(p.total) + '</div>' +
+              '</div>';
+          }).join('');
+        })
+        .catch(function () { list.innerHTML = emptyState('📡', '榜单加载失败，请稍后刷新'); });
+    }
+
+    function showBw() {
+      body.innerHTML = '<div id="bwMeta" style="font-size:13px;color:var(--muted-foreground);margin-bottom:14px">加载中…</div>' +
+        '<div style="overflow-x:auto"><table class="table" id="bwTable"><thead><tr><th>#</th><th>玩家</th><th>积分</th><th>胜 / 负</th><th>胜率</th><th>击杀</th><th>死亡</th><th>破床</th></tr></thead><tbody id="bwBody"></tbody></table></div>';
+      var tbody = body.querySelector('#bwBody');
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--muted-foreground)">加载中…</td></tr>';
+      fetch('bedwars.json?_=' + Date.now(), { cache: 'no-store' })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (d) {
+          if (!d || !Array.isArray(d.players) || !d.players.length) {
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--muted-foreground)">暂无起床战争战绩记录</td></tr>';
+            body.querySelector('#bwMeta').textContent = '';
+            return;
+          }
+          var meta = body.querySelector('#bwMeta');
+          var gt = d.generatedAt ? new Date(d.generatedAt * 1000) : null;
+          meta.textContent = '共 ' + d.count + ' 名玩家 · 数据更新于 ' + (gt ? gt.toLocaleString('zh-CN') : '未知');
+          var medals = { 1: '🥇', 2: '🥈', 3: '🥉' };
+          tbody.innerHTML = d.players.map(function (p) {
+            var m = medals[p.rank] || p.rank;
+            var kd = (typeof p.kd === 'number') ? (Number.isInteger(p.kd) ? p.kd : p.kd.toFixed(2)) : p.kd;
+            return '<tr>' +
+              '<td class="rank' + (p.rank === 1 ? ' top1' : '') + '">' + m + '</td>' +
+              '<td><div style="display:flex;align-items:center;gap:8px"><img src="https://minotar.net/helm/' + encodeURIComponent(p.name) + '/32.png" alt="" loading="lazy" style="width:26px;height:26px;border-radius:6px;background:var(--muted)" onerror="this.src=\'assets/icon.png\'"><span style="font-weight:700">' + esc(p.name) + '</span></div></td>' +
+              '<td style="font-weight:800;color:var(--primary)">' + (p.score || 0) + '</td>' +
+              '<td>' + (p.wins || 0) + ' / ' + (p.loses || 0) + '</td>' +
+              '<td>' + (p.winRate || 0) + '%</td>' +
+              '<td>' + (p.kills || 0) + ' <span style="color:var(--muted-foreground);font-size:12px">KD ' + kd + '</span></td>' +
+              '<td>' + (p.deaths || 0) + '</td>' +
+              '<td>' + (p.destroyedBeds || 0) + '</td>' +
+              '</tr>';
+          }).join('');
+        })
+        .catch(function () { tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--destructive)">战绩加载失败，请稍后刷新</td></tr>'; });
+    }
+
+    box.querySelectorAll('.rank-tab').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        box.querySelectorAll('.rank-tab').forEach(function (b) { b.classList.remove('btn-primary'); });
+        btn.classList.add('btn-primary');
+        if (btn.getAttribute('data-tab') === 'play') showPlay(); else showBw();
       });
+    });
+    showPlay();
   }
 
   var routes = {
@@ -444,7 +459,6 @@
     '/status': renderStatus,
     '/online': renderOnline,
     '/rank': renderRank,
-    '/bw': renderBedwars,
     '/guide': renderGuide,
     '/rules': renderRules,
     '/appeal': renderAppeal
