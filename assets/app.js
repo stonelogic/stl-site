@@ -523,7 +523,7 @@
             var subHtml = sub.length ? '<span style="color:var(--muted-foreground);font-weight:500">· ' + sub.join(' · ') + '</span>' : '';
             return '<div style="display:flex;align-items:center;gap:14px;padding:12px 4px;border-bottom:1px solid var(--border)">' +
               '<div style="width:34px;text-align:center;font-size:18px;font-weight:800;flex:none">' + m + '</div>' +
-              '<img src="https://minotar.net/helm/' + encodeURIComponent(p.name) + '/40.png" alt="" loading="lazy" style="width:36px;height:36px;border-radius:8px;background:var(--muted);flex:none" onerror="this.src=\'assets/icon.png\'">' +
+              '<img src="' + avatarUrl(p.name, 40) + '" alt="" loading="lazy" data-fb="' + identicon(p.name) + '" style="width:36px;height:36px;border-radius:8px;background:var(--muted);flex:none" onerror="this.onerror=null;this.src=this.getAttribute(\'data-fb\')">' +
               '<div style="flex:1;min-width:0">' +
               '<div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap"><span style="font-weight:700;font-size:15px">' + esc(p.name) + '</span>' + subHtml + '</div>' +
               '<div style="margin-top:6px;height:8px;border-radius:6px;background:var(--muted);overflow:hidden">' +

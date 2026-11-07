@@ -201,7 +201,8 @@
     grid.innerHTML = names.map(function (n) {
       return '<div class="acc">' +
         '<img class="body" loading="lazy" src="https://mc-heads.net/body/' + encodeURIComponent(n) + '/right" alt="' + esc(n) + '">' +
-        '<div class="line"><img loading="lazy" src="https://minotar.net/helm/' + encodeURIComponent(n) + '/32" alt="">' +
+        '<div class="line"><img loading="lazy" src="assets/avatars/' + encodeURIComponent(n) + '.png" alt="" ' +
+        'onerror="this.onerror=null;this.src=\'https://minotar.net/helm/' + encodeURIComponent(n) + '/32\'">' +
         '<span>' + esc(n) + '</span></div>' +
         '<div class="pt" data-name="' + esc(n) + '">游戏时长：加载中…</div>' +
         '</div>';
