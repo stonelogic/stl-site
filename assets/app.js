@@ -96,6 +96,7 @@
     { label: '状态', href: '#/status' },
     { label: '在线', href: '#/online' },
     { label: '榜单', href: '#/rank' },
+    { label: '起床', href: '#/bw' },
     { label: '指南', href: '#/guide' },
     { label: '规则', href: '#/rules' },
     { label: '申诉', href: '#/appeal' }
@@ -394,11 +395,56 @@
       });
   }
 
+  /* --- 起床战争战绩榜（小游戏服 BedWars 插件导出，bedwars.json） --- */
+  function renderBedwars(container) {
+    container.innerHTML = pageHead('首页', '起床战争战绩榜',
+      '统计自小游戏服 BedWars 插件，由本地脚本定时导出，每数分钟更新一次（略滞后于实时）');
+    var box = el('div', 'card'); container.appendChild(box);
+    box.innerHTML = '<div id="bwMeta" style="font-size:13px;color:var(--muted-foreground);margin-bottom:14px">加载中…</div>' +
+      '<div style="overflow-x:auto"><table class="table" id="bwTable"><thead><tr>' +
+      '<th>#</th><th>玩家</th><th>积分</th><th>胜 / 负</th><th>胜率</th><th>击杀</th><th>死亡</th><th>破床</th>' +
+      '</tr></thead><tbody id="bwBody"></tbody></table></div>';
+    var body = box.querySelector('#bwBody');
+    body.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--muted-foreground)">加载中…</td></tr>';
+    fetch('bedwars.json?_=' + Date.now(), { cache: 'no-store' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (d) {
+        if (!d || !Array.isArray(d.players) || !d.players.length) {
+          body.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--muted-foreground)">暂无起床战争战绩记录</td></tr>';
+          box.querySelector('#bwMeta').textContent = '';
+          return;
+        }
+        var meta = box.querySelector('#bwMeta');
+        var gt = d.generatedAt ? new Date(d.generatedAt * 1000) : null;
+        meta.textContent = '共 ' + d.count + ' 名玩家 · 数据更新于 ' + (gt ? gt.toLocaleString('zh-CN') : '未知');
+        var medals = { 1: '🥇', 2: '🥈', 3: '🥉' };
+        body.innerHTML = d.players.map(function (p) {
+          var m = medals[p.rank] || p.rank;
+          var kd = (typeof p.kd === 'number') ? (Number.isInteger(p.kd) ? p.kd : p.kd.toFixed(2)) : p.kd;
+          return '<tr>' +
+            '<td class="rank' + (p.rank === 1 ? ' top1' : '') + '">' + m + '</td>' +
+            '<td><div style="display:flex;align-items:center;gap:8px"><img src="https://minotar.net/helm/' + encodeURIComponent(p.name) + '/32.png" alt="" loading="lazy" ' +
+            'style="width:26px;height:26px;border-radius:6px;background:var(--muted)" onerror="this.src=\'assets/icon.png\'"><span style="font-weight:700">' + esc(p.name) + '</span></div></td>' +
+            '<td style="font-weight:800;color:var(--primary)">' + (p.score || 0) + '</td>' +
+            '<td>' + (p.wins || 0) + ' / ' + (p.loses || 0) + '</td>' +
+            '<td>' + (p.winRate || 0) + '%</td>' +
+            '<td>' + (p.kills || 0) + ' <span style="color:var(--muted-foreground);font-size:12px">KD ' + kd + '</span></td>' +
+            '<td>' + (p.deaths || 0) + '</td>' +
+            '<td>' + (p.destroyedBeds || 0) + '</td>' +
+            '</tr>';
+        }).join('');
+      })
+      .catch(function () {
+        body.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--destructive)">战绩加载失败，请稍后刷新</td></tr>';
+      });
+  }
+
   var routes = {
     '/': renderHome,
     '/status': renderStatus,
     '/online': renderOnline,
     '/rank': renderRank,
+    '/bw': renderBedwars,
     '/guide': renderGuide,
     '/rules': renderRules,
     '/appeal': renderAppeal

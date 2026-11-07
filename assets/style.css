@@ -281,3 +281,26 @@ code{font-family:ui-monospace,Consolas,Menlo,monospace}
   .main{padding:20px 14px 50px}
   .nav-main a,.nav-main .nav-item{padding:6px 9px;font-size:13px}
 }
+
+/* ===== 入场动画 ===== */
+@keyframes stlFadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+@keyframes stlFadeIn{from{opacity:0}to{opacity:1}}
+.card,.page-head{animation:stlFadeUp .55s cubic-bezier(.22,.61,.36,1) both}
+.hero-sky .hero-logo{animation:stlFadeUp .7s .05s both}
+.hero-sky .hero-tagline{animation:stlFadeUp .6s .18s both}
+.hero-sky .hero-slogan{animation:stlFadeUp .6s .28s both}
+.hero-sky .hero-actions,.hero-sky .hero-ip{animation:stlFadeUp .6s .38s both}
+.hero-sky .flower{animation:stlFadeIn 1s .25s both}
+.grid > *{animation:stlFadeUp .5s both}
+.grid > *:nth-child(2){animation-delay:.05s}
+.grid > *:nth-child(3){animation-delay:.1s}
+.grid > *:nth-child(4){animation-delay:.15s}
+.grid > *:nth-child(5){animation-delay:.2s}
+.grid > *:nth-child(6){animation-delay:.25s}
+.grid > *:nth-child(n+7){animation-delay:.3s}
+.stat-row > *{animation:stlFadeUp .5s both}
+@media (prefers-reduced-motion: reduce){
+  .card,.page-head,.hero-sky .hero-logo,.hero-sky .hero-tagline,.hero-sky .hero-slogan,
+  .hero-sky .hero-actions,.hero-sky .hero-ip,.hero-sky .flower,.grid > *,
+  .stat-row > *{animation:none!important}
+}
