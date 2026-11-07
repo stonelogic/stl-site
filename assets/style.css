@@ -29,6 +29,7 @@
   --shadow-sm: 0 1px 2px rgb(0 0 0/.05);
   --shadow: 0 4px 16px rgb(0 0 0/.07);
   --shadow-lg: 0 12px 34px rgb(0 0 0/.10);
+  --sky-top:#b8dcff; --sky-mid:#dcedff; --sky-bottom:#f4faff;
 }
 [data-theme="dark"]{
   --background: oklch(14.5% 0 0);
@@ -54,6 +55,7 @@
   --shadow-sm: 0 1px 2px rgb(0 0 0/.3);
   --shadow: 0 4px 16px rgb(0 0 0/.35);
   --shadow-lg: 0 12px 34px rgb(0 0 0/.45);
+  --sky-top:#1c2c3e; --sky-mid:#141e2a; --sky-bottom:#0d141c;
 }
 *{box-sizing:border-box}
 [hidden]{display:none!important}
@@ -111,6 +113,48 @@ code{font-family:ui-monospace,Consolas,Menlo,monospace}
 
 /* ===== 主内容 ===== */
 .main{max-width:1280px;margin:0 auto;padding:28px 20px 60px;min-height:60vh}
+
+/* ===== 首页 Hero（Minecraft 像素风大标题） ===== */
+.hero{
+  position:relative;overflow:hidden;
+  border:1px solid var(--border);border-radius:calc(var(--radius)*1.6);
+  background:linear-gradient(180deg,var(--sky-top) 0%,var(--sky-mid) 55%,var(--sky-bottom) 100%);
+  padding:clamp(44px,7vw,84px) 20px clamp(52px,8vw,96px);
+  text-align:center;margin-bottom:24px;
+}
+.hero-sky{position:relative;max-width:1080px;margin:0 auto}
+.mc-logo{
+  margin:0;
+  font-family:"Arial Black","Arial Bold","Microsoft YaHei",Arial,sans-serif;
+  font-weight:900;
+  font-size:clamp(32px,10vw,130px);
+  line-height:1.08;letter-spacing:.01em;white-space:nowrap;
+  color:#62bd3e;
+  text-shadow:
+    0 -2px 0 #a0e06a,
+    1px 1px 0 #8a6a3e,
+    2px 2px 0 #8a6a3e,
+    3px 3px 0 #795a33,
+    4px 4px 0 #795a33,
+    5px 5px 0 #684b29,
+    6px 6px 0 #684b29,
+    7px 7px 0 #573d20,
+    8px 8px 0 #573d20,
+    9px 9px 0 #463017,
+    10px 10px 0 #463017,
+    16px 18px 26px rgba(0,0,0,.35);
+}
+.hero-tag{margin:clamp(18px,3vw,30px) 0 20px;font-size:15px;color:var(--foreground);opacity:.82;letter-spacing:.06em}
+.hero-actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.hero-actions .btn{font-size:14.5px;padding:11px 22px}
+.hero-ip{display:inline-block;margin-top:22px;font-family:ui-monospace,Consolas,Menlo,monospace;font-size:15px;font-weight:700;
+  color:var(--foreground);background:color-mix(in oklab,var(--card) 62%,transparent);border:1px solid var(--border);
+  padding:8px 18px;border-radius:999px}
+.flower{position:absolute;color:#fff;font-size:clamp(15px,2.2vw,26px);text-shadow:0 1px 3px rgba(0,0,0,.28);pointer-events:none;opacity:.92;line-height:1}
+.flower.f1{top:2%;left:5%}
+.flower.f2{top:14%;right:7%}
+.flower.f3{bottom:18%;left:15%}
+.flower.f4{bottom:6%;right:16%}
 
 /* ===== 页头 ===== */
 .page-head{margin-bottom:24px}

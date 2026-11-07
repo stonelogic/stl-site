@@ -124,15 +124,29 @@
 
   /* --- 首页（介绍） --- */
   function renderHome(container) {
-    container.innerHTML = pageHead('', SITE.name, SITE.tagline);
-    var hero = el('div', 'card'); container.appendChild(hero);
-    hero.innerHTML = '<div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-bottom:8px">' +
-      '<span class="badge badge-green">Java 版</span>' +
-      '<code style="font-size:15px;font-weight:700">' + esc(SITE.javaIp) + '</code>' +
-      '<a class="btn btn-outline btn-sm" href="' + SITE.groupUrl + '" target="_blank" rel="noopener">加入 QQ 群</a>' +
-      '<a class="btn btn-outline btn-sm" href="#/players">查玩家皮肤</a>' +
+    container.innerHTML = '';
+    // Hero（Minecraft 像素风大标题，天空渐变背景）
+    var hero = el('div', 'hero');
+    hero.innerHTML = '<div class="hero-sky">' +
+      '<span class="flower f1">❀</span><span class="flower f2">✿</span>' +
+      '<span class="flower f3">❀</span><span class="flower f4">✿</span>' +
+      '<h1 class="mc-logo">STONE LOGIC</h1>' +
+      '<p class="hero-tag">' + esc(SITE.tagline) + '</p>' +
+      '<div class="hero-actions">' +
+      '<a class="btn btn-primary" href="' + SITE.groupUrl + '" target="_blank" rel="noopener">加入 QQ 群</a>' +
+      '<a class="btn btn-outline" href="#/players">查玩家皮肤</a>' +
       '</div>' +
-      '<p style="color:var(--muted-foreground);font-size:14px;line-height:1.8;margin:12px 0 0">' +
+      '<div><span class="hero-ip">' + esc(SITE.javaIp) + '</span></div>' +
+      '</div>';
+    container.appendChild(hero);
+
+    // 简介
+    var intro = el('div', 'card'); container.appendChild(intro);
+    intro.innerHTML = '<div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-bottom:8px">' +
+      '<span class="badge badge-green">Java 版</span>' +
+      '<span style="font-size:13px;color:var(--muted-foreground)">主世界不删档 · 小游戏随时玩 · 被封禁可申诉</span>' +
+      '</div>' +
+      '<p style="color:var(--muted-foreground);font-size:14px;line-height:1.8;margin:0">' +
       '长期稳定的纯生存服，主世界不删档，起床战争、方块躲猫猫等小游戏随时能玩。被封禁的玩家可到「申诉」页提交申请。' +
       '</p>';
 
