@@ -2,6 +2,6 @@
 .ghtoken
 
 # 定时同步的运行日志与手工备份：只存在于本机
-sync.log
+*.log
 *.bak
 *.bak-*
