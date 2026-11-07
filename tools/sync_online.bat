@@ -5,6 +5,10 @@ cd /d "%~dp0.."
 set PY=C:\Users\SJWJ\AppData\Local\Programs\Python\Python314\python.exe
 if not exist "%PY%" set PY=python
 
+rem 计划任务在后台跑，绝不能让 git 卡在等待输入上
+set GIT_TERMINAL_PROMPT=0
+set GCM_INTERACTIVE=never
+
 "%PY%" "%~dp0export_online.py" >nul 2>&1
 if errorlevel 1 exit /b 0
 

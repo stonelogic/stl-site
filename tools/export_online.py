@@ -155,6 +155,15 @@ def main():
         print(json.dumps(data, ensure_ascii=False))
         return 0
 
+    # 名单没变就不重写，否则定时同步会每分钟产生一个无意义的提交
+    try:
+        old = json.load(open(OUT, encoding="utf-8"))
+        if old.get("players") == players and old.get("now") == now and old.get("max") == mx:
+            print("[=] 名单没有变化，跳过写入")
+            return 0
+    except Exception:
+        pass
+
     with open(OUT, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, separators=(",", ":"))
     print("[✓] 已写入 %s" % OUT)

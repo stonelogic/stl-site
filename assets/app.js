@@ -415,11 +415,11 @@
       var face = avatarUrl(name, 96);
       return '<div class="player-cell"><img src="' + face + '" alt="" loading="lazy" data-fb="' + identicon(name) + '" onerror="this.onerror=null;this.src=this.getAttribute(\'data-fb\')"><span class="nm">' + esc(name) + '</span></div>';
     }).join('');
-    // 名单只在同步脚本跑过之后才更新，超过 5 分钟就提示一下，免得误导
-    if (age > 300) {
+    // 名单由本地脚本定时同步，半小时没动过说明同步大概率停了，提示一下免得误导
+    if (age > 1800) {
       var mins = Math.round(age / 60);
-      html += '<div style="grid-column:1/-1;margin-top:6px;font-size:12.5px;color:var(--muted-foreground)">名单更新于 ' +
-        (mins > 90 ? Math.round(mins / 60) + ' 小时前' : mins + ' 分钟前') + '</div>';
+      html += '<div style="grid-column:1/-1;margin-top:6px;font-size:12.5px;color:var(--muted-foreground)">名单最后更新于 ' +
+        (mins > 90 ? Math.round(mins / 60) + ' 小时前' : mins + ' 分钟前') + '，同步可能已停止</div>';
     }
     pg.innerHTML = html;
   }
