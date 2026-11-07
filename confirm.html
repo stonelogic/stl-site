@@ -200,7 +200,8 @@
       if (m.code === code) {
         // 令牌失效 / 登录过期属于可恢复：展示登录框让用户重新登录刷新令牌，而不是倒计时踢回首页
         if (/未登录|登录.*过期|过期/.test(m.reason || '')) {
-          logged = false; authing = false; token = '';
+          logged = false; authing = false; token = ''; pses = null;
+          try { localStorage.removeItem(SKEY); } catch (e) {}   // 关键：本地缓存也要清掉，否则刷新后又会带着失效令牌重试
           document.getElementById('loginBox').hidden = false;
           say('授权失败：' + m.reason + '。请在上方用 QQ + 验证码重新登录（会刷新授权令牌），或在游戏内重新获取登录链接后再试。', true);
         } else {
