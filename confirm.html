@@ -178,6 +178,8 @@
     if (m.type === 'loginFail') { say('登录失败：' + m.reason, true); return; }
     if (m.type === 'loginOk') {
       logged = true;
+      token = m.token || '';            // 关键修复：刷新内存中的令牌，否则下方 authReq 会带空令牌被服务端判「未登录或登录已过期」
+      myNames = m.names || [];
       document.getElementById('loginBox').hidden = true;
       authBox.hidden = false;
       renderList(m.names || []);
@@ -186,7 +188,20 @@
       return;
     }
     if (m.type === 'authOk') { say('授权成功！请回到游戏，弹窗会自动关闭并进入服务器。'); authBtn.disabled = true; return; }
-    if (m.type === 'authFail') { if (m.code === code) failAndGoHome(m.reason); }
+    if (m.type === 'authFail') {
+      if (m.code === code) {
+        // 令牌失效 / 登录过期属于可恢复：展示登录框让用户重新登录刷新令牌，而不是倒计时踢回首页
+        if (/未登录|登录.*过期|过期/.test(m.reason || '')) {
+          logged = false; chosen = ''; token = '';
+          document.getElementById('loginBox').hidden = false;
+          authBtn.disabled = true;
+          say('授权失败：' + m.reason + '。请在上方用 QQ + 验证码重新登录（会刷新授权令牌），或在游戏内重新获取登录链接后再试。', true);
+        } else {
+          failAndGoHome(m.reason);
+        }
+      }
+      return;
+    }
   };
 
   function renderList(names) {
