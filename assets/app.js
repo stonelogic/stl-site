@@ -49,6 +49,20 @@
       { t: '传送与地皮', c: '主城 spawn 有传送菜单与地标传送（/warp），也可输入 /warp plot 去地皮世界圈地造家。' },
       { t: '语音聊天', c: '想语音请安装 Simple Voice Chat 客户端模组；服务器已配置 ForcePack，进服自动加载材质包。' },
       { t: '小游戏', c: '起床战争、方块躲猫猫、PVP 等小游戏在世界 lobby 的菜单里进入，不影响生存进度。' }
+    ],
+    feat4: [
+      { icon: 'surv', title: '生存 + 小游戏', desc: '双模式同服，自由切换，体验丰富玩法', tint: 'blue' },
+      { icon: 'game', title: '两种模式', desc: '纯净生存 + 多种小游戏，总有适合你的', tint: 'pink' },
+      { icon: 'shield', title: '正版 / 离线均可', desc: '两种验证模式都支持，欢迎所有玩家', tint: 'blue' },
+      { icon: 'wifi', title: '跨版本互通', desc: '1.21.X 版本均可进入，无需担心版本问题', tint: 'pink' }
+    ],
+    staff: [
+      { name: 'Xiaoye_Hutao', roles: [{ t: '服主', c: 'gold' }] },
+      { name: 'zjls6', roles: [{ t: '管理', c: 'red' }, { t: '技术', c: 'blue' }] },
+      { name: 'AnmandoWendi', roles: [{ t: '小技术', c: 'blue' }] },
+      { name: 'xhj9210', roles: [{ t: '前服主', c: 'blue' }] },
+      { name: '_WOOHOU_', roles: [{ t: '志愿者', c: 'cyan' }] },
+      { name: 'Furry', roles: [{ t: '建筑师', c: 'green' }] }
     ]
   };
 
@@ -71,6 +85,43 @@
     if (sec < 3600) return Math.floor(sec / 60) + ' 分钟';
     if (sec < 86400) return Math.floor(sec / 3600) + ' 小时 ' + Math.floor((sec % 3600) / 60) + ' 分';
     return Math.floor(sec / 86400) + ' 天 ' + Math.floor((sec % 86400) / 3600) + ' 小时';
+  }
+
+  /* ---------- 内联线描图标（24x24，随 currentColor） ---------- */
+  var SVG = {
+    penguin: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.8c-3.1 0-5.2 2.3-5.2 5.6v5.4c0 3.4 2.1 5.8 5.2 5.8s5.2-2.4 5.2-5.8V8.4c0-3.3-2.1-5.6-5.2-5.6Z"/><path d="M9.6 9.2h.01M14.4 9.2h.01"/><path d="M10.4 11.2h3.2L12 13l-1.6-1.8Z"/><path d="M6.9 12.2c-1.2.5-1.9 1.4-1.9 2.5 0 1 .8 1.7 1.9 1.7M17.1 12.2c1.2.5 1.9 1.4 1.9 2.5 0 1-.8 1.7-1.9 1.7"/><path d="M9.4 20.4l.5-2M14.6 20.4l-.5-2"/></svg>',
+    copy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2.2"/><path d="M5 15V5.2A2.2 2.2 0 0 1 7.2 3H15"/></svg>',
+    check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>',
+    chevron: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>',
+    shield: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.4-3 8.2-7 9.4C8 19.2 5 15.4 5 11V6l7-3Z"/><path d="m9 11.6 2 2 4-4"/></svg>',
+    surv: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13.6 4.4c2.2-1.4 5.2-.6 6.4 1.6.3.6-.4 1.2-1 .9l-1.9-.9-1.6 1.6.9 1.9c.3.6-.3 1.3-.9 1-2.2-1.2-3-4.2-1.6-6.1Z"/><path d="M11.7 8.1 4.6 15.2a1.6 1.6 0 0 0 0 2.3l1.9 1.9a1.6 1.6 0 0 0 2.3 0l7.1-7.1"/></svg>',
+    game: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="7" width="19" height="10" rx="5"/><path d="M7 10.2v3M5.5 11.7h3M15.6 11h.01M18 13h.01"/></svg>',
+    wifi: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 8.6a15 15 0 0 1 19 0M5.6 12a10.4 10.4 0 0 1 12.8 0M8.7 15.4a5.8 5.8 0 0 1 6.6 0"/><path d="M12 19h.01"/></svg>'
+  };
+
+  /* 按 ID 生成像素 identicon 头像（data URI，永不空白；可通过 avatar 字段覆盖） */
+  function identicon(name) {
+    name = String(name || '?');
+    var h = 0;
+    for (var i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
+    var hue = h % 360;
+    var bg = 'hsl(' + hue + ',42%,92%)';
+    var fg = 'hsl(' + hue + ',58%,48%)';
+    var seed = (h | 0) || 1, cells = 5, size = 10, pad = 3;
+    var s = '<svg xmlns="http://www.w3.org/2000/svg" width="56" height="56" viewBox="0 0 56 56"><rect width="56" height="56" rx="12" fill="' + bg + '"/>';
+    for (var y = 0; y < cells; y++) {
+      for (var x = 0; x < 3; x++) {
+        seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+        if ((seed >> 9) & 1) {
+          var p = pad + x * size, q = pad + y * size;
+          s += '<rect x="' + p + '" y="' + q + '" width="' + size + '" height="' + size + '" fill="' + fg + '"/>';
+          var mx = pad + (4 - x) * size;
+          if (mx !== p) s += '<rect x="' + mx + '" y="' + q + '" width="' + size + '" height="' + size + '" fill="' + fg + '"/>';
+        }
+      }
+    }
+    s += '</svg>';
+    return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(s);
   }
 
   /* ---------- 主题 ---------- */
@@ -135,12 +186,15 @@
       '<h1 class="hero-title"><span>STONE</span><span>LOGIC</span></h1>' +
       '<p class="hero-tagline">' + esc(SITE.tagline) + '</p>' +
       '<p class="hero-slogan">' + esc(SITE.slogan) + '</p>' +
-      '<div class="hero-actions">' +
-      '<a class="btn btn-primary" href="' + SITE.groupUrl + '" target="_blank" rel="noopener">加入 QQ 群</a>' +
-      '<a class="btn btn-outline" href="#/online">查看在线玩家</a>' +
+      '<div class="hero-meta">' +
+      '<a class="hero-qq" href="' + SITE.groupUrl + '" target="_blank" rel="noopener" title="加入 QQ 群" aria-label="加入 QQ 群">' + SVG.penguin + '</a>' +
+      '<span class="hero-addr"><span class="hero-ip">' + esc(SITE.javaIp) + '</span>' +
+      '<button class="hero-copy" id="heroCopy" type="button" title="复制服务器地址" aria-label="复制服务器地址">' + SVG.copy + '</button></span>' +
       '</div>' +
-      '<div><span class="hero-ip">' + esc(SITE.javaIp) + '</span></div>' +
-      '</div><div class="hero-glow"></div>';
+      '<a class="hero-online" id="heroOnline" href="#/online">查看在线玩家 <span class="ho-arrow">→</span></a>' +
+      '</div>' +
+      '<button class="hero-scroll" id="heroScroll" type="button" aria-label="向下浏览玩法特色">' + SVG.chevron + '</button>' +
+      '<div class="hero-glow"></div>';
     container.appendChild(hero);
     // 鼠标跟随光晕
     var glow = hero.querySelector('.hero-glow');
@@ -152,33 +206,76 @@
     });
     hero.addEventListener('mouseleave', function () { glow.style.opacity = '0'; });
 
-    // 简介
-    var intro = el('div', 'card'); container.appendChild(intro);
-    intro.innerHTML = '<div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-bottom:8px">' +
-      '<span class="badge badge-green">Java 版</span>' +
-      '<span style="font-size:13px;color:var(--muted-foreground)">主世界不删档 · 小游戏随时玩 · 被封禁可申诉</span>' +
-      '</div>' +
-      '<p style="color:var(--muted-foreground);font-size:14px;line-height:1.8;margin:0">' +
-      '长期稳定的纯生存服，主世界不删档，起床战争、方块躲猫猫等小游戏随时能玩。被封禁的玩家可到「申诉」页提交申请。' +
-      '</p>';
+    // 复制地址 / 向下滚动 / 在线人数
+    var copyBtn = hero.querySelector('#heroCopy');
+    if (copyBtn) copyBtn.addEventListener('click', function () { copyText(SITE.javaIp, copyBtn); });
+    var scrollBtn = hero.querySelector('#heroScroll');
+    if (scrollBtn) scrollBtn.addEventListener('click', function () {
+      var f = $id('features'); if (f) f.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+    loadHeroOnline();
 
-    // 玩法特色
-    var fh = el('div', ''); fh.innerHTML = '<h2 style="font-size:20px;font-weight:800;margin:28px 0 16px">玩法特色</h2>';
-    container.appendChild(fh);
-    var fg = el('div', 'grid grid-4');
-    fg.innerHTML = SITE.features.map(function (f) {
-      return '<div class="card card-hover"><div style="font-size:26px">' + f.icon + '</div><h3 style="margin:10px 0 6px;font-size:15px">' + esc(f.title) + '</h3><p style="font-size:13px;color:var(--muted-foreground);margin:0;line-height:1.7">' + esc(f.desc) + '</p></div>';
-    }).join('');
-    container.appendChild(fg);
+    // 玩法特色（4 张概览卡）
+    var feat = el('section', 'home-section'); feat.id = 'features';
+    feat.innerHTML = '<h2 class="section-title">玩法特色</h2><div class="feat4">' +
+      SITE.feat4.map(function (f) {
+        return '<div class="feat4-card"><span class="feat4-ico tint-' + f.tint + '">' + SVG[f.icon] + '</span>' +
+          '<h3>' + esc(f.title) + '</h3><p>' + esc(f.desc) + '</p></div>';
+      }).join('') + '</div>';
+    container.appendChild(feat);
 
-    // 世界
-    var wh = el('div', ''); wh.innerHTML = '<h2 style="font-size:20px;font-weight:800;margin:28px 0 16px">世界一览</h2>';
-    container.appendChild(wh);
-    var wg = el('div', 'grid grid-3');
-    wg.innerHTML = SITE.worlds.map(function (w) {
-      return '<div class="card"><span class="badge badge-green">' + esc(w.tag) + '</span><div style="font-family:monospace;font-size:14px;margin:8px 0 4px">' + esc(w.name) + '</div><div style="font-size:13px;color:var(--muted-foreground)">' + esc(w.desc) + '</div></div>';
-    }).join('');
-    container.appendChild(wg);
+    // 服务器管理人员（ID 与头像可在 config 中自定义：name / avatar / roles）
+    var stf = el('section', 'home-section'); stf.id = 'staff';
+    stf.innerHTML = '<h2 class="section-title"><span class="sec-ico">' + SVG.shield + '</span>服务器管理人员</h2><div class="staff-grid">' +
+      SITE.staff.map(function (m) {
+        var av = m.avatar || ('https://minotar.net/helm/' + encodeURIComponent(m.name) + '/128.png');
+        var fb = identicon(m.name);
+        var roles = (m.roles || []).map(function (r) { return '<span class="badge badge-' + (r.c || 'muted') + '">' + esc(r.t) + '</span>'; }).join('');
+        return '<div class="staff-card"><img class="staff-av" src="' + av + '" style="background-image:url(\'' + fb + '\')" data-fb="' + fb + '" alt="' + esc(m.name) + '" onerror="this.onerror=null;this.src=this.getAttribute(\'data-fb\')">' +
+          '<div class="staff-nm">' + esc(m.name) + '</div><div class="staff-roles">' + roles + '</div></div>';
+      }).join('') + '</div>';
+    container.appendChild(stf);
+  }
+
+  /* 首页在线人数：进入首页时拉取，显示「当前在线 X 名玩家」 */
+  function loadHeroOnline() {
+    clearInterval(window.__stlHeroTimer);
+    function upd() {
+      var url = STATUS_API.replace('{host}', JAVA_HOST).replace('{port}', JAVA_PORT);
+      fetch(url).then(function (r) { return r.json(); }).then(function (d) {
+        var data = (d && d.data) ? d.data : d;
+        var ok = data && data.online === true;
+        var p = (data && data.players) || {};
+        var e = $id('heroOnline'); if (!e) return;
+        if (ok) e.innerHTML = '当前在线 <strong>' + (p.now || 0) + '</strong> 名玩家 <span class="ho-arrow">→</span>';
+        else e.innerHTML = '查看在线玩家 <span class="ho-arrow">→</span>';
+      }).catch(function () {
+        var e = $id('heroOnline'); if (e) e.innerHTML = '查看在线玩家 <span class="ho-arrow">→</span>';
+      });
+    }
+    upd();
+    window.__stlHeroTimer = setInterval(upd, 60000);
+  }
+
+  function fallbackCopy(text) {
+    try {
+      var ta = document.createElement('textarea');
+      ta.value = text; ta.style.position = 'fixed'; ta.style.top = '-1000px'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+    } catch (e) {}
+  }
+  function copyText(text, btn) {
+    function done() {
+      toast('已复制服务器地址：' + text);
+      if (btn) {
+        var old = btn.innerHTML;
+        btn.innerHTML = SVG.check; btn.classList.add('ok');
+        setTimeout(function () { btn.innerHTML = old; btn.classList.remove('ok'); }, 1400);
+      }
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done).catch(function () { fallbackCopy(text); done(); });
+    } else { fallbackCopy(text); done(); }
   }
 
   /* --- 状态页 --- */
@@ -466,6 +563,7 @@
   }
 
   function render() {
+    clearInterval(window.__stlHeroTimer);
     var r = resolve(location.hash);
     var main = $id('main');
     if (!main) return;
@@ -487,6 +585,8 @@
     SITE.javaIp = JAVA_HOST + ':' + JAVA_PORT;
     if (cfg.groupUrl) SITE.groupUrl = cfg.groupUrl;
     if (Array.isArray(cfg.features) && cfg.features.length) SITE.features = cfg.features;
+    if (Array.isArray(cfg.feat4) && cfg.feat4.length) SITE.feat4 = cfg.feat4;
+    if (Array.isArray(cfg.staff) && cfg.staff.length) SITE.staff = cfg.staff;
     if (Array.isArray(cfg.worlds) && cfg.worlds.length) SITE.worlds = cfg.worlds;
     if (Array.isArray(cfg.rules) && cfg.rules.length) SITE.rules = cfg.rules;
     if (Array.isArray(cfg.guide) && cfg.guide.length) SITE.guide = cfg.guide;
@@ -498,6 +598,7 @@
         if (bn) bn.textContent = SITE.name;
       }
     } catch (e) {}
+    syncFooter();
   }
   function loadConfig(done) {
     var local = null;
@@ -515,8 +616,15 @@
   window.__stlApplyConfig = applyConfig;
   window.__stlRender = render;
 
+  function syncFooter() {
+    var ip = $id('footerIp'); if (ip) ip.textContent = SITE.javaIp;
+    var qq = $id('footerQq'); if (qq) qq.href = SITE.groupUrl;
+    var nm = $id('footerName'); if (nm) nm.textContent = SITE.name + ' 服务器';
+  }
+
   function init() {
     initTheme();
+    syncFooter();
     $id('footerYear').textContent = new Date().getFullYear();
     window.addEventListener('hashchange', render);
     loadConfig(render);

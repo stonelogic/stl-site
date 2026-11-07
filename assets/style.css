@@ -123,8 +123,9 @@ code{font-family:ui-monospace,Consolas,Menlo,monospace}
 .hero{
   position:relative;overflow:hidden;
   margin:-28px calc(-50vw + 50%) 28px;
-  padding:clamp(56px,9vh,120px) 20px clamp(64px,10vh,132px);
-  min-height:62vh;
+  padding:clamp(60px,9vh,120px) 20px clamp(84px,12vh,150px);
+  min-height:calc(100vh - 60px);
+  min-height:calc(100svh - 60px);
   display:flex;align-items:center;justify-content:center;
   text-align:center;
   border-bottom:1px solid var(--border);
@@ -143,7 +144,7 @@ code{font-family:ui-monospace,Consolas,Menlo,monospace}
   gap:clamp(6px,1.1vw,14px);
   font-family:"StlPixel","Silkscreen","Courier New",monospace;
   font-weight:700;
-  font-size:clamp(36px,8.4vw,92px);
+  font-size:clamp(44px,10.5vw,132px);
   line-height:1;letter-spacing:.06em;text-transform:uppercase;
   color:#f4fbf6;
   -webkit-text-stroke:2px #1f3b28;
@@ -154,23 +155,47 @@ code{font-family:ui-monospace,Consolas,Menlo,monospace}
 .hero-title span{display:block;padding-left:.06em}
 .hero-tagline{
   margin:18px 0 4px;
-  font-size:clamp(13px,1.7vw,17px);
+  font-size:clamp(15px,1.9vw,21px);
   font-weight:600;letter-spacing:.02em;
   color:var(--muted-foreground);
   text-shadow:0 1px 0 rgba(255,255,255,.4);
 }
 .hero-slogan{
   margin:clamp(20px,3.2vw,34px) 0 22px;
-  font-size:clamp(18px,2.6vw,30px);
+  font-size:clamp(22px,3.1vw,40px);
   font-weight:800;letter-spacing:.03em;line-height:1.4;
   color:var(--foreground);
   text-shadow:0 1px 0 rgba(255,255,255,.45);
 }
 .hero-actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
 .hero-actions .btn{font-size:14.5px;padding:11px 22px}
-.hero-ip{display:inline-block;margin-top:22px;font-family:ui-monospace,Consolas,Menlo,monospace;font-size:15px;font-weight:700;
-  color:var(--foreground);background:color-mix(in oklab,var(--card) 62%,transparent);border:1px solid var(--border);
-  padding:8px 18px;border-radius:999px}
+.hero-meta{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:clamp(20px,3.2vh,36px);flex-wrap:wrap}
+.hero-qq{width:48px;height:48px;border-radius:50%;display:grid;place-items:center;flex:none;
+  border:1.6px solid color-mix(in oklab,var(--foreground) 24%,transparent);color:var(--foreground);
+  background:color-mix(in oklab,var(--card) 55%,transparent);transition:.18s}
+.hero-qq:hover{border-color:var(--primary);color:var(--primary);transform:translateY(-1px)}
+.hero-qq svg{width:26px;height:26px}
+.hero-addr{display:flex;align-items:center;gap:2px;padding:4px 4px 4px 18px;border-radius:999px;
+  background:color-mix(in oklab,var(--card) 62%,transparent);border:1px solid var(--border)}
+.hero-ip{font-family:ui-monospace,Consolas,Menlo,monospace;font-size:16px;font-weight:700;color:var(--foreground);letter-spacing:.02em}
+.hero-copy{width:40px;height:40px;border-radius:999px;border:0;background:transparent;color:var(--muted-foreground);
+  display:grid;place-items:center;transition:.18s}
+.hero-copy:hover{background:var(--accent);color:var(--primary)}
+.hero-copy.ok{color:var(--primary)}
+.hero-copy svg{width:18px;height:18px}
+.hero-online{display:inline-flex;align-items:center;gap:6px;margin-top:clamp(14px,2.4vh,22px);
+  font-size:15.5px;font-weight:700;color:var(--foreground);text-shadow:0 1px 0 rgba(255,255,255,.35)}
+.hero-online strong{color:var(--primary);font-size:18px;margin:0 2px}
+.ho-arrow{transition:transform .18s}
+.hero-online:hover .ho-arrow{transform:translateX(4px)}
+.hero-scroll{position:absolute;left:50%;bottom:clamp(16px,3.2vh,30px);transform:translateX(-50%);
+  width:48px;height:48px;border-radius:50%;display:grid;place-items:center;cursor:pointer;z-index:4;
+  border:2px solid color-mix(in oklab,var(--primary) 55%,transparent);
+  background:color-mix(in oklab,var(--card) 45%,transparent);color:var(--primary);
+  animation:stlBounce 1.8s ease-in-out infinite}
+.hero-scroll:hover{background:color-mix(in oklab,var(--card) 72%,transparent)}
+.hero-scroll svg{width:24px;height:24px}
+@keyframes stlBounce{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(9px)}}
 .flower{position:absolute;color:#fff;font-size:clamp(15px,2.2vw,26px);text-shadow:0 1px 3px rgba(0,0,0,.28);pointer-events:none;opacity:.92;line-height:1}
 .flower.f1{top:2%;left:5%}
 .flower.f2{top:14%;right:7%}
@@ -191,6 +216,30 @@ code{font-family:ui-monospace,Consolas,Menlo,monospace}
 .card + .card{margin-top:16px}
 .card-hover{transition:transform .2s,box-shadow .2s,border-color .2s}
 .card-hover:hover{transform:translateY(-3px);border-color:var(--ring);box-shadow:var(--shadow-lg)}
+
+/* ===== 首页分区（玩法特色 4 卡 / 服务器管理人员） ===== */
+.home-section{margin-top:clamp(44px,7vh,76px)}
+.section-title{display:flex;align-items:center;gap:10px;font-size:clamp(20px,2.6vw,26px);font-weight:800;margin:0 0 18px}
+.sec-ico{display:inline-flex;color:var(--primary)}
+.sec-ico svg{width:24px;height:24px}
+.feat4{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
+.feat4-card{background:var(--card);border:1px solid var(--border);border-radius:calc(var(--radius)*1.4);
+  display:flex;flex-direction:column;align-items:center;text-align:center;padding:26px 18px;
+  transition:transform .2s,box-shadow .2s,border-color .2s}
+.feat4-card:hover{transform:translateY(-3px);border-color:var(--ring);box-shadow:var(--shadow-lg)}
+.feat4-ico{width:54px;height:54px;border-radius:15px;display:grid;place-items:center;margin-bottom:14px}
+.feat4-ico svg{width:27px;height:27px}
+.tint-blue{background:color-mix(in oklab,#3b82f6 14%,transparent);color:#3b82f6}
+.tint-pink{background:color-mix(in oklab,#ec4899 14%,transparent);color:#ec4899}
+.feat4-card h3{margin:0 0 8px;font-size:16px;font-weight:800}
+.feat4-card p{margin:0;font-size:13px;color:var(--muted-foreground);line-height:1.7}
+.staff-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:16px}
+.staff-card{background:var(--card);border:1px solid var(--border);border-radius:calc(var(--radius)*1.4);
+  display:flex;flex-direction:column;align-items:center;text-align:center;padding:20px 14px;transition:.2s}
+.staff-card:hover{border-color:var(--ring);box-shadow:var(--shadow)}
+.staff-av{width:66px;height:66px;border-radius:15px;image-rendering:pixelated;background-color:var(--muted);background-size:cover;background-position:center;background-repeat:no-repeat;margin-bottom:12px}
+.staff-nm{font-weight:700;font-size:14.5px;margin-bottom:8px;word-break:break-all}
+.staff-roles{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
 
 /* ===== 网格 ===== */
 .grid{display:grid;gap:16px}
@@ -235,6 +284,8 @@ code{font-family:ui-monospace,Consolas,Menlo,monospace}
 .badge-gold{background:color-mix(in oklab, var(--gold) 16%, transparent);color:var(--gold)}
 .badge-red{background:color-mix(in oklab, var(--destructive) 12%, transparent);color:var(--destructive)}
 .badge-muted{background:var(--muted);color:var(--muted-foreground)}
+.badge-blue{background:color-mix(in oklab,#3b82f6 12%,transparent);color:#3b82f6}
+.badge-cyan{background:color-mix(in oklab,#06b6d4 12%,transparent);color:#06b6d4}
 .dot{width:8px;height:8px;border-radius:50%;background:currentColor;display:inline-block}
 
 /* ===== 状态页 ===== */
@@ -268,7 +319,17 @@ code{font-family:ui-monospace,Consolas,Menlo,monospace}
 .table .rank.top1{color:var(--gold)}
 
 /* ===== 页脚 ===== */
-.footer{border-top:1px solid var(--border);padding:28px 20px;text-align:center;color:var(--muted-foreground);font-size:13px}
+.footer{border-top:1px solid var(--border);padding:40px 20px 24px;color:var(--muted-foreground);font-size:13px}
+.footer-inner{max-width:1280px;margin:0 auto}
+.footer-cols{display:grid;grid-template-columns:1.7fr 1fr 1fr;gap:32px}
+.fb-name{font-size:17px;font-weight:800;color:var(--primary);margin-bottom:8px}
+.fb-tag{margin:0 0 10px;font-size:13px;color:var(--muted-foreground)}
+.fb-ip{font-family:ui-monospace,Consolas,Menlo,monospace;font-weight:700;color:var(--primary);font-size:13px;word-break:break-all}
+.footer-col{display:flex;flex-direction:column;gap:9px}
+.fc-title{font-size:13.5px;font-weight:800;color:var(--foreground);margin-bottom:2px}
+.footer-col a,.footer-col span{font-size:13px;color:var(--muted-foreground);transition:.16s}
+.footer-col a:hover{color:var(--primary)}
+.footer-copy{margin-top:30px;padding-top:18px;border-top:1px solid var(--border);text-align:center;font-size:12.5px;color:var(--muted-foreground)}
 
 /* ===== 灯箱 ===== */
 .lightbox{position:fixed;inset:0;z-index:200;background:rgb(0 0 0/.88);display:flex;align-items:center;justify-content:center;flex-direction:column}
@@ -307,6 +368,10 @@ code{font-family:ui-monospace,Consolas,Menlo,monospace}
 .hero-sky .hero-actions,.hero-sky .hero-ip{animation:stlFadeUp .6s .38s both}
 .hero-sky .flower{animation:stlFadeIn 1s .25s both}
 .grid > *{animation:stlFadeUp .5s both}
+.feat4 > *,.staff-grid > *{animation:stlFadeUp .5s both}
+.feat4 > *:nth-child(2),.staff-grid > *:nth-child(2){animation-delay:.05s}
+.feat4 > *:nth-child(3),.staff-grid > *:nth-child(3){animation-delay:.1s}
+.feat4 > *:nth-child(4),.staff-grid > *:nth-child(4){animation-delay:.15s}
 .grid > *:nth-child(2){animation-delay:.05s}
 .grid > *:nth-child(3){animation-delay:.1s}
 .grid > *:nth-child(4){animation-delay:.15s}
@@ -317,5 +382,5 @@ code{font-family:ui-monospace,Consolas,Menlo,monospace}
 @media (prefers-reduced-motion: reduce){
   .card,.page-head,.hero-sky .hero-title,.hero-sky .hero-tagline,.hero-sky .hero-slogan,
   .hero-sky .hero-actions,.hero-sky .hero-ip,.hero-sky .flower,.grid > *,
-  .stat-row > *{animation:none!important}
+  .stat-row > *,.feat4 > *,.staff-grid > *{animation:none!important}
 }
