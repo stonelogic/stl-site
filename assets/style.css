@@ -29,7 +29,7 @@
   --shadow-sm: 0 1px 2px rgb(0 0 0/.05);
   --shadow: 0 4px 16px rgb(0 0 0/.07);
   --shadow-lg: 0 12px 34px rgb(0 0 0/.10);
-  --sky-top:#b8dcff; --sky-mid:#dcedff; --sky-bottom:#f4faff;
+  --sky-top:#7bb5f1; --sky-mid:#aed4f8; --sky-bottom:#e6f1fd;
 }
 [data-theme="dark"]{
   --background: oklch(14.5% 0 0);
@@ -55,7 +55,7 @@
   --shadow-sm: 0 1px 2px rgb(0 0 0/.3);
   --shadow: 0 4px 16px rgb(0 0 0/.35);
   --shadow-lg: 0 12px 34px rgb(0 0 0/.45);
-  --sky-top:#1c2c3e; --sky-mid:#141e2a; --sky-bottom:#0d141c;
+  --sky-top:#2e5076; --sky-mid:#1e3654; --sky-bottom:#0f1c2c;
 }
 *{box-sizing:border-box}
 [hidden]{display:none!important}
@@ -117,16 +117,20 @@ code{font-family:ui-monospace,Consolas,Menlo,monospace}
 /* ===== 首页 Hero（Minecraft 像素风大标题） ===== */
 .hero{
   position:relative;overflow:hidden;
-  border:1px solid var(--border);border-radius:calc(var(--radius)*1.6);
-  background:linear-gradient(180deg,var(--sky-top) 0%,var(--sky-mid) 55%,var(--sky-bottom) 100%);
-  padding:clamp(44px,7vw,84px) 20px clamp(52px,8vw,96px);
-  text-align:center;margin-bottom:24px;
+  margin:-28px calc(-50vw + 50%) 28px;
+  padding:clamp(56px,9vh,120px) 20px clamp(64px,10vh,132px);
+  min-height:62vh;
+  display:flex;align-items:center;justify-content:center;
+  text-align:center;
+  border-bottom:1px solid var(--border);
+  background:linear-gradient(180deg,var(--sky-top) 0%,var(--sky-mid) 48%,var(--sky-bottom) 100%);
 }
 .hero-sky{position:relative;max-width:1080px;margin:0 auto}
 .hero-logo{
   display:block;margin:0 auto;
-  width:min(92%,820px);height:auto;
-  filter:drop-shadow(0 10px 24px rgba(0,0,0,.20));
+  width:min(94%,860px);height:auto;
+  image-rendering:pixelated;
+  filter:drop-shadow(0 12px 26px rgba(0,0,0,.22));
 }
 .hero-slogan{
   margin:clamp(20px,3.2vw,34px) 0 22px;
