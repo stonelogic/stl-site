@@ -14,6 +14,7 @@
   var SITE = {
     name: 'Stone Logic',
     tagline: '生存 | 小游戏 | 与朋友一起探索无限可能',
+    slogan: '生存 or 小游戏 你想要的，都在STL！',
     javaIp: JAVA_HOST + ':' + JAVA_PORT,
     groupUrl: 'https://qm.qq.com/q/UhSK4yuLGG',
     ownerQq: '1477211972',
@@ -131,7 +132,7 @@
       '<span class="flower f1">❀</span><span class="flower f2">✿</span>' +
       '<span class="flower f3">❀</span><span class="flower f4">✿</span>' +
       '<img class="hero-logo" src="assets/title-logo.png" alt="STONE LOGIC">' +
-      '<p class="hero-slogan">生存 or 小游戏 你想要的，都在STL！</p>' +
+      '<p class="hero-slogan">' + esc(SITE.slogan) + '</p>' +
       '<div class="hero-actions">' +
       '<a class="btn btn-primary" href="' + SITE.groupUrl + '" target="_blank" rel="noopener">加入 QQ 群</a>' +
       '<a class="btn btn-outline" href="#/online">查看在线玩家</a>' +
@@ -370,11 +371,42 @@
     window.scrollTo(0, 0);
   }
 
+  /* ---------- 配置加载（config.json 覆盖默认，localStorage 本机预览优先） ---------- */
+  function applyConfig(cfg) {
+    if (!cfg) return;
+    if (cfg.name) SITE.name = cfg.name;
+    if (cfg.tagline) SITE.tagline = cfg.tagline;
+    if (cfg.slogan) SITE.slogan = cfg.slogan;
+    if (cfg.javaHost) JAVA_HOST = cfg.javaHost;
+    if (cfg.javaPort) JAVA_PORT = String(cfg.javaPort);
+    SITE.javaIp = JAVA_HOST + ':' + JAVA_PORT;
+    if (cfg.groupUrl) SITE.groupUrl = cfg.groupUrl;
+    if (Array.isArray(cfg.features) && cfg.features.length) SITE.features = cfg.features;
+    if (Array.isArray(cfg.worlds) && cfg.worlds.length) SITE.worlds = cfg.worlds;
+    if (Array.isArray(cfg.rules) && cfg.rules.length) SITE.rules = cfg.rules;
+    if (Array.isArray(cfg.guide) && cfg.guide.length) SITE.guide = cfg.guide;
+  }
+  function loadConfig(done) {
+    var local = null;
+    try { local = JSON.parse(localStorage.getItem('stl_config') || 'null'); } catch (e) {}
+    if (local) { applyConfig(local); done(); return; }
+    fetch('assets/config.json?_=' + Date.now(), { cache: 'no-store' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (d) { if (d) applyConfig(d); })
+      .catch(function () {})
+      .then(function () { done(); });
+  }
+
+  /* 暴露给编辑器（editor.js）使用 */
+  window.__stlSite = SITE;
+  window.__stlApplyConfig = applyConfig;
+  window.__stlRender = render;
+
   function init() {
     initTheme();
     $id('footerYear').textContent = new Date().getFullYear();
     window.addEventListener('hashchange', render);
-    render();
+    loadConfig(render);
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
