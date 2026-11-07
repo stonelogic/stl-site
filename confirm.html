@@ -50,9 +50,9 @@
   <div class="rule"></div>
 
   <h1>网页授权登录</h1>
-  <p class="lead">确认后为你当前登录的游戏账号授权</p>
-  <div class="id">本次登录请求</div>
-  <p class="meta">有效期 <b>10 分钟</b><br>授权成功后回到游戏，弹窗会自动关闭并进入服务器</p>
+  <p class="lead">即将为以下游戏 ID 授权进入服务器</p>
+  <div class="id" id="player">—</div>
+  <p class="meta">有效期 <b>10 分钟</b><br>授权成功后回到游戏，弹窗会自动关闭并进入服务器<br>授权对象由服务端校验，修改链接无效</p>
 
   <button id="ok" type="button">确认授权</button>
   <p class="msg" id="msg"></p>
@@ -75,6 +75,8 @@
   var q = new URLSearchParams(location.search);
   var code = q.get('c') || '';
   var topic = q.get('topic') || '';
+  var name = q.get('n') || '';
+  document.getElementById('player').textContent = name || '—';
   var btn = document.getElementById('ok');
   var msg = document.getElementById('msg');
   if (!code || !topic) {
@@ -88,7 +90,7 @@
     fetch('https://ntfy.sh/' + encodeURIComponent(topic), {
       method: 'POST',
       headers: { 'content-type': 'text/plain' },
-      body: JSON.stringify({ code: code })
+      body: JSON.stringify({ code: code, name: name })
     }).then(function (r) {
       if (!r.ok) throw new Error('HTTP ' + r.status);
       btn.textContent = '已授权';
