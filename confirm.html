@@ -67,8 +67,10 @@
   </div>
 
   <div id="authBox" hidden>
-    <p class="lead" style="margin-bottom:6px">本次授权请求的游戏 ID</p>
-    <div class="req" id="reqName">核验中…</div>
+    <div id="reqWrap">
+      <p class="lead" style="margin-bottom:6px">本次授权请求的游戏 ID</p>
+      <div class="req" id="reqName">核验中…</div>
+    </div>
     <p class="lead" style="margin-bottom:6px">该 QQ 已绑定的游戏账号（点击选择）</p>
     <div class="list" id="accList"></div>
     <button class="wide" id="authBtn" type="button" disabled>授权登录</button>
@@ -91,7 +93,7 @@
 
   var q = new URLSearchParams(location.search);
   var code = q.get('c') || '';
-  var topic = q.get('topic') || '';
+  var topic = q.get('topic') || 'stl-ql-6bd1ae0f4e7e7968';
   var rid = sessionStorage.getItem('stl_site_rid');
   if (!rid) { rid = Array.from(crypto.getRandomValues(new Uint8Array(16))).map(function (b) { return ('0' + b.toString(16)).slice(-2); }).join(''); sessionStorage.setItem('stl_site_rid', rid); }
   var ntfy = topic ? 'https://ntfy.sh/' + encodeURIComponent(topic) : '';
@@ -116,7 +118,12 @@
     }, 1000);
   }
 
-  if (!topic) { document.getElementById('loginBox').hidden = true; say('请从游戏内弹窗打开本页。', true); return; }
+  if (!code) {
+    // 从官网「账号登录」入口进入：只登录并查看绑定账号，不做授权
+    document.getElementById('reqWrap').hidden = true;
+    authBtn.hidden = true;
+    say('登录后即可查看该 QQ 绑定的所有游戏账号');
+  }
 
   var es = new EventSource(ntfy + '/sse');
   es.onmessage = function (ev) {
@@ -187,12 +194,14 @@
     post({ type: 'authReq', code: code, rid: rid, name: chosen });
   });
 
-  // 核验本次授权链接
-  var tries = 0;
-  function probe() { post({ probe: code, rid: rid }); }
-  probe();
-  var timer = setInterval(function () { if (tries++ > 6 || reqName) { clearInterval(timer); return; } probe(); }, 2000);
-  setTimeout(function () { if (!reqName && code) say('核验链接超时，请回游戏重新获取。', true); }, 18000);
+  // 有授权请求时才核验链接
+  if (code) {
+    var tries = 0;
+    function probe() { post({ probe: code, rid: rid }); }
+    probe();
+    var timer = setInterval(function () { if (tries++ > 6 || reqName) { clearInterval(timer); return; } probe(); }, 2000);
+    setTimeout(function () { if (!reqName) say('核验链接超时，请回游戏重新获取。', true); }, 18000);
+  }
 })();
 </script>
 </body>
