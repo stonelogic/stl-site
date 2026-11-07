@@ -121,6 +121,40 @@
     return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(s);
   }
 
+  /* ---------- 头像 ----------
+     优先级：config 里显式写 avatar → 本地皮肤库导出图（assets/avatars/，由
+     tools/export_avatars.py 从 SkinsRestorer 裁正脸生成）→ minotar → identicon。
+     离线服玩家没有正版皮肤，minotar 只会给史蒂夫，所以本地这张才是真实皮肤。 */
+  var AVATARS = {};
+
+  function avatarLocal(name) {
+    var k = String(name == null ? '' : name).trim();
+    if (!k) return '';
+    var hit = AVATARS[k.toLowerCase()];
+    return hit ? 'assets/avatars/' + encodeURIComponent(hit) + '.png' : '';
+  }
+
+  function avatarUrl(name, size) {
+    return avatarLocal(name) ||
+      ('https://minotar.net/helm/' + encodeURIComponent(name) + '/' + (size || 128) + '.png');
+  }
+
+  /* 加载本地头像清单；失败也无所谓，退回 minotar */
+  function loadAvatars(done) {
+    fetch('assets/avatars/index.json?_=' + Date.now(), { cache: 'no-store' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (d) {
+        var list = d && (d.names || d);
+        if (Array.isArray(list)) {
+          var m = {};
+          list.forEach(function (n) { if (n) m[String(n).toLowerCase()] = String(n); });
+          AVATARS = m;
+        }
+      })
+      .catch(function () {})
+      .then(function () { done(); });
+  }
+
   /* ---------- 主题 ---------- */
   function applyTheme(t) {
     document.documentElement.setAttribute('data-theme', t);
@@ -225,10 +259,15 @@
     var stf = el('section', 'home-section'); stf.id = 'staff';
     stf.innerHTML = '<h2 class="section-title"><span class="sec-ico">' + SVG.shield + '</span>服务器管理人员</h2><div class="staff-grid">' +
       SITE.staff.map(function (m) {
-        var av = m.avatar || ('https://minotar.net/helm/' + encodeURIComponent(m.name) + '/128.png');
         var fb = identicon(m.name);
+        // 直接按名字试本地图（手放一张 assets/avatars/<ID>.png 也能生效），
+        // 没有则退到 minotar，再没有就用 identicon。
+        var av = m.avatar || ('assets/avatars/' + encodeURIComponent(m.name) + '.png');
+        var alt = m.avatar ? '' : ('https://minotar.net/helm/' + encodeURIComponent(m.name) + '/128.png');
         var roles = (m.roles || []).map(function (r) { return '<span class="badge badge-' + (r.c || 'muted') + '">' + esc(r.t) + '</span>'; }).join('');
-        return '<div class="staff-card"><img class="staff-av" src="' + av + '" style="background-image:url(\'' + fb + '\')" data-fb="' + fb + '" alt="' + esc(m.name) + '" onerror="this.onerror=null;this.src=this.getAttribute(\'data-fb\')">' +
+        return '<div class="staff-card"><img class="staff-av" src="' + av + '" style="background-image:url(\'' + fb + '\')"' +
+          ' data-fb="' + fb + '"' + (alt ? ' data-alt="' + alt + '"' : '') + ' alt="' + esc(m.name) + '"' +
+          ' onerror="if(this.getAttribute(\'data-alt\')){this.src=this.getAttribute(\'data-alt\');this.removeAttribute(\'data-alt\')}else{this.onerror=null;this.src=this.getAttribute(\'data-fb\')}">' +
           '<div class="staff-nm">' + esc(m.name) + '</div><div class="staff-roles">' + roles + '</div></div>';
       }).join('') + '</div>';
     container.appendChild(stf);
@@ -360,8 +399,8 @@
       return;
     }
     pg.innerHTML = players.map(function (name) {
-      var face = 'https://minotar.net/helm/' + encodeURIComponent(name) + '/96.png';
-      return '<div class="player-cell"><img src="' + face + '" alt="" loading="lazy" onerror="this.src=\'assets/icon.png\'"><span class="nm">' + esc(name) + '</span></div>';
+      var face = avatarUrl(name, 96);
+      return '<div class="player-cell"><img src="' + face + '" alt="" loading="lazy" data-fb="' + identicon(name) + '" onerror="this.onerror=null;this.src=this.getAttribute(\'data-fb\')"><span class="nm">' + esc(name) + '</span></div>';
     }).join('');
   }
 
@@ -519,7 +558,7 @@
             var kd = (typeof p.kd === 'number') ? (Number.isInteger(p.kd) ? p.kd : p.kd.toFixed(2)) : p.kd;
             return '<tr>' +
               '<td class="rank' + (p.rank === 1 ? ' top1' : '') + '">' + m + '</td>' +
-              '<td><div style="display:flex;align-items:center;gap:8px"><img src="https://minotar.net/helm/' + encodeURIComponent(p.name) + '/32.png" alt="" loading="lazy" style="width:26px;height:26px;border-radius:6px;background:var(--muted)" onerror="this.src=\'assets/icon.png\'"><span style="font-weight:700">' + esc(p.name) + '</span></div></td>' +
+              '<td><div style="display:flex;align-items:center;gap:8px"><img src="' + avatarUrl(p.name, 32) + '" alt="" loading="lazy" data-fb="' + identicon(p.name) + '" style="width:26px;height:26px;border-radius:6px;background:var(--muted)" onerror="this.onerror=null;this.src=this.getAttribute(\'data-fb\')"><span style="font-weight:700">' + esc(p.name) + '</span></div></td>' +
               '<td style="font-weight:800;color:var(--primary)">' + (p.score || 0) + '</td>' +
               '<td>' + (p.wins || 0) + ' / ' + (p.loses || 0) + '</td>' +
               '<td>' + (p.winRate || 0) + '%</td>' +
@@ -624,7 +663,7 @@
     syncFooter();
     $id('footerYear').textContent = new Date().getFullYear();
     window.addEventListener('hashchange', render);
-    loadConfig(render);
+    loadAvatars(function () { loadConfig(render); });
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
