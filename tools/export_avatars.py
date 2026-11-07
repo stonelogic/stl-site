@@ -65,11 +65,16 @@ def main():
             print("  ✓", name)
         except Exception as e:
             print("  ✗", name, "->", e)
-    # 写索引：前端据此判断某人有没有本地头像，避免无谓的 404 请求
-    idx = {"generated": time.strftime("%Y-%m-%d %H:%M:%S"), "names": sorted(done)}
+    # 写索引：前端据此判断某人有没有本地头像，避免无谓的 404 请求。
+    # 同时把目录里已有的手工头像（比如自己放进去的 sjwj12517.png）一起收进来，
+    # 免得重跑本脚本把它们的索引记录抹掉。
+    names = set(done)
+    for f in glob.glob(os.path.join(OUT_DIR, "*.png")):
+        names.add(os.path.splitext(os.path.basename(f))[0])
+    idx = {"generated": time.strftime("%Y-%m-%d %H:%M:%S"), "names": sorted(names)}
     with open(os.path.join(OUT_DIR, "index.json"), "w", encoding="utf-8") as f:
         json.dump(idx, f, ensure_ascii=False, separators=(",", ":"))
-    print("完成：写出 %d 个头像到 %s" % (len(done), OUT_DIR))
+    print("完成：本次导出 %d 个，索引共 %d 个 -> %s" % (len(done), len(names), OUT_DIR))
 
 
 if __name__ == "__main__":
