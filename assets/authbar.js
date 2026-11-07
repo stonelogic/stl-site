@@ -1,4 +1,4 @@
-/* authbar.js —— 导航右侧登录态组件（浅色主题）
+/* authbar.js —— 顶部导航登录态组件（适配 mcnova 风格深/浅色主题）
  * 未登录：显示「登录」按钮 → confirm.html
  * 已登录：显示 QQ 头像 → 点击进入个人主页 profile.html
  */
@@ -6,24 +6,22 @@
   'use strict';
   var LS_KEY = 'stl_web_session_v1';
 
-  /* ---------- 注入样式（浅色） ---------- */
   var css = [
-    '#navActions .ab-avatar-btn,#authbar-float .ab-avatar-btn{height:38px;min-width:38px;padding:0 4px;border:0;border-radius:20px;',
-    '  background:rgba(255,255,255,.7);color:#1f7a3a;border:1px solid rgba(255,255,255,.85);cursor:pointer;display:inline-flex;align-items:center;gap:8px;',
-    '  font:inherit;font-size:13px;font-weight:700;text-decoration:none;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);',
-    '  box-shadow:0 2px 8px rgba(28,80,52,.1)}',
-    '#authbar-float{position:fixed;top:12px;right:14px;z-index:9999}',
-    '.ab-avatar-img{width:30px;height:30px;border-radius:50%;object-fit:cover;background:#f3f8f4;display:block}',
-    '.ab-avatar-btn .ab-initial{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;',
-    '  background:linear-gradient(135deg,#57c46e,#2f9e54);color:#fff;font-weight:800;font-size:14px}',
-    '.ab-login-btn{padding:8px 16px;border:0;border-radius:18px;background:linear-gradient(135deg,#57c46e,#2f9e54);color:#fff;',
-    '  font:inherit;font-weight:800;font-size:13px;cursor:pointer;text-decoration:none;box-shadow:0 6px 16px rgba(47,158,84,.25)}'
+    '.ab-avatar-btn{height:36px;min-width:36px;padding:0 3px;border:0;border-radius:9px;background:var(--card);',
+    '  color:var(--primary);border:1px solid var(--border);cursor:pointer;display:inline-flex;align-items:center;gap:8px;',
+    '  font:inherit;font-size:13px;font-weight:700;text-decoration:none;transition:.18s}',
+    '.ab-avatar-btn:hover{border-color:var(--ring)}',
+    '.ab-avatar-img{width:28px;height:28px;border-radius:8px;object-fit:cover;background:var(--muted);display:block}',
+    '.ab-avatar-btn .ab-initial{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;',
+    '  background:var(--primary);color:var(--primary-foreground);font-weight:800;font-size:13px}',
+    '.ab-login-btn{padding:7px 16px;border:0;border-radius:9px;background:var(--primary);color:var(--primary-foreground);',
+    '  font:inherit;font-weight:700;font-size:13px;cursor:pointer;text-decoration:none;transition:.18s}',
+    '.ab-login-btn:hover{opacity:.9}'
   ].join('\n');
   var style = document.createElement('style');
   style.textContent = css;
   document.head.appendChild(style);
 
-  /* ---------- 工具 ---------- */
   function $id(id) { return document.getElementById(id); }
   function el(tag, cls, html) { var e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; }
 
@@ -46,7 +44,7 @@
 
   function buildHost() {
     var host = $id('navActions');
-    if (!host) { host = el('div'); host.id = 'authbar-float'; document.body.appendChild(host); }
+    if (!host) { host = el('div'); host.id = 'authbar-float'; host.style.cssText = 'position:fixed;top:12px;right:14px;z-index:9999'; document.body.appendChild(host); }
     return host;
   }
 
@@ -65,7 +63,6 @@
     }
   }
 
-  /* ---------- 供其他页面复用（当前 confirm/profile 自行读取 localStorage，此导出保留兼容） ---------- */
   window.__stlSession = function () { return session; };
   window.__stlSaveSession = function (s) { session = s; saveSession(s); renderBar(); };
 

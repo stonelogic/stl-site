@@ -6,50 +6,70 @@
 <title>个人主页 · Stone Logic</title>
 <link rel="icon" href="assets/icon.png">
 <style>
-  :root{--green:#2f9e54;--green-bright:#57c46e;--green-deep:#1f7a3a;--ink:#16231c;--muted:#5f7268;
-    --line:#e3ede6;--card:#ffffff;--card-2:#f3f8f4;--shadow:0 12px 34px rgba(28,80,52,.09);--shadow-sm:0 6px 18px rgba(28,80,52,.07)}
+  :root{
+    --background: oklch(100% 0 0); --foreground: oklch(14.5% 0 0);
+    --card: oklch(100% 0 0); --card-foreground: oklch(14.5% 0 0);
+    --primary: oklch(52% .14 160); --primary-foreground: oklch(98.5% 0 0);
+    --muted: oklch(97% 0 0); --muted-foreground: oklch(55.6% 0 0);
+    --accent: oklch(97% 0 0); --border: oklch(92.2% 0 0);
+    --destructive: oklch(57.7% .245 27.325); --ring: oklch(62% .14 160 / .6);
+    --radius: .625rem;
+  }
+  [data-theme="dark"]{
+    --background: oklch(14.5% 0 0); --foreground: oklch(98.5% 0 0);
+    --card: oklch(20.5% 0 0); --card-foreground: oklch(98.5% 0 0);
+    --primary: oklch(62% .14 160); --primary-foreground: oklch(15% 0 0);
+    --muted: oklch(26.9% 0 0); --muted-foreground: oklch(70.8% 0 0);
+    --accent: oklch(26.9% 0 0); --border: oklch(100% 0 0/.1);
+    --destructive: oklch(70.4% .191 22.216); --ring: oklch(65% .14 160);
+  }
   *{box-sizing:border-box}
   [hidden]{display:none!important}
-  body{margin:0;color:var(--ink);font-family:"PingFang SC","Microsoft YaHei","Helvetica Neue",Arial,sans-serif;
-    font-size:15px;background:#eef6f0;background:radial-gradient(900px 520px at 12% -8%,rgba(87,196,110,.18),transparent 60%),
-    radial-gradient(820px 520px at 92% 4%,rgba(120,200,150,.16),transparent 62%),linear-gradient(168deg,#e9f6ee 0%,#f1f8f1 46%,#fbf8ec 100%);
-    background-attachment:fixed;min-height:100vh;-webkit-font-smoothing:antialiased}
+  body{margin:0;color:var(--foreground);font-family:"Inter Variable","PingFang SC","Microsoft YaHei","Helvetica Neue",Arial,sans-serif;
+    font-size:15px;background:var(--background);min-height:100vh;-webkit-font-smoothing:antialiased;transition:background-color .25s,color .25s}
   a{color:inherit;text-decoration:none}
   img{display:block;max-width:100%}
 
-  .top{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.72);backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
-  .top-inner{max-width:960px;margin:0 auto;padding:11px 20px;display:flex;align-items:center;gap:14px}
-  .brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:16px;color:var(--green-deep);white-space:nowrap}
-  .brand img{width:30px;height:30px;border-radius:8px;image-rendering:pixelated}
-  .top-right{margin-left:auto;display:flex;align-items:center;gap:10px}
-  .btn{display:inline-flex;align-items:center;gap:7px;padding:9px 16px;border-radius:999px;font-size:13px;font-weight:700;cursor:pointer;transition:.2s;border:1px solid var(--green-line);background:var(--card);color:var(--green-deep)}
-  .btn:hover{background:rgba(58,168,86,.12)}
-  .btn.ghost{border-color:var(--line);color:var(--muted)}
-  .btn.ghost:hover{color:var(--green)}
+  .top{position:sticky;top:0;z-index:50;background:color-mix(in oklab,var(--card) 80%,transparent);
+    backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--border)}
+  .top-inner{max-width:960px;margin:0 auto;padding:11px 20px;display:flex;align-items:center;gap:12px}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:16px;color:var(--foreground);white-space:nowrap}
+  .brand img{width:30px;height:30px;border-radius:8px;image-rendering:pixelated;background:var(--muted)}
+  .top-right{margin-left:auto;display:flex;align-items:center;gap:8px}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:9px 16px;border-radius:calc(var(--radius)*.9);
+    font-size:13px;font-weight:600;cursor:pointer;transition:.18s;border:1px solid var(--border);background:var(--card);color:var(--foreground);font-family:inherit}
+  .btn:hover{border-color:var(--ring)}
+  .btn.primary{background:var(--primary);color:var(--primary-foreground);border-color:transparent}
+  .btn.primary:hover{opacity:.9}
+  .iconbtn{display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:calc(var(--radius)*.9);
+    border:1px solid var(--border);background:var(--card);color:var(--foreground);cursor:pointer;transition:.18s}
+  .iconbtn:hover{border-color:var(--ring)}
+  .iconbtn svg{width:18px;height:18px}
 
   .wrap{max-width:960px;margin:0 auto;padding:30px 20px 60px}
-  .card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:24px;box-shadow:var(--shadow);margin-bottom:20px}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:calc(var(--radius)*1.6);padding:24px;margin-bottom:20px;color:var(--card-foreground)}
 
   .me{display:flex;align-items:center;gap:18px}
-  .me .avatar{width:64px;height:64px;border-radius:16px;background:var(--card-2);box-shadow:var(--shadow-sm);object-fit:cover}
-  .me .avatar.initial{display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:800;color:#fff;background:linear-gradient(135deg,#57c46e,#2f9e54)}
-  .me h2{margin:0;font-size:20px;color:var(--ink)}
-  .me .qq{margin:5px 0 0;font-size:13px;color:var(--muted)}
+  .me .avatar{width:64px;height:64px;border-radius:calc(var(--radius)*1.4);background:var(--muted);object-fit:cover}
+  .me .avatar.initial{display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:800;color:var(--primary-foreground);
+    background:linear-gradient(135deg,var(--primary),oklch(62% .14 160))}
+  .me h2{margin:0;font-size:20px;color:var(--foreground)}
+  .me .qq{margin:5px 0 0;font-size:13px;color:var(--muted-foreground)}
 
-  h3.sec{margin:0 0 16px;font-size:15px;font-weight:800;color:var(--ink);display:flex;align-items:center;gap:8px}
-  h3.sec .cnt{margin-left:auto;font-size:12px;font-weight:600;color:var(--muted)}
+  h3.sec{margin:0 0 16px;font-size:15px;font-weight:700;color:var(--foreground);display:flex;align-items:center;gap:8px}
+  h3.sec .cnt{margin-left:auto;font-size:12px;font-weight:600;color:var(--muted-foreground)}
 
   .acc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px}
-  .acc{background:var(--card-2);border:1px solid var(--line);border-radius:16px;padding:14px;text-align:center;transition:.2s}
-  .acc:hover{border-color:var(--green-line)}
+  .acc{background:var(--muted);border:1px solid var(--border);border-radius:calc(var(--radius)*1.4);padding:14px;text-align:center;transition:.2s}
+  .acc:hover{border-color:var(--ring)}
   .acc .body{height:150px;margin:0 auto 10px;image-rendering:pixelated;object-fit:contain}
-  .acc .line{display:flex;align-items:center;justify-content:center;gap:8px;font-weight:800;font-size:14px;color:var(--ink)}
+  .acc .line{display:flex;align-items:center;justify-content:center;gap:8px;font-weight:700;font-size:14px;color:var(--foreground)}
   .acc .line img{width:24px;height:24px;border-radius:6px;image-rendering:pixelated;background:var(--card)}
-  .acc .pt{margin-top:8px;font-size:12.5px;color:var(--green-deep);font-weight:600}
+  .acc .pt{margin-top:8px;font-size:12.5px;color:var(--primary);font-weight:600}
 
-  .empty{padding:30px;text-align:center;color:var(--muted);font-size:14px;line-height:1.9}
+  .empty{padding:30px;text-align:center;color:var(--muted-foreground);font-size:14px;line-height:1.9}
   .empty .big{font-size:40px;margin-bottom:10px}
-  .note{margin-top:10px;font-size:12px;color:var(--muted);line-height:1.7}
+  .note{margin-top:10px;font-size:12px;color:var(--muted-foreground);line-height:1.7}
 </style>
 </head>
 <body>
@@ -57,8 +77,12 @@
   <div class="top-inner">
     <a class="brand" href="index.html"><img src="assets/icon.png" alt=""><span id="brandName">Stone Logic</span></a>
     <div class="top-right" id="topRight">
-      <a class="btn ghost" href="index.html">← 返回官网</a>
-      <button class="btn" id="logoutBtn" type="button" hidden>退出登录</button>
+      <a class="btn" href="index.html">← 返回官网</a>
+      <button class="iconbtn" id="themeToggle" type="button" title="切换主题" aria-label="切换主题">
+        <svg id="themeIconMoon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+        <svg id="themeIconSun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+      </button>
+      <button class="btn primary" id="logoutBtn" type="button" hidden>退出登录</button>
     </div>
   </div>
 </div>
@@ -69,7 +93,7 @@
     <div class="empty">
       <div class="big">🔐</div>
       尚未登录。<br>登录后即可在这里查看你的 QQ、绑定的游戏账号、皮肤与游戏时长。
-      <div style="margin-top:16px"><a class="btn" href="confirm.html" style="background:linear-gradient(135deg,var(--green-bright),var(--green));color:#fff;border:0">去登录</a></div>
+      <div style="margin-top:16px"><a class="btn primary" href="confirm.html">去登录</a></div>
     </div>
   </div>
 
@@ -99,6 +123,25 @@
   var CFG = 'mc-site-config-v2';
   var cfg = {};
   try { cfg = JSON.parse(localStorage.getItem(CFG) || '{}'); } catch (e) {}
+
+  /* ---------- 主题 ---------- */
+  function applyTheme(t) {
+    document.documentElement.setAttribute('data-theme', t);
+    try { localStorage.setItem('stl_theme', t); } catch (e) {}
+    var moon = document.getElementById('themeIconMoon'), sun = document.getElementById('themeIconSun');
+    if (moon) moon.style.display = t === 'dark' ? 'none' : '';
+    if (sun) sun.style.display = t === 'dark' ? '' : 'none';
+  }
+  function initTheme() {
+    var saved = null; try { saved = localStorage.getItem('stl_theme'); } catch (e) {}
+    if (!saved) saved = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    applyTheme(saved);
+    var btn = document.getElementById('themeToggle');
+    if (btn) btn.addEventListener('click', function () {
+      applyTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+    });
+  }
+  initTheme();
 
   if (cfg.serverName) document.getElementById('brandName').textContent = cfg.serverName;
   if (cfg.icon) document.querySelector('.brand img').src = cfg.icon;

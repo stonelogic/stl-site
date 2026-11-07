@@ -1,304 +1,52 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-theme="light">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="Stone Logic —— 长期稳定的 Minecraft 纯生存服务器，主世界不删档，含起床战争、地皮、公会等玩法。">
-<title>Stone Logic · Minecraft 服务器</title>
-<link rel="icon" id="favicon" href="assets/icon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Stone Logic 服务器官方站点：服务器状态、在线时长、论坛、商店、赛事、经济系统。">
+<title>Stone Logic 服务器</title>
+<link rel="icon" href="assets/icon.png">
 <link rel="stylesheet" href="assets/style.css">
 </head>
 <body>
 
 <!-- ===== 顶部导航 ===== -->
-<header class="nav" id="nav">
-  <div class="nav-inner">
-    <a class="brand" href="#top">
-      <img id="navIcon" class="brand-icon" alt="服务器图标" src="assets/icon.png">
-      <span id="navName" class="brand-name">Stone Logic</span>
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="#/status">
+      <img class="brand-icon" src="assets/icon.png" alt="logo">
+      <span class="brand-name">Stone Logic</span>
     </a>
-    <nav class="nav-links">
-      <a href="#features">玩法</a>
-      <a href="#worlds">世界</a>
-      <a href="#events">活动</a>
-      <a href="#status">状态</a>
-      <a href="#profile">玩家</a>
-      <a href="#rules">规则</a>
-      <a href="#appeal">申诉</a>
-      <a href="#owner">服主</a>
-      <a href="#join">加入</a>
-      <a href="#gallery">截图</a>
-    </nav>
-    <div class="nav-search">
-      <input id="navSearch" type="search" placeholder="搜索玩法、规则…" aria-label="搜索">
+    <nav class="nav-main" id="navMain"></nav>
+    <div class="nav-right">
+      <button class="icon-btn" id="themeToggle" title="切换深色/浅色模式" aria-label="切换主题">
+        <svg id="themeIconMoon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+        <svg id="themeIconSun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      </button>
+      <div class="nav-actions" id="navActions"></div>
     </div>
-    <div class="nav-actions" id="navActions"></div>
   </div>
 </header>
 
-<main id="top">
-
-  <!-- ===== HERO ===== -->
-  <section class="hero" id="hero">
-    <div class="hero-bg"></div>
-    <div class="hero-inner">
-      <div class="announce">
-        <span class="ann-tag">🟢 公告</span>
-        <div class="ann-body">
-          <h3>欢迎来到 Stone Logic</h3>
-          <p>长期稳定的纯生存服，主世界不删档；被封禁的玩家可到本页底部提交申诉。</p>
-        </div>
-      </div>
-
-      <img id="heroIcon" class="hero-icon" src="assets/icon.png" alt="服务器图标">
-      <span class="pill-badge">Minecraft 服务器</span>
-      <h1 class="hero-name" id="heroName">Stone Logic</h1>
-      <p class="hero-sub" id="heroSubtitle">纯生存 · 起床战争 · 地皮 · 公会</p>
-      <p class="hero-desc" id="heroDesc"></p>
-
-      <div class="hero-cta">
-        <a class="cta-pill cta-online" id="statusPillInline" href="#status">当前在线 <b id="heroOnline">0</b> 名玩家 →</a>
-        <div class="cta-pill cta-addr">
-          <span class="addr-ico">🌐</span>
-          <code id="javaIp">frp-top.com:44558</code>
-          <button class="pill-ico" data-copy="javaIp" title="复制地址" aria-label="复制地址">⧉</button>
-        </div>
-        <a class="btn-outline" href="#features">查看玩法</a>
-      </div>
-
-      <p class="hero-note">
-        <span class="badge" id="statusBadge"><i class="dot"></i><span id="statusText">检测中…</span></span>
-        首次进服输入 /register 注册，之后 /login 登录即可开始冒险。
-      </p>
-      <a class="scroll-down" href="#features" aria-label="向下滚动">↓</a>
-    </div>
-  </section>
-
-  <!-- ===== 在线状态 ===== -->
-  <section class="section" id="status">
-    <h2 class="sec-title">在线状态</h2>
-    <p class="sec-desc">数据每 60 秒自动刷新</p>
-    <div class="status-card" id="statusCard">
-      <div class="status-head">
-        <div>
-          <div class="status-title">服务器状态</div>
-          <div class="status-sub" id="statusAddr">—</div>
-        </div>
-        <div class="status-pill" id="statusPill">检测中</div>
-      </div>
-
-      <div class="status-body">
-        <div class="players-line">
-          <span class="players-now" id="playersOnline">0</span>
-          <span class="players-sep">/</span>
-          <span class="players-max" id="playersMax">0</span>
-          <span class="players-label">在线玩家</span>
-        </div>
-        <div class="bar"><i id="playersBar" style="width:0%"></i></div>
-
-        <div class="meta-grid">
-          <div class="meta"><span>版本</span><b id="metaVersion">—</b></div>
-          <div class="meta"><span>延迟</span><b id="metaPing">—</b></div>
-          <div class="meta"><span>更新</span><b id="metaTime">—</b></div>
-        </div>
-
-        <div class="motd" id="motd">正在获取服务器 MOTD…</div>
-        <div class="ph-block">
-          <div class="ph-head">在线玩家 <span class="ph-sub" id="phSub"></span></div>
-          <div class="player-heads" id="playerHeads"></div>
-          <p class="ph-note" id="phNote"></p>
-        </div>
-      </div>
-
-      <button class="refresh-btn" id="refreshBtn">重新检测</button>
-      <div class="api-note" id="apiNote"></div>
-    </div>
-  </section>
-
-  <!-- ===== 玩家主页 ===== -->
-  <section class="section" id="profile">
-    <h2 class="sec-title">玩家主页</h2>
-    <p class="sec-desc">输入游戏 ID，查看玩家皮肤与游戏时长</p>
-    <div class="profile-search">
-      <input id="pfSearch" type="text" placeholder="输入游戏 ID，如 Steve" autocomplete="off" maxlength="16">
-      <button class="btn-primary" id="pfSearchBtn" type="button">查询</button>
-    </div>
-    <div class="profile-card" id="pfCard" hidden>
-      <div class="pf-skin"><img id="pfBody" alt="皮肤" src=""></div>
-      <div class="pf-info">
-        <div class="pf-head-row">
-          <img id="pfHead" class="pf-head" alt="头像" src="">
-          <h3 id="pfName">—</h3>
-        </div>
-        <div class="pf-meta">
-          <div class="pf-item"><span>游戏时长</span><b id="pfPlaytime">—</b></div>
-          <div class="pf-item"><span>皮肤</span><b>按 ID 渲染</b></div>
-        </div>
-        <p class="pf-note" id="pfNote"></p>
-      </div>
-    </div>
-  </section>
-
-  <!-- ===== 玩法特色 ===== -->
-  <section class="section" id="features">
-    <h2 class="sec-title">玩法特色</h2>
-    <p class="sec-desc">生存为主，小游戏为辅，慢慢玩</p>
-    <div class="grid" id="featureGrid"></div>
-  </section>
-
-  <!-- ===== 世界 / 分区 ===== -->
-  <section class="section" id="worlds">
-    <h2 class="sec-title">世界一览</h2>
-    <p class="sec-desc">共 <b id="worldCount">0</b> 个世界，各司其职、互不干扰</p>
-    <div class="world-grid" id="worldGrid"></div>
-  </section>
-
-  <!-- ===== 活动 / 赛季 ===== -->
-  <section class="section" id="events">
-    <h2 class="sec-title">活动与赛季</h2>
-    <p class="sec-desc">服务器常驻的季节玩法与世界事件，慢慢玩也有新鲜感</p>
-    <div class="grid events-grid" id="eventsGrid"></div>
-  </section>
-
-  <!-- ===== 规则 ===== -->
-  <section class="section" id="rules">
-    <h2 class="sec-title">服务器规则</h2>
-    <p class="sec-desc">进服前请先了解，遵守是对所有人的保护</p>
-    <ul class="rule-list" id="ruleList"></ul>
-  </section>
-
-  <!-- ===== 封禁申诉 ===== -->
-  <section class="section" id="appeal">
-    <h2 class="sec-title">封禁申诉</h2>
-    <p class="sec-desc">认为被误封或想申请解封？填好下面的信息，腐竹会通过临时会话联系你</p>
-    <form class="appeal-form" id="appealForm" novalidate>
-      <div class="row2">
-        <div class="field">
-          <label for="apPlayer">游戏 ID</label>
-          <input id="apPlayer" type="text" placeholder="你在服务器里的名字" required>
-        </div>
-        <div class="field">
-          <label for="apQq">绑定 QQ</label>
-          <input id="apQq" type="text" inputmode="numeric" placeholder="申诉用的 QQ 号" required>
-        </div>
-      </div>
-      <div class="field">
-        <label for="apReason">申诉说明</label>
-        <textarea id="apReason" placeholder="发生了什么、为什么认为应该解封" required></textarea>
-      </div>
-      <div class="field">
-        <label for="apContact">联系方式（选填）</label>
-        <input id="apContact" type="text" placeholder="微信 / QQ / 邮箱，方便腐竹找到你">
-      </div>
-      <div class="appeal-msg" id="appealMsg"></div>
-      <button class="btn-primary" id="appealSubmit" type="submit">提交申诉</button>
-    </form>
-  </section>
-
-  <!-- ===== 加入方式 ===== -->
-  <section class="section" id="join">
-    <h2 class="sec-title">如何加入</h2>
-    <p class="sec-desc">三步即可开玩</p>
-    <div class="grid steps">
-      <div class="card"><div class="step-no">1</div><h3>安装游戏</h3><p>下载并安装对应版本的 Minecraft（Java 版）。</p></div>
-      <div class="card"><div class="step-no">2</div><h3>添加服务器</h3><p>多人游戏 → 添加服务器 → 填入下面的地址。</p></div>
-      <div class="card"><div class="step-no">3</div><h3>开始冒险</h3><p>进服按新手引导领取礼包，开始你的旅程。</p></div>
-    </div>
-    <div class="join-links" id="joinLinks"></div>
-    <div class="join-extra">
-      <a class="btn-outline" id="downloadBtn" href="https://www.minecraft.net/zh-hans/download" target="_blank" rel="noopener">下载客户端</a>
-    </div>
-  </section>
-
-  <!-- ===== 服主 & 联系 ===== -->
-  <section class="section" id="owner">
-    <h2 class="sec-title">服主与联系</h2>
-    <p class="sec-desc">有问题、想反馈或谈合作，找管理就对了</p>
-    <div class="owner-card" id="ownerCard">
-      <div class="owner-head">
-        <img class="owner-avatar" id="ownerAvatar" src="assets/icon.png" alt="服主头像">
-        <div class="owner-meta">
-          <h3 id="ownerName">Stone Logic 管理组</h3>
-          <p id="ownerTagline">长期稳定 · 用心运营</p>
-        </div>
-      </div>
-      <p class="owner-note" id="ownerNote"></p>
-      <div class="owner-links" id="ownerLinks"></div>
-    </div>
-  </section>
-</main>
+<!-- ===== 主内容 ===== -->
+<main class="main" id="main"></main>
 
 <footer class="footer">
-  <div id="footerText"></div>
-  <div class="foot-sub">本站为玩家自制宣传页，与 Mojang / Microsoft 无隶属关系。</div>
+  <div class="footer-inner">
+    <div>© <span id="footerYear"></span> Stone Logic · 玩家自制服务器，与 Mojang / Microsoft 无隶属关系</div>
+  </div>
 </footer>
 
-<!-- ===== 灯箱（截图用，当前无截图时隐藏） ===== -->
+<!-- 灯箱 -->
 <div class="lightbox" id="lightbox" hidden>
   <button class="lb-close" id="lbClose" aria-label="关闭">✕</button>
-  <button class="lb-nav prev" id="lbPrev" aria-label="上一张">‹</button>
   <img id="lbImg" src="" alt="">
-  <button class="lb-nav next" id="lbNext" aria-label="下一张">›</button>
   <div class="lb-cap" id="lbCap"></div>
 </div>
 
-<!-- 画廊：有截图时轮播展示，无截图时显示占位提示（图片由服主在配置 screenshots 中提供） -->
-<section class="section" id="gallery">
-  <h2 class="sec-title">服务器截图</h2>
-  <div class="gal-empty" id="galEmpty" hidden>
-    <div class="gal-empty-ico">🖼️</div>
-    <p>暂无服务器截图</p>
-    <p class="gal-empty-sub">把服务器实景图放进配置里的 screenshots，这里就会轮播展示。</p>
-  </div>
-  <div class="gallery-wrap" id="galWrap">
-    <button class="gal-arrow left" id="galLeft" aria-label="上一张">‹</button>
-    <div class="gallery" id="galleryList"></div>
-    <button class="gal-arrow right" id="galRight" aria-label="下一张">›</button>
-  </div>
-  <div class="gal-dots" id="galDots"></div>
-</section>
-<nav class="nav-links" id="navGallery" hidden></nav>
-
 <div class="toast" id="toast"></div>
 
-<script src="assets/cloud.js"></script>
 <script src="assets/app.js"></script>
-<script src="assets/editor.js"></script>
 <script src="assets/authbar.js"></script>
-<script>
-(function () {
-  // 封禁申诉：发到消息总线，服务端转发给腐竹（临时会话）
-  var form = document.getElementById('appealForm');
-  if (form) form.addEventListener('submit', function (e) {
-    e.preventDefault();
-    var player = document.getElementById('apPlayer').value.trim();
-    var qq = document.getElementById('apQq').value.replace(/\D/g, '');
-    var reason = document.getElementById('apReason').value.trim();
-    var contact = document.getElementById('apContact').value.trim();
-    var msg = document.getElementById('appealMsg');
-    if (!player || !qq || !reason) { msg.textContent = '请把游戏 ID、绑定 QQ 和申诉说明都填好。'; msg.className = 'appeal-msg err'; return; }
-    if (qq.length < 5) { msg.textContent = 'QQ 号格式不对。'; msg.className = 'appeal-msg err'; return; }
-    msg.textContent = '正在提交…'; msg.className = 'appeal-msg';
-    var payload = { type: 'appeal', player: player, qq: qq, reason: reason, contact: contact, ts: Date.now() };
-    fetch('https://ntfy.sh/stl-ql-6bd1ae0f4e7e7968', {
-      method: 'POST', headers: { 'content-type': 'text/plain' }, body: JSON.stringify(payload)
-    }).then(function () {
-      msg.textContent = '已提交，腐竹会通过临时会话联系你。'; msg.className = 'appeal-msg ok'; form.reset();
-    }).catch(function () {
-      msg.textContent = '提交失败，请稍后重试，或直接在 QQ 群联系腐竹。'; msg.className = 'appeal-msg err';
-    });
-  });
-
-  // 顶栏搜索：实时过滤玩法卡片
-  var search = document.getElementById('navSearch');
-  if (search) search.addEventListener('input', function () {
-    var q = search.value.trim().toLowerCase();
-    Array.prototype.forEach.call(document.querySelectorAll('#featureGrid .card'), function (c) {
-      var t = c.textContent.toLowerCase();
-      c.hidden = !!(q && t.indexOf(q) < 0);
-    });
-  });
-})();
-</script>
 </body>
 </html>

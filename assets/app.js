@@ -1,25 +1,28 @@
 /* ===========================================================
-   Stone Logic 官网 · 页面逻辑
-   配置取自 DEFAULT_CONFIG（已固定为当前服务器信息）
+   Stone Logic 官网 · 页面逻辑（mcnova 风格 SPA）
+   hash 路由 + 各功能页渲染 + 深浅色主题 + 后端 API 对接
    =========================================================== */
 (function () {
   'use strict';
 
-  var STORE_KEY = 'mc-site-config-v2';
+  /* ---------- 可配置项 ---------- */
+  // 后端内容 API 基地址（樱花 frp 隧道，指向 quicklogin-service 28080）
+  // 留空则论坛/商店/经济等需要后端的页面显示「未连接」空态
+  var API_BASE = (function () {
+    try { return localStorage.getItem('stl_api_base') || ''; } catch (e) { return ''; }
+  })();
 
-  /* ---------- 默认配置 ---------- */
-  var DEFAULT_CONFIG = {
-    serverName: 'Stone Logic',
-    subtitle: '纯生存 · 起床战争 · 地皮 · 公会 · 与朋友一起慢慢发展',
-    description: '长期稳定的纯生存服，主世界不删档，小游戏随时能玩。',
-    javaIp: 'frp-top.com:44558',
-    altIp: '',
-    bedrockIp: '',
-    statusApi: 'https://www.mclists.cn/api/server-status/?host={host}&port={port}',
-    mclistUrl: 'https://www.mclists.cn/',
-    statsApi: '',
-    icon: 'assets/icon.png',
-    accent: '#3aa856',
+  var STATUS_API = 'https://www.mclists.cn/api/server-status/?host={host}&port={port}';
+  var JAVA_HOST = 'frp-top.com';
+  var JAVA_PORT = '44558';
+
+  /* ---------- 站点配置（静态文案，可后续接后端） ---------- */
+  var SITE = {
+    name: 'Stone Logic',
+    tagline: '生存 | 小游戏 | 与朋友一起探索无限可能',
+    javaIp: JAVA_HOST + ':' + JAVA_PORT,
+    groupUrl: 'https://qm.qq.com/q/UhSK4yuLGG',
+    ownerQq: '1477211972',
     features: [
       { icon: '⚔️', title: '起床战争', desc: '独立 BedWars 竞技场，自动排队开局，输赢都不影响生存进度。' },
       { icon: '🫥', title: '方块躲猫猫', desc: 'BlockHideAndSeek：伪装成方块藏好，别被猎人抓到。' },
@@ -28,1067 +31,507 @@
       { icon: '👥', title: '公会系统', desc: 'PlayerGuild 公会、好友、TPA、地标传送，和朋友一起发展。' },
       { icon: '💰', title: '自由经济', desc: 'QuickShop 摆摊、市场交易、点券、抽奖红包，经济全靠自己经营。' },
       { icon: '⭐', title: '技能与职业', desc: 'mcMMO 技能、Jobs 职业、每日任务和签到，边玩边成长。' },
-      { icon: '🎁', title: '新手礼包', desc: '进服输入「同意」领全套铁装加 500 货币启动资金。' },
-      { icon: '🛡️', title: '反作弊', desc: 'GrimAC 加 Vulcan 双重拦截，CoreProtect 一键回滚，建筑安全。' },
-      { icon: '🌸', title: '季节与事件', desc: 'AeternumSeasons 四季轮转，WorldEvents 世界事件，钓鱼种田都有。' }
+      { icon: '🎁', title: '节日活动', desc: 'AeternumSeasons 四季轮转 + 节日活动，登录礼包拿到手软。' }
     ],
     worlds: [
-      { name: 'spawn / lobby', tag: '主城 · 大厅', desc: '传送枢纽与新手引导，回到这里永远安全。' },
-      { name: 'overworld', tag: '主世界', desc: '长期不删档的生存主世界，你的家在这里。' },
-      { name: 'the_nether / the_end', tag: '地狱 · 末地', desc: '原版维度，刷材料打末影龙。' },
-      { name: 'world_resource', tag: '资源世界', desc: '随便挖随便拆，定期轮换重置，主世界永不被挖空。' },
-      { name: 'plot', tag: '地皮世界', desc: 'PlotSquared 地皮，一人一块，安心搞建筑。' },
-      { name: 'community', tag: '社区共建', desc: '大家一起造的公共建筑区。' },
-      { name: 'bwsp', tag: '起床战争', desc: 'BedWars 竞技场，自动排队开局。' },
-      { name: 'blockhide / hide', tag: '方块躲猫猫', desc: '伪装成方块，躲过猎人。' },
-      { name: 'pvp / pvp2', tag: 'PVP 竞技场', desc: '决斗与混战专用世界。' },
-      { name: 'aeternum_frost / heat', tag: '季节世界', desc: '寒暑交替的四季世界，环境会变。' }
+      { name: 'world', tag: '主世界', desc: '不删档，长期保存你的建筑与家园' },
+      { name: 'world_nether', tag: '地狱', desc: '资源采集与快速交通' },
+      { name: 'world_the_end', tag: '末地', desc: '主末地，通过传送门进入，不重置' },
+      { name: 'resource', tag: '资源世界', desc: '定期轮换重置，持续获取资源' },
+      { name: 'plot', tag: '地皮', desc: 'PlotSquared 地皮世界，安心造家' },
+      { name: 'bedwars', tag: '起床战争', desc: '独立小游戏竞技场' }
     ],
-    screenshots: [],
     rules: [
-      '禁止使用任何外挂、脚本、宏和 bug 利用，一经发现永久封禁。',
-      '禁止恶意破坏他人建筑、偷窃、骗取物品（CoreProtect 全程可追溯并回滚）。',
-      '禁止在公共频道刷屏、人身攻击、发布违规或引战内容。',
-      '禁止恶意 PVP：PVP 请移步竞技场世界，主世界偷袭他人按恶意击杀处理。',
-      '禁止利用漏洞刷物品、刷经验、刷货币，发现漏洞请主动上报。',
-      '本服为离线服，请妥善保管自己的 AuthMe 账号密码，账号问题自行负责。',
+      '禁止使用外挂、作弊客户端（矿透、自动挖矿、加速等），一经查实永久封禁。',
+      '禁止恶意破坏他人建筑、偷窃物品；发现可联系管理员回滚并封禁对方。',
+      '禁止在聊天中发布广告、辱骂、刷屏或传播不良信息。',
       '地皮与领地内请互相尊重，长期不在线的建筑可能被回收。',
       '尊重管理员与其他玩家，有问题先在群内反馈，服从管理最终裁定。'
     ],
-    events: [
-      { icon: '🌸', title: '四季轮转', desc: 'AeternumSeasons 跟随现实季节变化：春华秋实、夏炎冬雪，不同季节有专属作物、生物与氛围。' },
-      { icon: '🌍', title: '世界事件', desc: 'WorldEvents 不定期触发全服事件——钓鱼大赛、丰收节、怪物潮等，参与就能拿限定奖励。' },
-      { icon: '🎣', title: '钓鱼与种田', desc: '休闲党友好：钓鱼有图鉴收集，种田产出可拿去市场交易，慢慢养成不赶进度。' },
-      { icon: '🎁', title: '节日活动', desc: '春节、万圣、圣诞等节点会有特别玩法与登录礼包，留意群公告别错过。' }
-    ],
-    links: [
-      { label: 'QQ 交流群', url: 'https://qm.qq.com/q/UhSK4yuLGG' },
-      { label: '客户端下载', url: 'https://www.minecraft.net/zh-hans/download' },
-      { label: '语音模组（Simple Voice Chat）', url: 'https://modrinth.com/plugin/simple-voice-chat' }
-    ],
-    owner: {
-      name: 'Stone Logic 管理组',
-      tagline: '长期稳定 · 用心运营',
-      qqGroup: '1094147045',
-      qqGroupUrl: 'https://qm.qq.com/q/UhSK4yuLGG',
-      email: '',
-      note: '任何问题、BUG 反馈或商务合作，欢迎加 QQ 群找管理；被封禁的玩家也可在页面底部提交申诉。'
-    },
-    footer: '© 2026 Stone Logic · 由玩家自建运营 · 与 Mojang / Microsoft 无隶属关系',
-    layout: { order: ['hero', 'features', 'worlds', 'events', 'status', 'profile', 'rules', 'appeal', 'owner', 'join', 'gallery'] }
+    guide: [
+      { t: '注册与登录', c: '首次进服输入 /register 设置密码（需先在 QQ 群绑定账号），之后每次进服 /login 登录。' },
+      { t: '领取新手礼包', c: '进服会收到一本《服务器游玩指南》，在聊天框输入「同意」即可领取全套铁装备、32 个牛排和 500 货币。' },
+      { t: '传送与地皮', c: '主城 spawn 有传送菜单与地标传送（/warp），也可输入 /warp plot 去地皮世界圈地造家。' },
+      { t: '语音聊天', c: '想语音请安装 Simple Voice Chat 客户端模组；服务器已配置 ForcePack，进服自动加载材质包。' },
+      { t: '小游戏', c: '起床战争、方块躲猫猫、PVP 等小游戏在世界 lobby 的菜单里进入，不影响生存进度。' }
+    ]
   };
 
   /* ---------- 工具 ---------- */
-  var $ = function (s) { return document.querySelector(s); };
-  var $$ = function (s) { return Array.prototype.slice.call(document.querySelectorAll(s)); };
+  function $(sel) { return document.querySelector(sel); }
+  function $id(id) { return document.getElementById(id); }
   function esc(s) {
-    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
-      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
-    });
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
-  function clone(o) { return JSON.parse(JSON.stringify(o)); }
+  function el(tag, cls, html) { var e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; }
   function toast(msg) {
-    var t = $('#toast');
-    t.textContent = msg;
-    t.classList.add('show');
-    clearTimeout(toast._t);
-    toast._t = setTimeout(function () { t.classList.remove('show'); }, 2200);
+    var t = $id('toast'); if (!t) return;
+    t.textContent = msg; t.classList.add('show');
+    clearTimeout(t._t); t._t = setTimeout(function () { t.classList.remove('show'); }, 2600);
+  }
+  function fmtTime(ts) {
+    if (!ts) return '—';
+    var d = new Date(Number(ts));
+    var p = function (n) { return (n < 10 ? '0' : '') + n; };
+    return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+  }
+  function fmtDur(sec) {
+    sec = Number(sec) || 0;
+    if (sec < 60) return sec + ' 秒';
+    if (sec < 3600) return Math.floor(sec / 60) + ' 分钟';
+    if (sec < 86400) return Math.floor(sec / 3600) + ' 小时 ' + Math.floor((sec % 3600) / 60) + ' 分';
+    return Math.floor(sec / 86400) + ' 天 ' + Math.floor((sec % 86400) / 3600) + ' 小时';
+  }
+  function api(path) {
+    return fetch(API_BASE + path, { headers: { 'accept': 'application/json' } }).then(function (r) { return r.json(); });
+  }
+  function apiPost(path, obj) {
+    return fetch(API_BASE + path, {
+      method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(obj)
+    }).then(function (r) { return r.json(); });
+  }
+  function hasBackend() { return !!API_BASE; }
+  function session() {
+    try { return window.__stlSession ? window.__stlSession() : null; } catch (e) { return null; }
   }
 
-  /* ---------- 配置读写 ---------- */
-  var cfg = (function () {
-    try {
-      var raw = localStorage.getItem(STORE_KEY);
-      if (raw) {
-        var saved = JSON.parse(raw);
-        var merged = clone(DEFAULT_CONFIG);
-        Object.keys(DEFAULT_CONFIG).forEach(function (k) {
-          if (saved[k] !== undefined) merged[k] = saved[k];
-        });
-        return merged;
-      }
-    } catch (e) { /* 忽略损坏的配置 */ }
-    return clone(DEFAULT_CONFIG);
-  })();
-
-  function saveCfg() {
-    try { localStorage.setItem(STORE_KEY, JSON.stringify(cfg)); }
-    catch (e) { toast('配置过大，无法保存到本地'); }
+  /* ---------- 主题 ---------- */
+  function applyTheme(t) {
+    document.documentElement.setAttribute('data-theme', t);
+    try { localStorage.setItem('stl_theme', t); } catch (e) {}
+    var moon = $id('themeIconMoon'), sun = $id('themeIconSun');
+    if (moon) moon.style.display = t === 'dark' ? 'none' : '';
+    if (sun) sun.style.display = t === 'dark' ? '' : 'none';
   }
-
-  /* ---------- 渲染页面 ---------- */
-  function renderAll() {
-    document.title = cfg.serverName + ' · Minecraft 服务器';
-    document.documentElement.style.setProperty('--accent', cfg.accent);
-
-    $('#navName').textContent = cfg.serverName;
-    $('#heroName').textContent = cfg.serverName;
-    $('#heroSubtitle').textContent = cfg.subtitle;
-    $('#heroDesc').textContent = cfg.description;
-    $('#javaIp').textContent = cfg.javaIp;
-    $('#statusAddr').textContent = cfg.javaIp;
-
-    var navIcon = $('#navIcon'), heroIcon = $('#heroIcon');
-    [navIcon, heroIcon].forEach(function (el) {
-      el.src = cfg.icon || DEFAULT_CONFIG.icon;
-      el.onerror = function () { el.src = DEFAULT_CONFIG.icon; };
-    });
-    $('#favicon').href = cfg.icon || DEFAULT_CONFIG.icon;
-
-    var br = $('#bedrockRow');
-    if (br) {
-      if (cfg.bedrockIp) { br.hidden = false; var bi = $('#bedrockIp'); if (bi) bi.textContent = cfg.bedrockIp; }
-      else { br.hidden = true; }
-    }
-
-    var dl = (cfg.links || []).filter(function (l) { return /下载|客户端/.test(l.label); })[0];
-    $('#downloadBtn').href = dl ? dl.url : 'https://www.minecraft.net/zh-hans/download';
-
-    // 特色
-    $('#featureGrid').innerHTML = (cfg.features || []).map(function (f) {
-      return '<div class="card"><span class="feat-icon">' + esc(f.icon) + '</span><h3>' +
-        esc(f.title) + '</h3><p>' + esc(f.desc) + '</p></div>';
-    }).join('');
-
-    // 世界
-    var worlds = cfg.worlds || [];
-    $('#worldCount').textContent = worlds.length;
-    $('#worldGrid').innerHTML = worlds.map(function (w) {
-      return '<div class="wcard"><div class="w-tag">' + esc(w.tag) + '</div>' +
-        '<code class="w-name">' + esc(w.name) + '</code>' +
-        '<p>' + esc(w.desc) + '</p></div>';
-    }).join('');
-
-    // 规则
-    $('#ruleList').innerHTML = (cfg.rules || []).map(function (r, i) {
-      return '<li><b>' + String(i + 1).padStart(2, '0') + '</b><span>' + esc(r) + '</span></li>';
-    }).join('');
-
-    // 链接
-    var links = (cfg.links || []).slice();
-    if (cfg.mclistUrl) links.push({ label: '📋 在 McLists 查看 / 投票', url: cfg.mclistUrl });
-    $('#joinLinks').innerHTML = links.map(function (l) {
-      return '<a href="' + esc(l.url) + '" target="_blank" rel="noopener">' + esc(l.label) + '</a>';
-    }).join('');
-
-    $('#footerText').textContent = cfg.footer;
-
-    renderEvents();
-    renderOwner();
-    renderGallery();
-  }
-
-  /* ---------- 截图画廊 ---------- */
-  var shots = [];
-  function renderGallery() {
-    shots = (cfg.screenshots || []).slice();
-    var list = $('#galleryList');
-    var empty = $('#galEmpty');
-    var wrap = $('#galWrap');
-    var dots = $('#galDots');
-    /* 没有截图：展示占位提示，保留版块（不再整体隐藏） */
-    if (!shots.length) {
-      if (list) list.innerHTML = '';
-      if (dots) dots.innerHTML = '';
-      if (empty) empty.hidden = false;
-      if (wrap) wrap.hidden = true;
-      return;
-    }
-    if (empty) empty.hidden = true;
-    if (wrap) wrap.hidden = false;
-    list.innerHTML = shots.map(function (s, i) {
-      return '<figure class="shot" data-i="' + i + '" style="margin:0">' +
-        '<img loading="lazy" src="' + esc(s.url) + '" alt="' + esc(s.cap) + '">' +
-        '<figcaption class="cap">' + esc(s.cap) + '</figcaption></figure>';
-    }).join('');
-    $('#galDots').innerHTML = shots.map(function (_, i) {
-      return '<i data-i="' + i + '" class="' + (i === 0 ? 'on' : '') + '"></i>';
-    }).join('');
-    $$('.shot').forEach(function (el) {
-      el.addEventListener('click', function () { openLb(+el.dataset.i); });
-    });
-    $$('#galDots i').forEach(function (d) {
-      d.addEventListener('click', function () { scrollToShot(+d.dataset.i); });
-    });
-    list.addEventListener('scroll', function () {
-      var w = list.clientWidth, i = Math.round(list.scrollLeft / (w || 1));
-      $$('#galDots i').forEach(function (d, idx) { d.classList.toggle('on', idx === i); });
+  function initTheme() {
+    var saved = null; try { saved = localStorage.getItem('stl_theme'); } catch (e) {}
+    if (!saved) saved = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    applyTheme(saved);
+    var btn = $id('themeToggle');
+    if (btn) btn.addEventListener('click', function () {
+      applyTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
     });
   }
 
-  /* ---------- 活动与赛季 ---------- */
-  function renderEvents() {
-    var grid = $('#eventsGrid');
-    if (!grid) return;
-    grid.innerHTML = (cfg.events || []).map(function (e) {
-      return '<div class="card event-card"><span class="feat-icon">' + esc(e.icon) +
-        '</span><h3>' + esc(e.title) + '</h3><p>' + esc(e.desc) + '</p></div>';
+  /* ---------- 导航 ---------- */
+  var NAV = [
+    { label: '状态', href: '#/status' },
+    { label: '论坛', href: '#/forum' },
+    { label: '商店', href: '#/store' },
+    { label: '赛事', href: '#/tournaments' },
+    { label: '经济', href: '#/economy' },
+    { label: '成就', href: '#/achievements' },
+    { label: '建筑', href: '#/builds' },
+    { label: '指南', href: '#/guide' },
+    { label: '规则', href: '#/rules' },
+    { label: '申诉', href: '#/appeal' }
+  ];
+  function renderNav(activePath) {
+    var nav = $id('navMain');
+    if (!nav) return;
+    nav.innerHTML = NAV.map(function (n) {
+      var path = n.href.replace('#', '') || '/status';
+      var isActive = activePath === path;
+      return '<a href="' + n.href + '" class="' + (isActive ? 'active' : '') + '">' + n.label + '</a>';
     }).join('');
   }
 
-  /* ---------- 服主与联系 ---------- */
-  function renderOwner() {
-    var o = cfg.owner || {};
-    var on = $('#ownerName'); if (on && o.name) on.textContent = o.name;
-    var ot = $('#ownerTagline'); if (ot && o.tagline) ot.textContent = o.tagline;
-    var ono = $('#ownerNote'); if (ono && o.note) ono.textContent = o.note;
-    var oa = $('#ownerAvatar'); if (oa && o.icon) oa.src = o.icon;
-    var links = [];
-    if (o.qqGroupUrl) links.push({ icon: '💬', label: 'QQ 群 ' + (o.qqGroup || ''), url: o.qqGroupUrl });
-    if (o.email) links.push({ icon: '✉️', label: '邮箱 ' + o.email, url: 'mailto:' + o.email });
-    var box = $('#ownerLinks');
-    if (box) box.innerHTML = links.map(function (l) {
-      return '<a class="owner-link" href="' + esc(l.url) + '" target="_blank" rel="noopener">' +
-        '<span class="ol-ico">' + l.icon + '</span><span>' + esc(l.label) + '</span></a>';
-    }).join('');
-  }
-
-  /* ---------- 玩家主页 ---------- */
-  function formatPlaytime(sec) {
-    sec = Math.max(0, Math.floor(Number(sec) || 0));
-    if (!sec) return '0 分钟';
-    var d = Math.floor(sec / 86400), h = Math.floor(sec % 86400 / 3600), m = Math.floor(sec % 3600 / 60);
-    var out = [];
-    if (d) out.push(d + ' 天');
-    if (h) out.push(h + ' 小时');
-    out.push(m + ' 分钟');
-    return out.join(' ');
-  }
-  function lookupProfile(name) {
-    var card = $('#pfCard'), note = $('#pfNote'), pname = $('#pfName');
-    name = String(name || '').trim();
-    if (!name) { if (note) note.textContent = '请输入游戏 ID。'; return; }
-    if (!/^[A-Za-z0-9_]{1,16}$/.test(name)) { if (note) note.textContent = '游戏 ID 只能包含字母、数字和下划线（1–16 位）。'; return; }
-    if (card) card.hidden = false;
-    if (pname) pname.textContent = name;
-    var hd = $('#pfHead'); if (hd) hd.src = 'https://minotar.net/helm/' + encodeURIComponent(name) + '/64';
-    var bd = $('#pfBody'); if (bd) bd.src = 'https://mc-heads.net/body/' + encodeURIComponent(name) + '/right';
-    var pt = $('#pfPlaytime'); if (pt) pt.textContent = '加载中…';
-    var api = (cfg.statsApi || '').trim();
-    if (api) {
-      var url = api.indexOf('{name}') >= 0 ? api.replace('{name}', encodeURIComponent(name)) : api + encodeURIComponent(name);
-      fetch(url, { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; })
-        .then(function (d) {
-          var v = d && (d.playtime || d.play_time || d.playTime || (d.data && (d.data.playtime || d.data.play_time)));
-          if (pt) pt.textContent = (v != null) ? formatPlaytime(v) : '未接入';
-        }).catch(function () { if (pt) pt.textContent = '未接入'; });
-    } else {
-      if (pt) pt.textContent = '未接入';
-    }
-    if (note) note.textContent = api ? '' : '皮肤按游戏 ID 渲染（离线服可能显示默认皮肤）；游戏时长需接入服务器统计后才会显示真实数据。';
-  }
-  var pfBtn = $('#pfSearchBtn'), pfInp = $('#pfSearch');
-  if (pfBtn) pfBtn.addEventListener('click', function () { lookupProfile(pfInp && pfInp.value); });
-  if (pfInp) pfInp.addEventListener('keydown', function (e) { if (e.key === 'Enter') lookupProfile(pfInp.value); });
-
-  function scrollToShot(i) {
-    var list = $('#galleryList');
-    var el = list.children[i];
-    if (el) list.scrollTo({ left: el.offsetLeft - list.offsetLeft, behavior: 'smooth' });
-  }
-  $('#galLeft').addEventListener('click', function () { $('#galleryList').scrollBy({ left: -360, behavior: 'smooth' }); });
-  $('#galRight').addEventListener('click', function () { $('#galleryList').scrollBy({ left: 360, behavior: 'smooth' }); });
-
-  /* ---------- 灯箱 ---------- */
-  var lbIndex = 0;
-  function openLb(i) {
-    if (!shots.length) return;
-    lbIndex = i;
-    $('#lbImg').src = shots[i].url;
-    $('#lbCap').textContent = shots[i].cap;
-    $('#lightbox').hidden = false;
-  }
-  function lbStep(d) {
-    if (!shots.length) return;
-    lbIndex = (lbIndex + d + shots.length) % shots.length;
-    $('#lbImg').src = shots[lbIndex].url;
-    $('#lbCap').textContent = shots[lbIndex].cap;
-  }
-  $('#lbClose').addEventListener('click', function () { $('#lightbox').hidden = true; });
-  $('#lightbox').addEventListener('click', function (e) { if (e.target.id === 'lightbox') $('#lightbox').hidden = true; });
-  $('#lbPrev').addEventListener('click', function () { lbStep(-1); });
-  $('#lbNext').addEventListener('click', function () { lbStep(1); });
-  document.addEventListener('keydown', function (e) {
-    if ($('#lightbox').hidden) return;
-    if (e.key === 'Escape') $('#lightbox').hidden = true;
-    if (e.key === 'ArrowLeft') lbStep(-1);
-    if (e.key === 'ArrowRight') lbStep(1);
-  });
-
-  /* ---------- 复制地址 ---------- */
-  $$('[data-copy]').forEach(function (btn) {
-    btn.addEventListener('click', function () {
-      var text = document.getElementById(btn.dataset.copy).textContent.trim();
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(text).then(function () { toast('已复制：' + text); });
-      } else {
-        var ta = document.createElement('textarea');
-        ta.value = text; document.body.appendChild(ta); ta.select();
-        try { document.execCommand('copy'); toast('已复制：' + text); } catch (e) {}
-        document.body.removeChild(ta);
-      }
-    });
-  });
-
-  /* ---------- 服务器状态检测 ---------- */
-  function normalizeJava(data) {
-    var pl = data.players || {};
-    return {
-      online: !!data.online,
-      players: {
-        online: pl.online != null ? pl.online : 0,
-        max: pl.max != null ? pl.max : 0,
-        list: (pl.list || pl.sample || []).map(function (x) {
-          return typeof x === 'string' ? x : (x && (x.name || x.name_clean || x.name_raw)) || '';
-        }).filter(Boolean),
-        uuid: pl.uuid || {}
-      },
-      version: typeof data.version === 'string' ? data.version : (data.version && (data.version.name_clean || data.version.name)) || '',
-      motd: motdText(data.motd),
-      icon: data.icon || data.favicon || ''
-    };
-  }
-  /* MOTD 可能是字符串，也可能是 1.16+ 的 text component（对象/数组），统一压成纯文本 */
-  function motdText(m) {
-    if (!m) return '';
-    if (typeof m === 'string') return m;
-    if (Array.isArray(m)) return m.map(motdText).join('');
-    if (typeof m === 'object') {
-      if (typeof m.clean === 'string') return m.clean;
-      if (typeof m.raw === 'string') return m.raw;
-      if (typeof m.text === 'string' && (!m.extra || !m.extra.length)) return m.text;
-      var s = '';
-      if (typeof m.text === 'string') s += m.text;
-      if (Array.isArray(m.extra)) s += m.extra.map(motdText).join('');
-      if (Array.isArray(m.translate)) s += m.translate.map(motdText).join('');
-      return s;
-    }
-    return '';
-  }
-  function splitAddr(addr) {
-    var s = String(addr || '').trim().replace(/^\[/, '');
-    var m = s.match(/^(.*?)(?::(\d{1,5}))?$/);
-    return { host: (m && m[1]) || s, port: (m && m[2]) || '25565' };
-  }
-  async function queryCustomApi(api, addr) {
-    var t0 = performance.now();
-    var a = splitAddr(addr);
-    var url;
-    if (/\{host\}|\{port\}|\{addr\}/.test(api)) {
-      url = api
-        .replace('{host}', encodeURIComponent(a.host))
-        .replace('{port}', encodeURIComponent(a.port))
-        .replace('{addr}', encodeURIComponent(addr));
-    } else {
-      url = api + (api.indexOf('?') >= 0 ? '&' : '?') + 'addr=' + encodeURIComponent(addr);
-    }
-    var res = await fetch(url, { cache: 'no-store' });
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    var d = await res.json();
-    var elapsed = Math.round(performance.now() - t0);
-    var out;
-    if (d && d.data && d.data.online !== undefined) {
-      var s = d.data; // mclists.cn 格式
-      out = {
-        online: !!s.online,
-        players: {
-          online: s.players ? (s.players.now != null ? s.players.now : s.players.online) : 0,
-          max: s.players ? (s.players.max != null ? s.players.max : s.players.maximum) : 0,
-          list: (s.players && (s.players.list || s.players.sample)) || [],
-          uuid: {}
-        },
-        version: s.version || s.name || '',
-        motd: motdText(s.description),
-        icon: s.favicon || '',
-        ping: s.latency > 0 ? s.latency : elapsed
-      };
-    } else if (d && d.data && d.data.status !== undefined) {
-      d = d.data; d.online = !!d.status; // apihz 格式
-      out = normalizeJava(d);
-      out.ping = elapsed;
-    } else {
-      out = normalizeJava(d);
-      out.ping = elapsed;
-    }
-    return out;
-  }
-  async function queryJava(addr) {
-    var t0 = performance.now();
-    var res = await fetch('https://api.mcsrvstat.us/3/' + encodeURIComponent(addr), { cache: 'no-store' });
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    var d = normalizeJava(await res.json());
-    d.ping = Math.round(performance.now() - t0);
-    return d;
-  }
-  async function queryJavaFallback(addr) {
-    var t0 = performance.now();
-    var res = await fetch('https://api.mcstatus.io/v2/status/java/' + encodeURIComponent(addr), { cache: 'no-store' });
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    var j = await res.json();
-    var d = {
-      online: !!j.online,
-      players: {
-        online: j.players ? j.players.online : 0,
-        max: j.players ? j.players.max : 0,
-        list: (j.players && j.players.list ? j.players.list.map(function (p) { return p.name_clean || p.name_raw; }) : []),
-        uuid: {}
-      },
-      version: j.version ? j.version.name_clean : '',
-      motd: j.motd ? j.motd.clean : '',
-      icon: j.icon || ''
-    };
-    d.ping = Math.round(performance.now() - t0);
-    return d;
-  }
-
-  var statusTimer = null;
-  async function checkStatus() {
-    var addr = (cfg.javaIp || '').trim();
-    if (!addr) { setOffline('未配置服务器地址'); return; }
-    if (/example\.com|127\.0\.0\.1|localhost/i.test(addr)) {
-      setOffline('请在设置中填写真实地址');
-      $('#apiNote').textContent = '当前地址仅为示例，无法检测';
-      return;
-    }
-
-    $('#statusText').textContent = '检测中…';
-    $('#statusPill').textContent = '检测中';
-    $('#statusPill').className = 'status-pill';
-    $('#apiNote').textContent = '';
-
-    var data = null, src = '', viaAlt = false;
-    var customApi = (cfg.statusApi || '').trim();
-
-    /* 单一地址的检测流程：优先自定义接口，失败再走公共接口 */
-    async function probe(a) {
-      var r = { data: null, src: '' };
-      try {
-        if (customApi) { r.data = await queryCustomApi(customApi, a); r.src = '自定义接口'; }
-        else { r.data = await queryJava(a); r.src = 'mcsrvstat.us'; }
-      } catch (e1) {
-        try { r.data = await queryJavaFallback(a); r.src = 'mcstatus.io'; }
-        catch (e2) { /* 留给调用方处理 */ }
-      }
-      return r;
-    }
-
-    var res = await probe(addr);
-    data = res.data; src = res.src;
-
-    /* 主地址（自定义域名）查不到时，用备用地址再探一次。
-       场景：域名 DNS 还没生效、或域名临时解析异常，服务器本身其实在线。 */
-    var alt = (cfg.altIp || '').trim();
-    if ((!data || !data.online) && alt && alt !== addr) {
-      var r2 = await probe(alt);
-      if (r2.data && r2.data.online) { data = r2.data; src = r2.src; viaAlt = true; }
-    }
-
-    if (!data) {
-      setOffline('所有状态接口均不可用');
-      $('#apiNote').textContent = customApi
-        ? '自定义接口请求失败，请检查接口地址或稍后重试'
-        : '接口请求失败。国内 frp 节点常被海外公共 API 检测不到，可在设置里配置自定义状态接口';
-      return;
-    }
-
-    if (!data.online) { setOffline('服务器离线'); $('#apiNote').textContent = '数据来源：' + src; return; }
-
-    $('#statusBadge').className = 'badge on';
-    $('#statusText').textContent = '服务器在线';
-    $('#statusPill').className = 'status-pill on';
-    $('#statusPill').textContent = '在线';
-
-    $('#playersOnline').textContent = data.players.online;
-    var ho = $('#heroOnline'); if (ho) ho.textContent = data.players.online;
-    $('#playersMax').textContent = data.players.max;
-    var pct = data.players.max > 0 ? Math.min(100, data.players.online / data.players.max * 100) : 0;
-    $('#playersBar').style.width = pct.toFixed(1) + '%';
-
-    $('#metaVersion').textContent = data.version || '未知';
-    $('#metaPing').textContent = data.ping != null ? data.ping + ' ms' : '—';
-    $('#metaTime').textContent = new Date().toLocaleTimeString('zh-CN', { hour12: false });
-    $('#motd').textContent = motdText(data.motd) || '（该服务器未设置 MOTD）';
-    $('#apiNote').textContent = '数据来源：' + src +
-      (viaAlt ? ' · 自定义域名暂未生效，已用备用地址 ' + alt + ' 检测' : '') + ' · 每 60 秒自动刷新';
-
-    // 在线玩家：头像 + 名字网格
-    var names = (data.players.list || []).slice(0, 30);
-    var box = $('#playerHeads');
-    var phSub = $('#phSub'); if (phSub) phSub.textContent = '当前 ' + data.players.online + ' 人在线';
-    var phNote = $('#phNote');
-    if (!names.length) {
-      box.innerHTML = '';
-      if (phNote) phNote.textContent = '暂无玩家在线，来当第一个吧！';
-    } else {
-      box.innerHTML = names.map(function (n) {
-        return '<div class="phead"><img loading="lazy" alt="' + esc(n) +
-          '" src="https://mc-heads.net/avatar/' + encodeURIComponent(n) + '/32"><span>' + esc(n) + '</span></div>';
-      }).join('');
-      if (phNote) phNote.textContent = (names.length >= 30 ? '仅展示部分在线玩家' : '');
-    }
-  }
-  function setOffline(msg) {
-    $('#statusBadge').className = 'badge off';
-    $('#statusText').textContent = msg;
-    $('#statusPill').className = 'status-pill off';
-    $('#statusPill').textContent = '离线';
-    $('#playersOnline').textContent = '0';
-    var ho = $('#heroOnline'); if (ho) ho.textContent = '0';
-    $('#playersMax').textContent = '0';
-    $('#playersBar').style.width = '0%';
-    $('#metaVersion').textContent = '—';
-    $('#metaPing').textContent = '—';
-    $('#metaTime').textContent = new Date().toLocaleTimeString('zh-CN', { hour12: false });
-    $('#motd').textContent = '服务器当前不可达，可能正在维护或地址填写有误。';
-    $('#playerHeads').innerHTML = '';
-  }
-  $('#refreshBtn').addEventListener('click', function () { checkStatus(); toast('正在重新检测…'); });
-  function startPolling() {
-    clearInterval(statusTimer);
-    statusTimer = setInterval(checkStatus, 60000);
-  }
-
-  /* ---------- 设置抽屉 ---------- */
-  var draft = null;
-  function openDrawer() {
-    draft = clone(cfg);
-    buildForm();
-    $('#drawer').classList.add('open');
-    $('#drawerMask').hidden = false;
-  }
-  function closeDrawer() { var d = $('#drawer'); if (d) d.classList.remove('open'); var m = $('#drawerMask'); if (m) m.hidden = true; }
-
-  function pickImage(cb, prefix) {
-    var inp = document.createElement('input');
-    inp.type = 'file';
-    inp.accept = 'image/*';
-    inp.addEventListener('change', async function () {
-      var f = inp.files[0];
-      if (!f) return;
-      var reader = new FileReader();
-      reader.onload = async function (ev) {
-        var img = new Image();
-        img.onload = async function () {
-          var max = 1280;
-          var scale = Math.min(1, max / Math.max(img.width, img.height));
-          var cv = document.createElement('canvas');
-          cv.width = Math.round(img.width * scale);
-          cv.height = Math.round(img.height * scale);
-          cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
-          var dataUrl = cv.toDataURL('image/jpeg', 0.85);
-          var path = '';
-          try {
-            if (cloudSession) path = await MCCloud.uploadImage(f, prefix || 'img');
-          } catch (e) { /* 未登录或上传失败时仅用本地图 */ }
-          cb(dataUrl, path);
-        };
-        img.onerror = function () { cb(ev.target.result, ''); };
-        img.src = ev.target.result;
-      };
-      reader.readAsDataURL(f);
-    });
-    inp.click();
-  }
-
-  /* ---------- 云同步 ---------- */
-  var cloudSession = null, cloudRowId = null, cloudPending = null, cloudNote = '';
-
-  function mergeConfig(p) {
-    var m = clone(DEFAULT_CONFIG);
-    Object.keys(DEFAULT_CONFIG).forEach(function (k) { if (p && p[k] !== undefined) m[k] = p[k]; });
-    return m;
-  }
-  function setCloudNote(t) { var el = $('#cloudNote'); if (el) el.textContent = t; }
-
-  async function refreshCloudUI() {
-    if (!window.MCCloud || !MCCloud.available()) return;
-    cloudSession = await MCCloud.getSession();
-    var box = $('#cloudLoginBox'), out = $('#cloudLogout');
-    if (cloudSession && cloudSession.user) {
-      var who = cloudSession.user.email || cloudSession.user.phone || '已登录';
-      setCloudNote('已登录：' + who + (cloudRowId ? ' · 云端已有你的配置' : ' · 云端还没有你的配置'));
-      if (box) box.style.display = 'none';
-      if (out) out.style.display = '';
-    } else {
-      setCloudNote(cloudNote || '未登录：访客只能浏览，登录后才能把配置和图片保存到云端');
-      if (box) box.style.display = '';
-      if (out) out.style.display = 'none';
-    }
-  }
-
-  async function applyCloudImages() {
-    if (!cloudSession || !window.MCCloud) return;
-    var backup = JSON.parse(JSON.stringify(cfg));
-    try {
-      cfg = await MCCloud.resolveImages(cfg);
-      renderAll();
-    } catch (e) { /* 签名链接失败就用本地图 */ }
-    cfg = backup;
-  }
-
-  async function bootCloud() {
-    if (!window.MCCloud || !MCCloud.available()) {
-      cloudNote = '云服务未就绪：请在已发布的域名下打开（本地预览不支持）';
-      setCloudNote(cloudNote);
-      return;
-    }
-    try {
-      var remote = await MCCloud.loadConfig();
-      if (remote && remote.payload) {
-        cfg = mergeConfig(remote.payload);
-        saveCfg();
-        renderAll();
-        checkStatus();
-        cloudNote = '已加载云端配置（' + new Date(remote.updatedAt).toLocaleString('zh-CN') + '）';
-      } else {
-        cloudNote = '云端暂无配置，登录并保存后生效';
-      }
-      cloudSession = await MCCloud.getSession();
-      cloudRowId = (cloudSession && remote && remote.ownerId === cloudSession.user.id) ? remote.id : null;
-      await refreshCloudUI();
-      await applyCloudImages();
-    } catch (e) {
-      cloudNote = '云端读取失败：' + MCCloud.errText(e, '请稍后重试');
-      setCloudNote(cloudNote);
-    }
-  }
-
-  function bindCloudEvents() {
-    var send = $('#cloudSend'), verify = $('#cloudVerify'), push = $('#cloudPush'),
-      pull = $('#cloudPull'), out = $('#cloudLogout');
-    if (send) send.addEventListener('click', async function () {
-      var email = $('#cloudEmail').value.trim();
-      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { toast('请输入正确的邮箱'); return; }
-      send.disabled = true; send.textContent = '发送中…';
-      try {
-        cloudPending = await MCCloud.sendEmailCode(email);
-        toast('验证码已发送至邮箱');
-      } catch (e) { toast(MCCloud.errText(e, '验证码发送失败')); }
-      send.disabled = false; send.textContent = '获取验证码';
-    });
-    if (verify) verify.addEventListener('click', async function () {
-      if (!cloudPending) { toast('请先获取验证码'); return; }
-      var code = $('#cloudCode').value.trim();
-      var pwd = $('#cloudPwd').value;
-      if (!code) { toast('请输入验证码'); return; }
-      if (!cloudPending.isExistingUser && !pwd) { toast('新账号需要设置密码'); return; }
-      try {
-        await MCCloud.verifyEmailCode(cloudPending, code, pwd);
-        cloudPending = null;
-        toast('登录成功');
-        await refreshCloudUI();
-        await applyCloudImages();
-      } catch (e) { toast(MCCloud.errText(e, '登录失败')); }
-    });
-    if (push) push.addEventListener('click', async function () {
-      if (!cloudSession) { toast('请先登录'); return; }
-      push.disabled = true; push.textContent = '保存中…';
-      try {
-        var payload = clone(collectForm());
-        payload.iconPath = draft.iconPath || '';
-        var id = await MCCloud.saveConfig(payload, cloudRowId);
-        cloudRowId = id;
-        toast('已保存到云端');
-        await refreshCloudUI();
-      } catch (e) {
-        toast(MCCloud.errText(e, '云端保存失败'));
-        if (/不属于当前账号/.test(e.message || '')) cloudRowId = null;
-      }
-      push.disabled = false; push.textContent = '保存到云端';
-    });
-    if (pull) pull.addEventListener('click', async function () {
-      try {
-        var remote = await MCCloud.loadConfig();
-        if (!remote || !remote.payload) { toast('云端暂无配置'); return; }
-        cfg = mergeConfig(remote.payload);
-        saveCfg();
-        renderAll();
-        checkStatus();
-        cloudSession = await MCCloud.getSession();
-        cloudRowId = (cloudSession && remote.ownerId === cloudSession.user.id) ? remote.id : null;
-        await refreshCloudUI();
-        await applyCloudImages();
-        toast('已从云端拉取');
-      } catch (e) { toast(MCCloud.errText(e, '拉取失败')); }
-    });
-    if (out) out.addEventListener('click', async function () {
-      await MCCloud.signOut();
-      cloudSession = null; cloudRowId = null; cloudPending = null;
-      cloudNote = '';
-      await refreshCloudUI();
-      toast('已退出登录');
-    });
-  }
-
-  function buildForm() {
-    var d = draft;
-    var html = '';
-
-    html += '<div class="group"><div class="g-title">云同步（跨设备保存配置）</div>' +
-      '<div class="hint" id="cloudNote">检测中…</div>' +
-      '<div class="field" id="cloudLoginBox">' +
-      '<div class="rowauto"><input type="text" id="cloudEmail" placeholder="管理员邮箱">' +
-      '<button type="button" class="btn-outline small" id="cloudSend">获取验证码</button></div>' +
-      '<div class="rowauto" style="margin-top:8px"><input type="text" id="cloudCode" placeholder="邮箱验证码">' +
-      '<button type="button" class="btn-primary small" id="cloudVerify">登录 / 注册</button></div>' +
-      '<input type="password" id="cloudPwd" placeholder="新账号需设置密码" style="margin-top:8px">' +
-      '<div class="hint">游客只能浏览；登录后才能把站点配置与图片保存到云端</div></div>' +
-      '<div class="rowauto" style="margin-top:10px">' +
-      '<button type="button" class="btn-outline small" id="cloudPull">从云端拉取</button>' +
-      '<button type="button" class="btn-primary small" id="cloudPush">保存到云端</button></div>' +
-      '<button type="button" class="add-btn" id="cloudLogout" style="margin-top:8px">退出登录</button>' +
+  /* ---------- 通用页面外壳 ---------- */
+  function pageHead(crumb, title, desc) {
+    return '<div class="page-head">' +
+      (crumb ? '<div class="crumb">' + crumb + '</div>' : '') +
+      '<h1>' + esc(title) + '</h1>' +
+      (desc ? '<p>' + esc(desc) + '</p>' : '') +
       '</div>';
-
-    html += '<div class="group"><div class="g-title">基本信息</div>';
-    html += '<div class="field"><label>服务器名称</label><input type="text" data-k="serverName" value="' + esc(d.serverName) + '"></div>';
-    html += '<div class="field"><label>副标题 / 一句话简介</label><input type="text" data-k="subtitle" value="' + esc(d.subtitle) + '"></div>';
-    html += '<div class="field"><label>详细介绍</label><textarea data-k="description">' + esc(d.description) + '</textarea></div>';
-    html += '<div class="field"><label>Java 版地址（域名或 IP，端口用 :25565）</label><input type="text" data-k="javaIp" value="' + esc(d.javaIp) + '">' +
-      '<div class="hint">状态检测使用此地址，例如 play.example.com 或 1.2.3.4:25565</div></div>';
-    html += '<div class="field"><label>备用检测地址（可选）</label><input type="text" data-k="altIp" value="' + esc(d.altIp || '') + '">' +
-      '<div class="hint">主地址（自定义域名）检测不到时，用它再试一次。适合填 frp 原始地址，避免域名解析未生效期间误报离线</div></div>';
-    html += '<div class="field"><label>自定义状态检测接口（可选）</label><input type="text" data-k="statusApi" value="' + esc(d.statusApi || '') + '">' +
-      '<div class="hint">支持 {host} / {port} / {addr} 占位符。留空用公共 API（海外源，frp 地址常被判离线）</div></div>';
-    html += '<div class="field"><label>McLists 服务器页面链接（可选）</label><input type="text" data-k="mclistUrl" value="' + esc(d.mclistUrl || '') + '">' +
-      '<div class="hint">填写后会在「如何加入」区显示查看/投票入口</div></div>';
-    html += '<div class="field"><label>基岩版地址（留空则隐藏）</label><input type="text" data-k="bedrockIp" value="' + esc(d.bedrockIp) + '"></div>';
-    html += '<div class="field"><label>页脚文字</label><input type="text" data-k="footer" value="' + esc(d.footer) + '"></div>';
-    html += '<div class="row2"><div class="field"><label>主题色</label><input type="color" data-k="accent" value="' + esc(d.accent) + '"></div>';
-    html += '<div class="field"><label>服务器图标</label><div class="rowauto">' +
-      '<img class="thumb" id="iconThumb" src="' + esc(d.icon) + '" alt="">' +
-      '<button type="button" class="btn-outline small" id="iconPick">上传</button></div>' +
-      '<input type="text" id="iconUrl" data-k="icon" value="' + esc(d.icon) + '" style="margin-top:8px">' +
-      '<div class="hint">建议使用 64×64 的 PNG，也可直接填图片链接</div></div></div>';
-    html += '</div>';
-
-    html += '<div class="group"><div class="g-title">玩法特色</div><div id="featWrap"></div>' +
-      '<button type="button" class="add-btn" data-add="features">+ 添加一项</button></div>';
-
-    html += '<div class="group"><div class="g-title">世界 / 分区</div><div id="worldWrap"></div>' +
-      '<button type="button" class="add-btn" data-add="worlds">+ 添加世界</button></div>';
-
-    html += '<div class="group"><div class="g-title">服务器截图</div><div id="shotWrap"></div>' +
-      '<button type="button" class="add-btn" data-add="screenshots">+ 添加截图</button>' +
-      '<div class="hint" style="margin-top:8px">上传的图片会压缩并保存在浏览器本地</div></div>';
-
-    html += '<div class="group"><div class="g-title">服务器规则（一行一条）</div>' +
-      '<textarea data-k="rules" style="min-height:120px">' + esc((d.rules || []).join('\n')) + '</textarea></div>';
-
-    html += '<div class="group"><div class="g-title">社群 / 下载链接</div><div id="linkWrap"></div>' +
-      '<button type="button" class="add-btn" data-add="links">+ 添加链接</button></div>';
-
-    $('#drawerBody').innerHTML = html;
-    renderLists();
-
-    $('#iconPick').addEventListener('click', function () {
-      pickImage(function (dataUrl, path) {
-        $('#iconUrl').value = dataUrl;
-        $('#iconThumb').src = dataUrl;
-        if (path) draft.iconPath = path;
-      }, 'icon');
-    });
-    $('#iconUrl').addEventListener('input', function () { $('#iconThumb').src = this.value; });
-
-    $$('[data-add]').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        var key = btn.dataset.add;
-        var item = key === 'features' ? { icon: '⭐', title: '新特色', desc: '描述' }
-          : key === 'screenshots' ? { url: '', cap: '新截图' }
-          : key === 'worlds' ? { name: 'world_name', tag: '分类', desc: '一句话说明' }
-          : { label: '🔗 链接名称', url: '#' };
-        draft[key].push(item);
-        renderLists();
-      });
-    });
-
-    bindCloudEvents();
-    refreshCloudUI();
+  }
+  function emptyState(ico, text) {
+    return '<div class="empty"><div class="ico">' + ico + '</div><p>' + esc(text) + '</p></div>';
+  }
+  function backendRequired() {
+    return emptyState('🔌', '该功能需要连接服务器后端。当前未配置 API 地址，管理员可在控制台设置。');
   }
 
-  function renderLists() {
-    // 特色
-    $('#featWrap').innerHTML = draft.features.map(function (f, i) {
-      return '<div class="item-row" data-key="features" data-i="' + i + '">' +
-        '<div class="row2"><input type="text" data-f="icon" value="' + esc(f.icon) + '" placeholder="emoji">' +
-        '<input type="text" data-f="title" value="' + esc(f.title) + '" placeholder="标题"></div>' +
-        '<input type="text" data-f="desc" value="' + esc(f.desc) + '" placeholder="描述">' +
-        '<button type="button" class="mini-del">删除</button></div>';
+  /* ================= 各页面 ================= */
+
+  /* --- 状态页 --- */
+  function renderStatus(container) {
+    container.innerHTML = pageHead('首页', '服务器状态', '实时在线人数与延迟，每 60 秒自动刷新');
+    var card = el('div', 'card');
+    card.innerHTML = '<div class="status-hero">' +
+      '<div><div class="online-count" id="stOnline">—</div><div style="font-size:13px;color:var(--muted-foreground);margin-top:4px">当前在线玩家</div></div>' +
+      '<div><span class="status-pill" id="stPill">检测中…</span></div>' +
+      '</div>' +
+      '<div class="stat-row" id="stStats"></div>' +
+      '<div class="motd" id="stMotd">正在获取服务器 MOTD…</div>' +
+      '<div style="margin-top:20px"><div style="font-size:14px;font-weight:700;margin-bottom:12px">在线玩家</div><div class="player-grid" id="stPlayers"></div></div>';
+    container.appendChild(card);
+    loadStatus();
+  }
+  function loadStatus() {
+    var url = STATUS_API.replace('{host}', JAVA_HOST).replace('{port}', JAVA_PORT);
+    fetch(url).then(function (r) { return r.json(); }).then(function (d) {
+      var ok = d && (d.online === true || d.status === true || (d.online !== undefined && d.online !== false));
+      var players = (d && (d.players && d.players.list)) || [];
+      var now = (d && (d.players && d.players.online)) || players.length || 0;
+      var max = (d && d.players && d.players.max) || 0;
+      var pill = $id('stPill'), on = $id('stOnline');
+      if (pill) { pill.textContent = ok ? '● 在线' : '● 离线'; pill.className = 'status-pill ' + (ok ? 'on' : 'off'); }
+      if (on) on.textContent = ok ? now : '0';
+      var stats = $id('stStats');
+      if (stats) {
+        var ping = (d && (d.ping !== undefined)) ? d.ping : '—';
+        var ver = (d && d.version) ? (typeof d.version === 'string' ? d.version : d.version.name) : '—';
+        stats.innerHTML = '<div class="stat-box"><div class="k">在线/最大</div><div class="v">' + now + ' / ' + max + '</div></div>' +
+          '<div class="stat-box"><div class="k">延迟</div><div class="v">' + (ping === '—' ? '—' : ping + 'ms') + '</div></div>' +
+          '<div class="stat-box"><div class="k">版本</div><div class="v">' + esc(ver || '—') + '</div></div>' +
+          '<div class="stat-box"><div class="k">地址</div><div class="v" style="font-size:14px">' + esc(SITE.javaIp) + '</div></div>';
+      }
+      var motd = $id('stMotd');
+      if (motd) motd.textContent = (d && d.motd) ? (typeof d.motd === 'string' ? d.motd : JSON.stringify(d.motd)) : (ok ? 'MOTD 未返回' : '服务器离线或不可达');
+      var pg = $id('stPlayers');
+      if (pg) {
+        if (!players.length) pg.innerHTML = emptyState('🕹️', ok ? '暂无在线玩家' : '服务器离线');
+        else pg.innerHTML = players.map(function (n) {
+          var name = (typeof n === 'string') ? n : (n.name || '');
+          var id = (typeof n === 'string') ? n : (n.uuid || n.id || n.name || '');
+          var face = 'https://minotar.net/helm/' + encodeURIComponent(id) + '/96.png';
+          return '<div class="player-cell"><img src="' + face + '" alt="" loading="lazy" onerror="this.src=\'assets/icon.png\'"><span class="nm">' + esc(name) + '</span></div>';
+        }).join('');
+      }
+    }).catch(function () {
+      var pill = $id('stPill'); if (pill) { pill.textContent = '● 离线'; pill.className = 'status-pill off'; }
+      var on = $id('stOnline'); if (on) on.textContent = '0';
+      var motd = $id('stMotd'); if (motd) motd.textContent = '无法获取服务器状态（请检查网络）';
+      var pg = $id('stPlayers'); if (pg) pg.innerHTML = emptyState('🕹️', '服务器离线或不可达');
+    });
+  }
+
+  /* --- 论坛页 --- */
+  var forumCat = null;
+  function renderForum(container, param) {
+    if (param && param.startsWith('post/')) { renderForumPost(container, param.slice(5)); return; }
+    container.innerHTML = pageHead('社区', '论坛', '发帖讨论、求助、交易，畅所欲言');
+    if (!hasBackend()) { container.innerHTML += backendRequired(); return; }
+    var lay = el('div', 'forum-layout');
+    lay.innerHTML = '<div class="cat-list" id="catList"></div><div><div id="postArea"></div></div>';
+    container.appendChild(lay);
+    loadForum();
+  }
+  function loadForum() {
+    api('/api/forum/categories').then(function (cats) {
+      var cl = $id('catList');
+      if (!cl) return;
+      cl.innerHTML = '<div class="cat-item' + (forumCat == null ? ' active' : '') + '" data-cat=""><span class="dot" style="background:var(--primary)"></span>全部</div>' +
+        (cats || []).map(function (c) {
+          return '<div class="cat-item' + (forumCat === c.id ? ' active' : '') + '" data-cat="' + c.id + '"><span class="dot" style="background:' + esc(c.color) + '"></span>' + esc(c.name) + '</div>';
+        }).join('');
+      cl.querySelectorAll('.cat-item').forEach(function (it) {
+        it.addEventListener('click', function () {
+          forumCat = it.getAttribute('data-cat') ? Number(it.getAttribute('data-cat')) : null;
+          cl.querySelectorAll('.cat-item').forEach(function (x) { x.classList.remove('active'); });
+          it.classList.add('active');
+          loadPosts();
+        });
+      });
+      loadPosts();
+    }).catch(function () { var cl = $id('catList'); if (cl) cl.innerHTML = emptyState('⚠️', '无法连接后端'); });
+  }
+  function loadPosts() {
+    var area = $id('postArea');
+    if (!area) return;
+    var url = '/api/forum/posts' + (forumCat ? '?category=' + forumCat : '');
+    area.innerHTML = '<div style="display:flex;justify-content:flex-end;margin-bottom:12px"><a class="btn btn-primary btn-sm" href="#/forum/new">+ 发帖</a></div><div class="post-list" id="postList"></div>';
+    api(url).then(function (posts) {
+      var pl = $id('postList');
+      if (!pl) return;
+      if (!posts || !posts.length) { pl.innerHTML = emptyState('📝', '还没有帖子，来发第一帖吧'); return; }
+      pl.innerHTML = posts.map(function (p) {
+        var avatar = p.author_name ? String(p.author_name).slice(0, 1).toUpperCase() : '?';
+        return '<a class="post-card" href="#/forum/post/' + p.id + '">' +
+          '<div class="avatar">' + esc(avatar) + '</div>' +
+          '<div style="flex:1;min-width:0">' +
+          '<h3>' + esc(p.title) + '</h3>' +
+          '<div class="meta"><span class="badge badge-muted">' + esc(p.category_name) + '</span><span>' + esc(p.author_name || '匿名') + '</span><span>' + fmtTime(p.created_at) + '</span><span>💬 ' + (p.reply_count || 0) + '</span><span>👁 ' + (p.views || 0) + '</span></div>' +
+          '</div></a>';
+      }).join('');
+    }).catch(function () { var pl = $id('postList'); if (pl) pl.innerHTML = emptyState('⚠️', '无法连接后端'); });
+  }
+  function renderForumPost(container, id) {
+    container.innerHTML = pageHead('<a href="#/forum">论坛</a>', '帖子', '');
+    if (!hasBackend()) { container.innerHTML += backendRequired(); return; }
+    var box = el('div', 'card'); container.appendChild(box);
+    api('/api/forum/post/' + id).then(function (p) {
+      if (!p || p.error) { box.innerHTML = emptyState('📭', '帖子不存在或已删除'); return; }
+      var avatar = p.author_name ? String(p.author_name).slice(0, 1).toUpperCase() : '?';
+      box.innerHTML = '<div class="meta" style="font-size:12.5px;color:var(--muted-foreground);display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px">' +
+        '<span class="badge badge-muted">' + esc(p.category_name) + '</span><span>' + esc(p.author_name || '匿名') + '</span><span>' + fmtTime(p.created_at) + '</span><span>👁 ' + (p.views || 0) + '</span></div>' +
+        '<h2 style="margin:0 0 14px;font-size:22px">' + esc(p.title) + '</h2>' +
+        '<div class="post-body">' + esc(p.content) + '</div>' +
+        '<hr style="border:0;border-top:1px solid var(--border);margin:20px 0">' +
+        '<div style="font-size:15px;font-weight:700;margin-bottom:12px">回复（' + (p.replies ? p.replies.length : 0) + '）</div>' +
+        '<div id="replyList">' + ((p.replies || []).map(function (r) {
+          return '<div style="padding:12px;border:1px solid var(--border);border-radius:10px;margin-bottom:10px"><div style="font-size:12.5px;color:var(--muted-foreground);margin-bottom:6px">' + esc(r.author_name || '匿名') + ' · ' + fmtTime(r.created_at) + '</div><div style="font-size:14px">' + esc(r.content) + '</div></div>';
+        }).join('') || emptyState('💬', '还没有回复')) + '</div>' +
+        '<div class="field" style="margin-top:16px"><textarea id="replyInput" placeholder="写下你的回复…"></textarea></div>' +
+        '<button class="btn btn-primary" id="replyBtn">发表回复</button>';
+      box.querySelector('#replyBtn').addEventListener('click', function () {
+        var s = session();
+        if (!s) { toast('请先登录再回复'); return; }
+        var content = box.querySelector('#replyInput').value.trim();
+        if (!content) { toast('回复内容不能为空'); return; }
+        apiPost('/api/forum/reply', { token: s.token, post_id: Number(id), content: content, author_name: s.qq }).then(function (r) {
+          if (r.error) { toast('回复失败：' + r.error); return; }
+          toast('回复成功'); box.querySelector('#replyInput').value = '';
+          renderForumPost(container, id);
+        }).catch(function () { toast('回复失败：网络错误'); });
+      });
+    }).catch(function () { box.innerHTML = emptyState('⚠️', '无法连接后端'); });
+  }
+  function renderForumNew(container) {
+    container.innerHTML = pageHead('<a href="#/forum">论坛</a>', '发新帖', '');
+    if (!hasBackend()) { container.innerHTML += backendRequired(); return; }
+    var box = el('div', 'card'); box.innerHTML = '<div id="newCatWrap"></div>' +
+      '<div class="field"><label>标题</label><input id="postTitle" type="text" maxlength="80" placeholder="一句话说清主题"></div>' +
+      '<div class="field"><label>内容</label><textarea id="postContent" style="min-height:160px" placeholder="详细描述…"></textarea></div>' +
+      '<button class="btn btn-primary" id="postSubmit">发布</button>';
+    container.appendChild(box);
+    api('/api/forum/categories').then(function (cats) {
+      var w = $id('newCatWrap');
+      if (w) w.innerHTML = '<div class="field"><label>分类</label><select id="postCat">' + (cats || []).map(function (c) { return '<option value="' + c.id + '">' + esc(c.name) + '</option>'; }).join('') + '</select></div>';
+    });
+    box.querySelector('#postSubmit').addEventListener('click', function () {
+      var s = session();
+      if (!s) { toast('请先登录再发帖'); return; }
+      var title = box.querySelector('#postTitle').value.trim();
+      var content = box.querySelector('#postContent').value.trim();
+      if (!title) { toast('标题不能为空'); return; }
+      if (!content) { toast('内容不能为空'); return; }
+      var cat = box.querySelector('#postCat') ? Number(box.querySelector('#postCat').value) : 1;
+      apiPost('/api/forum/post', { token: s.token, category_id: cat, title: title, content: content, author_name: s.qq }).then(function (r) {
+        if (r.error) { toast('发布失败：' + r.error); return; }
+        toast('发布成功'); location.hash = '#/forum/post/' + r.id;
+      }).catch(function () { toast('发布失败：网络错误'); });
+    });
+  }
+
+  /* --- 商店页 --- */
+  function renderStore(container) {
+    container.innerHTML = pageHead('商店', '商店', '点券、道具与特权，支持在线购买');
+    if (!hasBackend()) { container.innerHTML += backendRequired(); return; }
+    var grid = el('div', 'grid grid-3'); grid.id = 'storeGrid'; container.appendChild(grid);
+    api('/api/store/items').then(function (items) {
+      if (!items || !items.length) { grid.innerHTML = emptyState('🛒', '商店暂时没有上架商品'); return; }
+      grid.innerHTML = items.map(function (it) {
+        return '<div class="store-item">' +
+          '<div class="ico">' + esc(it.icon || '🎁') + '</div>' +
+          '<div class="nm">' + esc(it.name) + '</div>' +
+          '<div class="desc">' + esc(it.description || '') + '</div>' +
+          '<div style="display:flex;align-items:center;justify-content:space-between">' +
+          '<div class="price">' + (it.price > 0 ? '¥' + it.price : '免费') + '</div>' +
+          '<button class="btn btn-primary btn-sm" data-item="' + it.id + '">购买</button></div></div>';
+      }).join('');
+      grid.querySelectorAll('[data-item]').forEach(function (b) {
+        b.addEventListener('click', function () {
+          var s = session();
+          if (!s) { toast('请先登录再购买'); return; }
+          apiPost('/api/store/order', { token: s.token, item_id: Number(b.getAttribute('data-item')), amount: 1, buyer_name: s.qq }).then(function (r) {
+            if (r.error) { toast('下单失败：' + r.error); return; }
+            toast('已下单：' + r.item + '（待管理员处理）');
+          }).catch(function () { toast('下单失败：网络错误'); });
+        });
+      });
+    }).catch(function () { grid.innerHTML = emptyState('⚠️', '无法连接后端'); });
+  }
+
+  /* --- 赛事页 --- */
+  function renderTournaments(container) {
+    container.innerHTML = pageHead('活动', '赛事与活动', '服务器常驻与季节活动');
+    if (!hasBackend()) { container.innerHTML += backendRequired(); return; }
+    var grid = el('div', 'grid grid-2'); container.appendChild(grid);
+    api('/api/tournaments').then(function (list) {
+      if (!list || !list.length) { grid.innerHTML = emptyState('🏆', '暂无进行中的赛事'); return; }
+      grid.innerHTML = list.map(function (t) {
+        var st = t.status === 'ongoing' ? '进行中' : t.status === 'upcoming' ? '即将开始' : '已结束';
+        var badge = t.status === 'ongoing' ? 'badge-green' : t.status === 'upcoming' ? 'badge-gold' : 'badge-muted';
+        return '<div class="card card-hover"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><h3 style="margin:0;font-size:17px">' + esc(t.title) + '</h3><span class="badge ' + badge + '">' + st + '</span></div>' +
+          '<p style="color:var(--muted-foreground);font-size:13.5px;margin:0 0 10px">' + esc(t.description || '') + '</p>' +
+          '<div style="font-size:12.5px;color:var(--muted-foreground)">' + fmtTime(t.start_at) + ' ~ ' + fmtTime(t.end_at) + '</div>' +
+          (t.reward ? '<div style="margin-top:8px;font-size:13px;color:var(--gold)">奖励：' + esc(t.reward) + '</div>' : '') +
+          '</div>';
+      }).join('');
+    }).catch(function () { grid.innerHTML = emptyState('⚠️', '无法连接后端'); });
+  }
+
+  /* --- 经济页 --- */
+  function renderEconomy(container) {
+    container.innerHTML = pageHead('经济', '经济系统', '查询你的点券余额与交易记录');
+    if (!hasBackend()) { container.innerHTML += backendRequired(); return; }
+    var box = el('div', 'card'); container.appendChild(box);
+    var s = session();
+    if (!s) { box.innerHTML = emptyState('🔑', '请先登录后查看你的余额'); return; }
+    box.innerHTML = '<div style="font-size:14px;color:var(--muted-foreground)">当前登录 QQ：' + esc(s.qq) + '</div>' +
+      '<div style="font-size:40px;font-weight:800;color:var(--primary);margin:10px 0" id="balVal">—</div>' +
+      '<div style="font-size:13px;color:var(--muted-foreground)">点券余额</div>';
+    api('/api/economy/balance/' + encodeURIComponent(s.qq)).then(function (r) {
+      var v = $id('balVal'); if (v) v.textContent = (r && r.balance != null) ? r.balance : '0';
+    });
+  }
+
+  /* --- 成就页 --- */
+  function renderAchievements(container) {
+    container.innerHTML = pageHead('成就', '成就', '达成条件即可解锁成就');
+    if (!hasBackend()) { container.innerHTML += backendRequired(); return; }
+    var grid = el('div', 'grid grid-3'); container.appendChild(grid);
+    api('/api/achievements').then(function (list) {
+      if (!list || !list.length) { grid.innerHTML = emptyState('🏅', '暂无成就'); return; }
+      grid.innerHTML = list.map(function (a) {
+        return '<div class="card" style="text-align:center"><div style="font-size:34px">' + esc(a.icon || '🏅') + '</div><div style="font-weight:700;margin-top:8px">' + esc(a.name) + '</div><div style="font-size:13px;color:var(--muted-foreground);margin-top:6px">' + esc(a.description || '') + '</div></div>';
+      }).join('');
+    }).catch(function () { grid.innerHTML = emptyState('⚠️', '无法连接后端'); });
+  }
+
+  /* --- 建筑页 --- */
+  function renderBuilds(container) {
+    container.innerHTML = pageHead('建筑', '建筑欣赏', '玩家们的优秀建筑作品');
+    if (!hasBackend()) { container.innerHTML += backendRequired(); return; }
+    var grid = el('div', 'grid grid-3'); container.appendChild(grid);
+    api('/api/builds').then(function (list) {
+      if (!list || !list.length) { grid.innerHTML = emptyState('🏛️', '暂无建筑作品'); return; }
+      grid.innerHTML = list.map(function (b) {
+        return '<div class="card card-hover"><div style="font-weight:700;font-size:16px">' + esc(b.title) + '</div>' +
+          '<div style="font-size:13px;color:var(--muted-foreground);margin:8px 0">' + esc(b.description || '') + '</div>' +
+          '<div style="font-size:12.5px;color:var(--muted-foreground)">作者：' + esc(b.author || '匿名') + (b.world ? ' · ' + esc(b.world) : '') + '</div></div>';
+      }).join('');
+    }).catch(function () { grid.innerHTML = emptyState('⚠️', '无法连接后端'); });
+  }
+
+  /* --- 指南页 --- */
+  function renderGuide(container) {
+    container.innerHTML = pageHead('指南', '新手指南', '快速上手，玩得明白');
+    var box = el('div', 'card'); container.appendChild(box);
+    box.innerHTML = SITE.guide.map(function (g, i) {
+      return '<div style="margin-bottom:18px"><div style="display:flex;align-items:center;gap:10px;margin-bottom:6px"><span class="badge badge-green">' + (i + 1) + '</span><span style="font-weight:700;font-size:15px">' + esc(g.t) + '</span></div><div style="color:var(--muted-foreground);font-size:14px;line-height:1.8">' + esc(g.c) + '</div></div>';
     }).join('');
+  }
+
+  /* --- 规则页 --- */
+  function renderRules(container) {
+    container.innerHTML = pageHead('规则', '服务器规则', '进服前请先了解，遵守是对所有人的保护');
+    var box = el('div', 'card'); container.appendChild(box);
+    box.innerHTML = SITE.rules.map(function (r, i) {
+      return '<div style="display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)"><span style="color:var(--primary);font-weight:800;font-family:monospace">' + String(i + 1).padStart(2, '0') + '</span><span style="font-size:14.5px;line-height:1.7">' + esc(r) + '</span></div>';
+    }).join('');
+  }
+
+  /* --- 申诉页 --- */
+  function renderAppeal(container) {
+    container.innerHTML = pageHead('申诉', '封禁申诉', '认为被误封？填好信息，腐竹会通过临时会话联系你');
+    var box = el('div', 'card'); container.appendChild(box);
+    box.innerHTML = '<div class="row2">' +
+      '<div class="field"><label>游戏 ID</label><input id="apPlayer" type="text" placeholder="你在服务器里的名字"></div>' +
+      '<div class="field"><label>绑定 QQ</label><input id="apQq" type="text" inputmode="numeric" placeholder="申诉用的 QQ 号"></div></div>' +
+      '<div class="field"><label>申诉说明</label><textarea id="apReason" placeholder="发生了什么、为什么认为应该解封"></textarea></div>' +
+      '<div class="field"><label>联系方式（选填）</label><input id="apContact" type="text" placeholder="微信 / QQ / 邮箱"></div>' +
+      '<div id="apMsg" style="font-size:13px;min-height:18px;margin-bottom:10px"></div>' +
+      '<button class="btn btn-primary" id="apSubmit">提交申诉</button>';
+    box.querySelector('#apSubmit').addEventListener('click', function () {
+      var player = box.querySelector('#apPlayer').value.trim();
+      var qq = box.querySelector('#apQq').value.replace(/\D/g, '');
+      var reason = box.querySelector('#apReason').value.trim();
+      var contact = box.querySelector('#apContact').value.trim();
+      var msg = box.querySelector('#apMsg');
+      if (!player || !qq || !reason) { msg.textContent = '请把游戏 ID、绑定 QQ 和申诉说明都填好。'; msg.style.color = 'var(--destructive)'; return; }
+      if (qq.length < 5) { msg.textContent = 'QQ 号格式不对。'; msg.style.color = 'var(--destructive)'; return; }
+      msg.textContent = '正在提交…'; msg.style.color = 'var(--muted-foreground)';
+      var payload = { type: 'appeal', player: player, qq: qq, reason: reason, contact: contact, ts: Date.now() };
+      fetch('https://ntfy.sh/stl-ql-6bd1ae0f4e7e7968', {
+        method: 'POST', headers: { 'content-type': 'text/plain' }, body: JSON.stringify(payload)
+      }).then(function () {
+        msg.textContent = '已提交，腐竹会通过临时会话联系你。'; msg.style.color = 'var(--primary)';
+        box.querySelector('#apPlayer').value = ''; box.querySelector('#apQq').value = ''; box.querySelector('#apReason').value = ''; box.querySelector('#apContact').value = '';
+      }).catch(function () {
+        msg.textContent = '提交失败，请稍后重试，或直接在 QQ 群联系腐竹。'; msg.style.color = 'var(--destructive)';
+      });
+    });
+  }
+
+  /* --- 关于/首页介绍 --- */
+  function renderAbout(container) {
+    container.innerHTML = pageHead('', SITE.name, SITE.tagline);
+    var hero = el('div', 'card'); container.appendChild(hero);
+    hero.innerHTML = '<div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-bottom:8px">' +
+      '<span class="badge badge-green">Java 版</span>' +
+      '<code style="font-size:15px;font-weight:700">' + esc(SITE.javaIp) + '</code>' +
+      '<a class="btn btn-outline btn-sm" href="' + SITE.groupUrl + '" target="_blank" rel="noopener">加入 QQ 群</a>' +
+      '</div>' +
+      '<p style="color:var(--muted-foreground);font-size:14px;line-height:1.8;margin:12px 0 0">' +
+      '长期稳定的纯生存服，主世界不删档，起床战争、方块躲猫猫等小游戏随时能玩。被封禁的玩家可到「申诉」页提交申请。' +
+      '</p>';
+
+    // 玩法特色
+    var fh = el('div', ''); fh.innerHTML = '<h2 style="font-size:20px;font-weight:800;margin:28px 0 16px">玩法特色</h2>';
+    container.appendChild(fh);
+    var fg = el('div', 'grid grid-4');
+    fg.innerHTML = SITE.features.map(function (f) {
+      return '<div class="card card-hover"><div style="font-size:26px">' + f.icon + '</div><h3 style="margin:10px 0 6px;font-size:15px">' + esc(f.title) + '</h3><p style="font-size:13px;color:var(--muted-foreground);margin:0;line-height:1.7">' + esc(f.desc) + '</p></div>';
+    }).join('');
+    container.appendChild(fg);
 
     // 世界
-    $('#worldWrap').innerHTML = draft.worlds.map(function (w, i) {
-      return '<div class="item-row" data-key="worlds" data-i="' + i + '">' +
-        '<div class="row2"><input type="text" data-f="tag" value="' + esc(w.tag) + '" placeholder="分类">' +
-        '<input type="text" data-f="name" value="' + esc(w.name) + '" placeholder="世界名"></div>' +
-        '<input type="text" data-f="desc" value="' + esc(w.desc) + '" placeholder="说明">' +
-        '<button type="button" class="mini-del">删除</button></div>';
+    var wh = el('div', ''); wh.innerHTML = '<h2 style="font-size:20px;font-weight:800;margin:28px 0 16px">世界一览</h2>';
+    container.appendChild(wh);
+    var wg = el('div', 'grid grid-3');
+    wg.innerHTML = SITE.worlds.map(function (w) {
+      return '<div class="card"><span class="badge badge-green">' + esc(w.tag) + '</span><div style="font-family:monospace;font-size:14px;margin:8px 0 4px">' + esc(w.name) + '</div><div style="font-size:13px;color:var(--muted-foreground)">' + esc(w.desc) + '</div></div>';
     }).join('');
-
-    // 截图
-    $('#shotWrap').innerHTML = draft.screenshots.map(function (s, i) {
-      return '<div class="item-row" data-key="screenshots" data-i="' + i + '">' +
-        '<div class="rowauto"><input type="text" data-f="url" value="' + esc(s.url) + '" placeholder="图片链接">' +
-        '<button type="button" class="btn-outline small shot-pick">上传</button></div>' +
-        '<div class="rowauto"><input type="text" data-f="cap" value="' + esc(s.cap) + '" placeholder="说明">' +
-        '<img class="thumb" src="' + esc(s.url) + '" alt=""></div>' +
-        '<button type="button" class="mini-del">删除</button></div>';
-    }).join('');
-
-    // 链接
-    $('#linkWrap').innerHTML = draft.links.map(function (l, i) {
-      return '<div class="item-row" data-key="links" data-i="' + i + '">' +
-        '<div class="row2"><input type="text" data-f="label" value="' + esc(l.label) + '" placeholder="名称">' +
-        '<input type="text" data-f="url" value="' + esc(l.url) + '" placeholder="链接"></div>' +
-        '<button type="button" class="mini-del">删除</button></div>';
-    }).join('');
-
-    // 输入同步
-    $$('.item-row input,.item-row textarea').forEach(function (el) {
-      var ev = el.tagName === 'TEXTAREA' || el.type === 'text' || el.type === 'color' ? 'input' : 'change';
-      el.addEventListener(ev, function () {
-        var row = el.closest('.item-row');
-        draft[row.dataset.key][+row.dataset.i][el.dataset.f] = el.value;
-        if (el.dataset.f === 'url') {
-          var img = row.querySelector('img.thumb');
-          if (img) img.src = el.value;
-        }
-      });
-    });
-    // 删除
-    $$('.item-row .mini-del').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        var row = btn.closest('.item-row');
-        draft[row.dataset.key].splice(+row.dataset.i, 1);
-        renderLists();
-      });
-    });
-    // 截图上传
-    $$('.shot-pick').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        var row = btn.closest('.item-row');
-        pickImage(function (dataUrl, path) {
-          var i = +row.dataset.i;
-          draft.screenshots[i].url = dataUrl;
-          if (path) draft.screenshots[i].path = path;
-          renderLists();
-        }, 'shot');
-      });
-    });
+    container.appendChild(wg);
   }
 
-  function collectForm() {
-    $$('#drawerBody [data-k]').forEach(function (el) {
-      var k = el.dataset.k;
-      if (k === 'rules') draft.rules = el.value.split('\n').map(function (s) { return s.trim(); }).filter(Boolean);
-      else if (k === 'accent') draft.accent = el.value;
-      else draft[k] = el.value.trim();
-    });
-    return draft;
+  /* ================= 路由 ================= */
+  var routes = {
+    '/status': renderStatus,
+    '/forum': renderForum,
+    '/forum/new': renderForumNew,
+    '/store': renderStore,
+    '/tournaments': renderTournaments,
+    '/economy': renderEconomy,
+    '/achievements': renderAchievements,
+    '/builds': renderBuilds,
+    '/guide': renderGuide,
+    '/rules': renderRules,
+    '/appeal': renderAppeal
+  };
+
+  function resolve(hash) {
+    var path = (hash || '#/status').replace(/^#/, '');
+    if (!path) path = '/status';
+    // 论坛帖子 /forum/post/:id
+    if (path.startsWith('/forum/post/')) return { page: renderForum, param: 'post/' + path.slice('/forum/post/'.length) };
+    if (path === '/forum/new') return { page: renderForumNew, param: '' };
+    if (routes[path]) return { page: routes[path], param: '' };
+    return { page: renderStatus, param: '' };
   }
 
-  var saveBtn = $('#saveBtn');
-  if (saveBtn) saveBtn.addEventListener('click', function () {
-    cfg = clone(collectForm());
-    saveCfg();
-    renderAll();
-    checkStatus();
-    startPolling();
-    closeDrawer();
-    toast('已保存并应用');
-  });
-
-  var exportBtn = $('#exportBtn');
-  if (exportBtn) exportBtn.addEventListener('click', function () {
-    var blob = new Blob([JSON.stringify(cfg, null, 2)], { type: 'application/json' });
-    var a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'mc-server-config.json';
-    a.click();
-    setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
-    toast('配置已导出');
-  });
-
-  var importInput = $('#importInput');
-  if (importInput) importInput.addEventListener('change', function (e) {
-    var f = e.target.files[0];
-    if (!f) return;
-    var r = new FileReader();
-    r.onload = function () {
-      try {
-        var obj = JSON.parse(r.result);
-        var merged = clone(DEFAULT_CONFIG);
-        Object.keys(DEFAULT_CONFIG).forEach(function (k) { if (obj[k] !== undefined) merged[k] = obj[k]; });
-        cfg = merged;
-        saveCfg();
-        renderAll();
-        checkStatus();
-        toast('配置已导入');
-      } catch (err) { toast('配置文件解析失败'); }
-    };
-    r.readAsText(f);
-    e.target.value = '';
-  });
-
-  var resetBtn = $('#resetBtn');
-  if (resetBtn) resetBtn.addEventListener('click', function () {
-    if (!confirm('确定恢复默认配置？当前自定义内容将被覆盖。')) return;
-    cfg = clone(DEFAULT_CONFIG);
-    saveCfg();
-    renderAll();
-    checkStatus();
-    toast('已恢复默认');
-  });
-
-  /* ---------- 布局编辑（密码保护） ---------- */
-  // 默认密码：mcstl-sjwj（改密码：把新密码做 SHA-256 后替换下面的哈希）
-  var EDIT_HASH = '8f4771942294a2d7bea850b27b57f7dfe7a66b6dfb91ffb100ba180a0c48af96';
-
-  function sha256(s) {
-    return new Promise(function (res, rej) {
-      if (!(window.crypto && crypto.subtle && window.TextEncoder)) { rej(new Error('no-crypto')); return; }
-      crypto.subtle.digest('SHA-256', new TextEncoder().encode(s)).then(function (buf) {
-        var a = Array.prototype.map.call(new Uint8Array(buf), function (b) {
-          return ('0' + b.toString(16)).slice(-2);
-        }).join('');
-        res(a);
-      }).catch(rej);
-    });
-  }
-
-  function mainSections() {
-    var main = document.getElementById('top');
-    if (!main) return [];
-    return Array.prototype.filter.call(main.children, function (el) {
-      return el.tagName === 'SECTION' && el.id;
-    });
-  }
-
-  function applyLayout() {
-    var main = document.getElementById('top');
+  function render() {
+    var r = resolve(location.hash);
+    var main = $id('main');
     if (!main) return;
-    var order = (cfg.layout && Array.isArray(cfg.layout.order) && cfg.layout.order.length)
-      ? cfg.layout.order : DEFAULT_CONFIG.layout.order;
-    order.forEach(function (id) {
-      var el = document.getElementById(id);
-      if (el && el.parentNode === main) main.appendChild(el);
-    });
+    // 同步导航高亮
+    var path = (location.hash || '#/status').replace(/^#/, '');
+    if (path === '/forum/new' || path.startsWith('/forum/post/')) path = '/forum';
+    renderNav(path || '/status');
+    if (r.param) r.page(main, r.param); else r.page(main);
+    window.scrollTo(0, 0);
   }
 
-  // 让 renderAll 之后自动套用布局顺序
-  var __renderAll = renderAll;
-  renderAll = function () { __renderAll.apply(this, arguments); applyLayout(); };
-
-  function currentOrder() {
-    return mainSections().map(function (s) { return s.id; });
-  }
-  function persistOrder() {
-    cfg.layout = { order: currentOrder() };
-    saveCfg();
+  function init() {
+    initTheme();
+    $id('footerYear').textContent = new Date().getFullYear();
+    window.addEventListener('hashchange', render);
+    render();
   }
 
-  function enableDrag(on) {
-    Array.prototype.forEach.call(document.querySelectorAll('#top > section'), function (s) {
-      if (on) s.setAttribute('draggable', 'true');
-      else s.removeAttribute('draggable');
-    });
-  }
-
-  function afterElement(container, y) {
-    var els = Array.prototype.filter.call(container.children, function (c) {
-      return c.tagName === 'SECTION' && !c.classList.contains('dragging');
-    });
-    var closest = { offset: Number.NEGATIVE_INFINITY, element: null };
-    els.forEach(function (child) {
-      var box = child.getBoundingClientRect();
-      var offset = y - box.top - box.height / 2;
-      if (offset < 0 && offset > closest.offset) closest = { offset: offset, element: child };
-    });
-    return closest.element;
-  }
-
-  var editing = false, dragEl = null;
-
-  function buildEditBar() {
-    if (document.getElementById('editBar')) return;
-    var bar = document.createElement('div');
-    bar.id = 'editBar';
-    bar.innerHTML = '<span class="eb-title">布局编辑中 · 拖动区块排序</span>' +
-      '<button type="button" class="eb-btn" id="ebExit">退出</button>' +
-      '<button type="button" class="eb-btn primary" id="ebSaveCloud">保存到云端</button>';
-    document.body.appendChild(bar);
-    document.getElementById('ebExit').addEventListener('click', exitEdit);
-    document.getElementById('ebSaveCloud').addEventListener('click', pushLayoutCloud);
-  }
-
-  async function pushLayoutCloud() {
-    persistOrder();
-    if (!cloudSession) { toast('未登录：请到 设置 → 云同步 登录后再保存到云端'); return; }
-    try {
-      var payload = clone(cfg);
-      payload.iconPath = cfg.iconPath || '';
-      var id = await MCCloud.saveConfig(payload, cloudRowId);
-      cloudRowId = id;
-      toast('布局已保存到云端');
-    } catch (e) { toast(MCCloud.errText(e, '云端保存失败')); }
-  }
-
-  function enterEdit() {
-    if (editing) return;
-    editing = true;
-    document.body.classList.add('layout-edit');
-    applyLayout();
-    enableDrag(true);
-    buildEditBar();
-    var main = document.getElementById('top');
-    if (main && !main._dragBound) {
-      main._dragBound = true;
-      main.addEventListener('dragstart', function (e) {
-        var s = e.target.closest ? e.target.closest('section') : null;
-        if (!s || s.parentNode !== main) return;
-        dragEl = s; s.classList.add('dragging');
-        try { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', s.id || ''); } catch (_) {}
-      });
-      main.addEventListener('dragend', function (e) {
-        var s = e.target.closest ? e.target.closest('section') : null;
-        if (s) s.classList.remove('dragging');
-        if (dragEl) { dragEl.classList.remove('dragging'); dragEl = null; }
-        persistOrder(); toast('布局已保存到本地');
-      });
-      main.addEventListener('dragover', function (e) {
-        if (!dragEl) return;
-        e.preventDefault();
-        var after = afterElement(main, e.clientY);
-        if (after == null) main.appendChild(dragEl);
-        else main.insertBefore(dragEl, after);
-      });
-    }
-    toast('已进入布局编辑：拖动各区块调整顺序');
-  }
-
-  function exitEdit() {
-    editing = false;
-    document.body.classList.remove('layout-edit');
-    enableDrag(false);
-    var bar = document.getElementById('editBar');
-    if (bar) bar.remove();
-    persistOrder();
-    toast('已退出编辑');
-  }
-
-  function requestEdit() {
-    if (editing) { exitEdit(); return; }
-    var pw = prompt('请输入编辑密码：');
-    if (pw === null) return;
-    sha256(pw).then(function (h) {
-      if (h === EDIT_HASH) enterEdit();
-      else toast('密码错误');
-    }).catch(function () { toast('当前环境不支持密码校验（需 https）'); });
-  }
-
-  /* 布局编辑仅保留快捷键 Ctrl+Shift+E（见 editor.js），此处不再暴露任何入口 */
-
-  /* ---------- 启动 ---------- */
-  renderAll();
-  checkStatus();
-  startPolling();
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
 })();

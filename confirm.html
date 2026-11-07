@@ -5,52 +5,65 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>账号登录 · Stone Logic</title>
 <style>
+  :root{
+    --background: oklch(100% 0 0); --foreground: oklch(14.5% 0 0);
+    --card: oklch(100% 0 0); --card-foreground: oklch(14.5% 0 0);
+    --primary: oklch(52% .14 160); --primary-foreground: oklch(98.5% 0 0);
+    --muted: oklch(97% 0 0); --muted-foreground: oklch(55.6% 0 0);
+    --accent: oklch(97% 0 0); --border: oklch(92.2% 0 0);
+    --destructive: oklch(57.7% .245 27.325); --ring: oklch(62% .14 160 / .6);
+    --radius: .625rem;
+  }
+  [data-theme="dark"]{
+    --background: oklch(14.5% 0 0); --foreground: oklch(98.5% 0 0);
+    --card: oklch(20.5% 0 0); --card-foreground: oklch(98.5% 0 0);
+    --primary: oklch(62% .14 160); --primary-foreground: oklch(15% 0 0);
+    --muted: oklch(26.9% 0 0); --muted-foreground: oklch(70.8% 0 0);
+    --accent: oklch(26.9% 0 0); --border: oklch(100% 0 0/.1);
+    --destructive: oklch(70.4% .191 22.216); --ring: oklch(65% .14 160);
+  }
   *{box-sizing:border-box}
   body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;
-    font-family:"PingFang SC","Microsoft YaHei","Helvetica Neue",Arial,sans-serif;color:#16231c;
-    background:radial-gradient(900px 520px at 12% -8%,rgba(87,196,110,.18),transparent 60%),
-      radial-gradient(820px 520px at 92% 4%,rgba(120,200,150,.16),transparent 62%),
-      linear-gradient(168deg,#e9f6ee 0%,#f1f8f1 46%,#fbf8ec 100%);background-attachment:fixed}
-  .veil{position:fixed;inset:0;z-index:0;background:rgba(255,255,255,.28);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
-  .box{position:relative;z-index:1;width:min(92vw,480px);text-align:center;
-    background:#fff;border:1px solid #e3ede6;border-radius:22px;
-    padding:28px 26px 24px;box-shadow:0 26px 70px rgba(28,80,52,.18)}
-  .logo{width:84px;height:84px;margin:0 auto 12px;border-radius:20px;display:block;image-rendering:pixelated;
-    background:#f3f8f4;box-shadow:0 12px 30px rgba(28,80,52,.15),0 0 0 1px #e3ede6}
-  .sname{margin:0;font-size:24px;font-weight:800;color:#1f7a3a}
-  .sub{margin:5px 0 0;font-size:12.5px;color:#5f7268}
-  .rule{height:1px;margin:18px 0;background:linear-gradient(90deg,transparent,#e3ede6,transparent)}
-  h1{margin:0 0 4px;font-size:17px;color:#1f7a3a}
-  .lead{margin:0 0 14px;font-size:12.5px;color:#5f7268;line-height:1.7}
-  .req{margin:0 0 14px;padding:10px;border-radius:12px;background:rgba(47,158,84,.10);
-    border:1px solid rgba(47,158,84,.30);font-size:19px;font-weight:800;color:#1f7a3a;word-break:break-all}
+    font-family:"Inter Variable","PingFang SC","Microsoft YaHei","Helvetica Neue",Arial,sans-serif;
+    color:var(--foreground);background:var(--background);transition:background-color .25s,color .25s}
+  .box{width:min(92vw,460px);text-align:center;background:var(--card);border:1px solid var(--border);
+    border-radius:calc(var(--radius)*1.6);padding:28px 26px 24px;color:var(--card-foreground);
+    box-shadow:0 24px 70px rgb(0 0 0/.12)}
+  .logo{width:80px;height:80px;margin:0 auto 12px;border-radius:20px;display:block;image-rendering:pixelated;
+    background:var(--muted)}
+  .sname{margin:0;font-size:24px;font-weight:800;color:var(--primary)}
+  .sub{margin:5px 0 0;font-size:12.5px;color:var(--muted-foreground)}
+  .rule{height:1px;margin:18px 0;background:linear-gradient(90deg,transparent,var(--border),transparent)}
+  h1{margin:0 0 4px;font-size:17px;color:var(--foreground)}
+  .lead{margin:0 0 14px;font-size:12.5px;color:var(--muted-foreground);line-height:1.7}
+  .req{margin:0 0 14px;padding:10px;border-radius:12px;background:color-mix(in oklab,var(--primary) 12%,transparent);
+    border:1px solid var(--ring);font-size:19px;font-weight:800;color:var(--primary);word-break:break-all}
   .row{display:flex;gap:8px;margin-bottom:10px}
-  input{flex:1;min-width:0;padding:11px 12px;border:1px solid #e3ede6;border-radius:10px;
-    background:#f3f8f4;color:#16231c;outline:none;font-size:14px;font-family:inherit}
-  input:focus{border-color:#2f9e54;box-shadow:0 0 0 3px rgba(58,168,86,.12)}
+  input{flex:1;min-width:0;padding:11px 12px;border:1px solid var(--border);border-radius:10px;
+    background:var(--muted);color:var(--foreground);outline:none;font-size:14px;font-family:inherit}
+  input:focus{border-color:var(--ring);box-shadow:0 0 0 3px var(--ring)}
   input.otp{letter-spacing:6px;text-align:center;font-size:17px;font-weight:800}
-  button{padding:11px 14px;border:0;border-radius:10px;background:linear-gradient(135deg,#57c46e,#2f9e54);color:#fff;
-    font-size:13px;font-weight:800;cursor:pointer;white-space:nowrap;font-family:inherit}
-  button:hover{filter:brightness(1.04)}
+  button{padding:11px 14px;border:0;border-radius:10px;background:var(--primary);color:var(--primary-foreground);
+    font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:inherit}
+  button:hover{opacity:.9}
   button:disabled{opacity:.45;cursor:not-allowed}
   button.wide{width:100%;margin-top:4px;font-size:15px;padding:13px}
-  button.ghost{background:#f3f8f4;color:#16231c;border:1px solid #e3ede6}
+  button.ghost{background:var(--muted);color:var(--foreground);border:1px solid var(--border)}
   .list{margin:12px 0;display:grid;gap:8px;text-align:left}
-  .item{padding:10px 12px;border-radius:10px;border:1px solid #e3ede6;
-    background:#f3f8f4;cursor:pointer;font-size:14px;display:flex;justify-content:space-between;align-items:center;color:#16231c}
-  .item:hover{border-color:#2f9e54}
-  .item.on{border-color:#2f9e54;background:rgba(47,158,84,.12)}
-  .item small{color:#5f7268;font-size:11px}
-  .msg{min-height:18px;margin:10px 0 0;font-size:12.5px;color:#5f7268;line-height:1.6}
-  .msg.err{color:#b23b30;font-weight:700}
-  .foot{margin-top:16px;padding-top:12px;border-top:1px solid #e3ede6;font-size:12px;color:#8298b5;line-height:1.9}
-  a{color:#2f9e54;text-decoration:none}
+  .item{padding:10px 12px;border-radius:10px;border:1px solid var(--border);
+    background:var(--muted);cursor:pointer;font-size:14px;display:flex;justify-content:space-between;align-items:center;color:var(--foreground)}
+  .item:hover{border-color:var(--ring)}
+  .item.on{border-color:var(--ring);background:color-mix(in oklab,var(--primary) 12%,transparent)}
+  .item small{color:var(--muted-foreground);font-size:11px}
+  .msg{min-height:18px;margin:10px 0 0;font-size:12.5px;color:var(--muted-foreground);line-height:1.6}
+  .msg.err{color:var(--destructive);font-weight:700}
+  .foot{margin-top:16px;padding-top:12px;border-top:1px solid var(--border);font-size:12px;color:var(--muted-foreground);line-height:1.9}
+  a{color:var(--primary);text-decoration:none}
   a:hover{text-decoration:underline}
   [hidden]{display:none!important}
 </style>
 </head>
 <body>
-<div class="veil"></div>
 <div class="box">
   <img class="logo" id="logo" src="assets/icon.png" alt="服务器 Logo">
   <h2 class="sname" id="sname">Stone Logic</h2>
@@ -85,6 +98,11 @@
 </div>
 <script>
 (function () {
+  try {
+    var saved = localStorage.getItem('stl_theme');
+    if (!saved) saved = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-theme', saved);
+  } catch (e) {}
   try {
     var cfg = JSON.parse(localStorage.getItem('mc-site-config-v2') || '{}');
     if (cfg.serverName) document.getElementById('sname').textContent = cfg.serverName;
