@@ -202,29 +202,6 @@ code{font-family:ui-monospace,Consolas,Menlo,monospace}
 .table .rank{font-weight:800;color:var(--primary)}
 .table .rank.top1{color:var(--gold)}
 
-/* ===== 论坛 ===== */
-.forum-layout{display:grid;grid-template-columns:240px 1fr;gap:20px;align-items:start}
-.cat-list{display:grid;gap:8px}
-.cat-item{display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:10px;border:1px solid var(--border);background:var(--card);cursor:pointer;transition:.18s;font-size:14px}
-.cat-item:hover{border-color:var(--ring)}
-.cat-item.active{background:color-mix(in oklab, var(--primary) 10%, transparent);border-color:var(--ring)}
-.cat-item .dot{flex:0 0 auto}
-.post-list{display:grid;gap:12px}
-.post-card{display:flex;gap:14px;padding:16px 18px;border-radius:12px;border:1px solid var(--border);background:var(--card);transition:.18s}
-.post-card:hover{border-color:var(--ring)}
-.post-card .avatar{width:40px;height:40px;border-radius:10px;flex:0 0 auto;background:var(--muted);display:grid;place-items:center;font-weight:700;color:var(--primary)}
-.post-card h3{margin:0 0 6px;font-size:16px;font-weight:700}
-.post-card .meta{font-size:12.5px;color:var(--muted-foreground);display:flex;gap:10px;flex-wrap:wrap}
-.post-body{margin-top:14px;line-height:1.8;font-size:14.5px;white-space:pre-wrap}
-
-/* ===== 商店 ===== */
-.store-item{display:flex;flex-direction:column;gap:12px;padding:18px;border-radius:14px;border:1px solid var(--border);background:var(--card);transition:.18s}
-.store-item:hover{border-color:var(--ring);transform:translateY(-3px)}
-.store-item .ico{font-size:34px}
-.store-item .nm{font-size:16px;font-weight:700}
-.store-item .price{font-size:20px;font-weight:800;color:var(--primary)}
-.store-item .desc{font-size:13px;color:var(--muted-foreground);flex:1}
-
 /* ===== 页脚 ===== */
 .footer{border-top:1px solid var(--border);padding:28px 20px;text-align:center;color:var(--muted-foreground);font-size:13px}
 
@@ -245,7 +222,6 @@ code{font-family:ui-monospace,Consolas,Menlo,monospace}
 
 /* ===== 响应式 ===== */
 @media(max-width:860px){
-  .forum-layout{grid-template-columns:1fr}
   .status-hero{grid-template-columns:1fr}
   .row2{grid-template-columns:1fr}
 }
