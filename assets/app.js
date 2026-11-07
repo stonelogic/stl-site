@@ -51,7 +51,7 @@
       { t: '小游戏', c: '起床战争、方块躲猫猫、PVP 等小游戏在世界 lobby 的菜单里进入，不影响生存进度。' }
     ],
     feat4: [
-      { icon: 'surv', title: '生存 + 小游戏', desc: '双模式同服，自由切换，体验丰富玩法', tint: 'blue' },
+      { icon: 'surv', title: '生存 + 小游戏', desc: '双服务器自由切换，玩法丰富', tint: 'blue' },
       { icon: 'game', title: '两种模式', desc: '纯净生存 + 多种小游戏，总有适合你的', tint: 'pink' },
       { icon: 'shield', title: '正版 / 离线均可', desc: '两种验证模式都支持，欢迎所有玩家', tint: 'blue' },
       { icon: 'wifi', title: '跨版本互通', desc: '1.21.X 版本均可进入，无需担心版本问题', tint: 'pink' }
