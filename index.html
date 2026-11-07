@@ -22,6 +22,7 @@
       <a href="#worlds">世界</a>
       <a href="#events">活动</a>
       <a href="#status">状态</a>
+      <a href="#profile">玩家</a>
       <a href="#rules">规则</a>
       <a href="#faq">问答</a>
       <a href="#appeal">申诉</a>
@@ -112,6 +113,30 @@
 
       <button class="refresh-btn" id="refreshBtn">重新检测</button>
       <div class="api-note" id="apiNote"></div>
+    </div>
+  </section>
+
+  <!-- ===== 玩家主页 ===== -->
+  <section class="section" id="profile">
+    <h2 class="sec-title">玩家主页</h2>
+    <p class="sec-desc">输入游戏 ID，查看玩家皮肤与游戏时长</p>
+    <div class="profile-search">
+      <input id="pfSearch" type="text" placeholder="输入游戏 ID，如 Steve" autocomplete="off" maxlength="16">
+      <button class="btn-primary" id="pfSearchBtn" type="button">查询</button>
+    </div>
+    <div class="profile-card" id="pfCard" hidden>
+      <div class="pf-skin"><img id="pfBody" alt="皮肤" src=""></div>
+      <div class="pf-info">
+        <div class="pf-head-row">
+          <img id="pfHead" class="pf-head" alt="头像" src="">
+          <h3 id="pfName">—</h3>
+        </div>
+        <div class="pf-meta">
+          <div class="pf-item"><span>游戏时长</span><b id="pfPlaytime">—</b></div>
+          <div class="pf-item"><span>皮肤</span><b>按 ID 渲染</b></div>
+        </div>
+        <p class="pf-note" id="pfNote"></p>
+      </div>
     </div>
   </section>
 

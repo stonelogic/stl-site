@@ -17,6 +17,7 @@
     bedrockIp: '',
     statusApi: 'https://www.mclists.cn/api/server-status/?host={host}&port={port}',
     mclistUrl: 'https://www.mclists.cn/',
+    statsApi: '',
     icon: 'assets/icon.png',
     accent: '#3aa856',
     features: [
@@ -83,7 +84,7 @@
       note: '任何问题、BUG 反馈或商务合作，欢迎加 QQ 群找管理；被封禁的玩家也可在页面底部提交申诉。'
     },
     footer: '© 2026 Stone Logic · 由玩家自建运营 · 与 Mojang / Microsoft 无隶属关系',
-    layout: { order: ['hero', 'features', 'worlds', 'events', 'status', 'rules', 'faq', 'appeal', 'owner', 'join', 'gallery'] }
+    layout: { order: ['hero', 'features', 'worlds', 'events', 'status', 'profile', 'rules', 'faq', 'appeal', 'owner', 'join', 'gallery'] }
   };
 
   /* ---------- 工具 ---------- */
@@ -263,6 +264,44 @@
         '<span class="ol-ico">' + l.icon + '</span><span>' + esc(l.label) + '</span></a>';
     }).join('');
   }
+
+  /* ---------- 玩家主页 ---------- */
+  function formatPlaytime(sec) {
+    sec = Math.max(0, Math.floor(Number(sec) || 0));
+    if (!sec) return '0 分钟';
+    var d = Math.floor(sec / 86400), h = Math.floor(sec % 86400 / 3600), m = Math.floor(sec % 3600 / 60);
+    var out = [];
+    if (d) out.push(d + ' 天');
+    if (h) out.push(h + ' 小时');
+    out.push(m + ' 分钟');
+    return out.join(' ');
+  }
+  function lookupProfile(name) {
+    var card = $('#pfCard'), note = $('#pfNote'), pname = $('#pfName');
+    name = String(name || '').trim();
+    if (!name) { if (note) note.textContent = '请输入游戏 ID。'; return; }
+    if (!/^[A-Za-z0-9_]{1,16}$/.test(name)) { if (note) note.textContent = '游戏 ID 只能包含字母、数字和下划线（1–16 位）。'; return; }
+    if (card) card.hidden = false;
+    if (pname) pname.textContent = name;
+    var hd = $('#pfHead'); if (hd) hd.src = 'https://minotar.net/helm/' + encodeURIComponent(name) + '/64';
+    var bd = $('#pfBody'); if (bd) bd.src = 'https://mc-heads.net/body/' + encodeURIComponent(name) + '/right';
+    var pt = $('#pfPlaytime'); if (pt) pt.textContent = '加载中…';
+    var api = (cfg.statsApi || '').trim();
+    if (api) {
+      var url = api.indexOf('{name}') >= 0 ? api.replace('{name}', encodeURIComponent(name)) : api + encodeURIComponent(name);
+      fetch(url, { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (d) {
+          var v = d && (d.playtime || d.play_time || d.playTime || (d.data && (d.data.playtime || d.data.play_time)));
+          if (pt) pt.textContent = (v != null) ? formatPlaytime(v) : '未接入';
+        }).catch(function () { if (pt) pt.textContent = '未接入'; });
+    } else {
+      if (pt) pt.textContent = '未接入';
+    }
+    if (note) note.textContent = api ? '' : '皮肤按游戏 ID 渲染（离线服可能显示默认皮肤）；游戏时长需接入服务器统计后才会显示真实数据。';
+  }
+  var pfBtn = $('#pfSearchBtn'), pfInp = $('#pfSearch');
+  if (pfBtn) pfBtn.addEventListener('click', function () { lookupProfile(pfInp && pfInp.value); });
+  if (pfInp) pfInp.addEventListener('keydown', function (e) { if (e.key === 'Enter') lookupProfile(pfInp.value); });
 
   function scrollToShot(i) {
     var list = $('#galleryList');
