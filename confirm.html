@@ -5,6 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>账号登录 · Stone Logic</title>
 <style>
+  /* 与官网主站一致：服务器名称用方块像素字体 */
+  @font-face{
+    font-family:"StlPixel";
+    src:url("assets/fonts/silkscreen-700.woff2") format("woff2");
+    font-weight:700;font-style:normal;font-display:swap;
+  }
+  .stl-pixel{
+    font-family:"StlPixel","Silkscreen","PingFang SC","Microsoft YaHei",Arial,sans-serif;
+    font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+  }
   :root{
     --background: oklch(100% 0 0); --foreground: oklch(14.5% 0 0);
     --card: oklch(100% 0 0); --card-foreground: oklch(14.5% 0 0);
@@ -31,7 +41,7 @@
     box-shadow:0 24px 70px rgb(0 0 0/.12)}
   .logo{width:80px;height:80px;margin:0 auto 12px;border-radius:20px;display:block;image-rendering:pixelated;
     background:var(--muted)}
-  .sname{margin:0;font-size:24px;font-weight:800;color:var(--primary)}
+  .sname{margin:0;font-size:24px;font-weight:700;color:var(--primary)}
   .sub{margin:5px 0 0;font-size:12.5px;color:var(--muted-foreground)}
   .rule{height:1px;margin:18px 0;background:linear-gradient(90deg,transparent,var(--border),transparent)}
   h1{margin:0 0 4px;font-size:17px;color:var(--foreground)}
@@ -66,7 +76,7 @@
 <body>
 <div class="box">
   <img class="logo" id="logo" src="assets/icon.png" alt="服务器 Logo">
-  <h2 class="sname" id="sname">Stone Logic</h2>
+  <h2 class="sname stl-pixel" id="sname">Stone Logic</h2>
   <p class="sub" id="sub">Minecraft 服务器 · 账号登录</p>
   <div class="rule"></div>
 

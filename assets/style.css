@@ -2,6 +2,15 @@
    Stone Logic 官网样式 · mcnova 风格
    青绿主色 + 深色/浅色双主题 · shadcn 式卡片圆角
    =========================================================== */
+/* 服务器名称统一用首页大标题那套方块像素字体。
+   StlPixel 只有拉丁字形，"服务器" 这类中文会自动回落到后面的中文字体，
+   跟首页「像素英文标题 + 普通中文标语」的搭配一致。 */
+.stl-pixel{
+  font-family:"StlPixel","Silkscreen","PingFang SC","Microsoft YaHei",Arial,sans-serif;
+  font-weight:700;
+  letter-spacing:.05em;
+  text-transform:uppercase;
+}
 @font-face{
   font-family:"StlPixel";
   src:url("fonts/silkscreen-700.woff2") format("woff2");
@@ -98,7 +107,7 @@ code{font-family:ui-monospace,Consolas,Menlo,monospace}
 }
 .brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:17px;color:var(--primary);white-space:nowrap}
 .brand-icon{width:34px;height:34px;border-radius:9px;object-fit:cover;box-shadow:0 1px 3px rgb(0 0 0/.10)}
-.brand-name{letter-spacing:-.3px}
+.brand-name{font-size:16px}
 .nav-main{display:flex;align-items:center;gap:4px;margin-left:8px;overflow-x:auto;scrollbar-width:none}
 .nav-main::-webkit-scrollbar{display:none}
 .nav-main a,.nav-main .nav-item{
@@ -315,7 +324,7 @@ code{font-family:ui-monospace,Consolas,Menlo,monospace}
 .footer{border-top:1px solid var(--border);padding:40px 20px 24px;color:var(--muted-foreground);font-size:13px}
 .footer-inner{max-width:1280px;margin:0 auto}
 .footer-cols{display:grid;grid-template-columns:1.7fr 1fr 1fr;gap:32px}
-.fb-name{font-size:17px;font-weight:800;color:var(--primary);margin-bottom:8px}
+.fb-name{font-size:18px;font-weight:700;color:var(--primary);margin-bottom:8px}
 .fb-tag{margin:0 0 10px;font-size:13px;color:var(--muted-foreground)}
 .fb-ip{font-family:ui-monospace,Consolas,Menlo,monospace;font-weight:700;color:var(--primary);font-size:13px;word-break:break-all}
 .footer-col{display:flex;flex-direction:column;gap:9px}

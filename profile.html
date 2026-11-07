@@ -6,6 +6,16 @@
 <title>个人主页 · Stone Logic</title>
 <link rel="icon" href="assets/icon.png">
 <style>
+  /* 与官网主站一致：服务器名称用方块像素字体 */
+  @font-face{
+    font-family:"StlPixel";
+    src:url("assets/fonts/silkscreen-700.woff2") format("woff2");
+    font-weight:700;font-style:normal;font-display:swap;
+  }
+  .stl-pixel{
+    font-family:"StlPixel","Silkscreen","PingFang SC","Microsoft YaHei",Arial,sans-serif;
+    font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+  }
   :root{
     --background: oklch(100% 0 0); --foreground: oklch(14.5% 0 0);
     --card: oklch(100% 0 0); --card-foreground: oklch(14.5% 0 0);
@@ -84,7 +94,7 @@
 <body>
 <div class="top">
   <div class="top-inner">
-    <a class="brand" href="index.html"><img src="assets/icon.png" alt=""><span id="brandName">Stone Logic</span></a>
+    <a class="brand" href="index.html"><img src="assets/icon.png" alt=""><span id="brandName" class="stl-pixel">Stone Logic</span></a>
     <div class="top-right" id="topRight">
       <a class="btn" href="index.html">← 返回官网</a>
       <button class="iconbtn" id="themeToggle" type="button" title="切换主题" aria-label="切换主题">
