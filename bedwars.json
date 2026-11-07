@@ -1,0 +1,127 @@
+{
+  "generatedAt": 1794041651,
+  "source": "bedwars",
+  "count": 10,
+  "players": [
+    {
+      "name": "sjwj12517",
+      "rank": 1,
+      "score": 3135,
+      "wins": 36,
+      "loses": 5,
+      "kills": 31,
+      "deaths": 31,
+      "destroyedBeds": 29,
+      "winRate": 88,
+      "kd": 1.0
+    },
+    {
+      "name": "sjwj",
+      "rank": 2,
+      "score": 635,
+      "wins": 8,
+      "loses": 23,
+      "kills": 1,
+      "deaths": 37,
+      "destroyedBeds": 1,
+      "winRate": 26,
+      "kd": 0.03
+    },
+    {
+      "name": "xiaoran8083",
+      "rank": 3,
+      "score": 285,
+      "wins": 3,
+      "loses": 1,
+      "kills": 6,
+      "deaths": 2,
+      "destroyedBeds": 3,
+      "winRate": 75,
+      "kd": 3.0
+    },
+    {
+      "name": "feng_56",
+      "rank": 4,
+      "score": 180,
+      "wins": 2,
+      "loses": 2,
+      "kills": 3,
+      "deaths": 5,
+      "destroyedBeds": 2,
+      "winRate": 50,
+      "kd": 0.6
+    },
+    {
+      "name": "qrnb",
+      "rank": 5,
+      "score": 150,
+      "wins": 1,
+      "loses": 1,
+      "kills": 0,
+      "deaths": 2,
+      "destroyedBeds": 0,
+      "winRate": 50,
+      "kd": 0.0
+    },
+    {
+      "name": "mnbhjk",
+      "rank": 6,
+      "score": 105,
+      "wins": 1,
+      "loses": 1,
+      "kills": 3,
+      "deaths": 5,
+      "destroyedBeds": 1,
+      "winRate": 50,
+      "kd": 0.6
+    },
+    {
+      "name": "123456789191",
+      "rank": 7,
+      "score": 50,
+      "wins": 1,
+      "loses": 0,
+      "kills": 0,
+      "deaths": 1,
+      "destroyedBeds": 0,
+      "winRate": 100,
+      "kd": 0.0
+    },
+    {
+      "name": "24511",
+      "rank": 8,
+      "score": 0,
+      "wins": 0,
+      "loses": 0,
+      "kills": 0,
+      "deaths": 2,
+      "destroyedBeds": 0,
+      "winRate": 0,
+      "kd": 0.0
+    },
+    {
+      "name": "played",
+      "rank": 9,
+      "score": 0,
+      "wins": 0,
+      "loses": 1,
+      "kills": 0,
+      "deaths": 6,
+      "destroyedBeds": 0,
+      "winRate": 0,
+      "kd": 0.0
+    },
+    {
+      "name": "win2016",
+      "rank": 10,
+      "score": 0,
+      "wins": 0,
+      "loses": 0,
+      "kills": 0,
+      "deaths": 0,
+      "destroyedBeds": 0,
+      "winRate": 0,
+      "kd": 0.0
+    }
+  ]
+}
