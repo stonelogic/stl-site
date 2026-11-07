@@ -86,6 +86,9 @@
   var editing = false;
   var draft = null;
   var mask = null;
+  var originalFeatures = null;
+  // 内置默认图标兜底：仓库配置里图标被清空时，按位置恢复默认 emoji
+  var BUILTIN_ICONS = ['⚔️', '🫥', '🏹', '🏡', '👥', '💰', '⭐', '🎁'];
 
   function deepClone(o) { return JSON.parse(JSON.stringify(o)); }
 
@@ -174,6 +177,16 @@
       });
       draft[key] = out;
     });
+    // 图标保护：保存时若某个 feature 的 icon 被清空，先用原始配置、再用内置默认图标兜底
+    if (Array.isArray(draft.features)) {
+      draft.features = draft.features.map(function (it, i) {
+        if (!it.icon) {
+          if (originalFeatures && originalFeatures[i] && originalFeatures[i].icon) it.icon = originalFeatures[i].icon;
+          else if (BUILTIN_ICONS[i]) it.icon = BUILTIN_ICONS[i];
+        }
+        return it;
+      });
+    }
   }
 
   function delRow(k) {
@@ -234,7 +247,10 @@
         body: JSON.stringify(body2)
       });
       if (!r.ok) throw new Error('HTTP ' + r.status + ' ' + (await r.text()).slice(0, 120));
-      toast('已保存到仓库，线上约 1 分钟后生效');
+      // 立即让当前页面反映新配置（不依赖刷新 / 等待 Pages 重建）
+      if (window.__stlApplyConfig) window.__stlApplyConfig(draft);
+      if (window.__stlRender) window.__stlRender();
+      toast('已保存到仓库，线上约 1 分钟后生效（本页已即时预览）');
     } catch (e) {
       toast('保存失败：' + e.message, true);
     }
@@ -253,6 +269,7 @@
     if (!ok) { toast('密码错误', true); return; }
     if (!mask) build();
     draft = currentCfg();
+    originalFeatures = (window.__stlSite && window.__stlSite.features) ? deepClone(window.__stlSite.features) : null;
     renderForm();
     editing = true;
     mask.style.display = 'flex';

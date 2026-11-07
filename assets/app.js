@@ -132,6 +132,7 @@
       '<span class="flower f1">❀</span><span class="flower f2">✿</span>' +
       '<span class="flower f3">❀</span><span class="flower f4">✿</span>' +
       '<img class="hero-logo" src="assets/title-logo.png" alt="STONE LOGIC">' +
+      '<p class="hero-tagline">' + esc(SITE.tagline) + '</p>' +
       '<p class="hero-slogan">' + esc(SITE.slogan) + '</p>' +
       '<div class="hero-actions">' +
       '<a class="btn btn-primary" href="' + SITE.groupUrl + '" target="_blank" rel="noopener">加入 QQ 群</a>' +
@@ -385,6 +386,14 @@
     if (Array.isArray(cfg.worlds) && cfg.worlds.length) SITE.worlds = cfg.worlds;
     if (Array.isArray(cfg.rules) && cfg.rules.length) SITE.rules = cfg.rules;
     if (Array.isArray(cfg.guide) && cfg.guide.length) SITE.guide = cfg.guide;
+    // name / tagline 也要落到页面可见处（导航品牌名 + 文档标题 + 首页副标题）
+    try {
+      if (SITE.name) {
+        if (document.title.indexOf(SITE.name) === -1) document.title = SITE.name + ' 服务器';
+        var bn = document.querySelector('.brand-name');
+        if (bn) bn.textContent = SITE.name;
+      }
+    } catch (e) {}
   }
   function loadConfig(done) {
     var local = null;
