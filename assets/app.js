@@ -276,16 +276,10 @@
   function loadHeroOnline() {
     clearInterval(window.__stlHeroTimer);
     function upd() {
-      var url = STATUS_API.replace('{host}', JAVA_HOST).replace('{port}', JAVA_PORT);
-      fetch(url).then(function (r) { return r.json(); }).then(function (d) {
-        var data = (d && d.data) ? d.data : d;
-        var ok = data && data.online === true;
-        var p = (data && data.players) || {};
+      fetchLocalOnline(function (d, err) {
         var e = $id('heroOnline'); if (!e) return;
-        if (ok) e.innerHTML = '当前在线 <strong>' + (p.now || 0) + '</strong> 名玩家 <span class="ho-arrow">→</span>';
+        if (!err && d && d.online) e.innerHTML = '当前在线 <strong>' + (d.now || 0) + '</strong> 名玩家 <span class="ho-arrow">→</span>';
         else e.innerHTML = '查看在线玩家 <span class="ho-arrow">→</span>';
-      }).catch(function () {
-        var e = $id('heroOnline'); if (e) e.innerHTML = '查看在线玩家 <span class="ho-arrow">→</span>';
       });
     }
     upd();
@@ -331,36 +325,50 @@
     loadStatus._t = setInterval(loadStatus, 60000);
   }
   var ONLINE_TOPIC = 'stl-online-6bd1ae0f4e7e7968';
+
+  /* 站点统一的在线数据源：仓库里的 online.json（由 tools/export_online.py 经 RCON 导出）
+     人数与名单必须同源，否则会出现「显示在线 1 人却列出 2 个头像」这种自相矛盾。 */
+  function fetchLocalOnline(cb) {
+    fetch('online.json?_=' + Date.now(), { cache: 'no-store' })
+      .then(function (r) { if (!r.ok) throw new Error('no file'); return r.json(); })
+      .then(function (d) { cb(d, null); })
+      .catch(function (e) { cb(null, e); });
+  }
+
   function loadStatus() {
-    var url = STATUS_API.replace('{host}', JAVA_HOST).replace('{port}', JAVA_PORT);
-    fetch(url).then(function (r) { return r.json(); }).then(function (d) {
-      var data = (d && d.data) ? d.data : d;
-      var ok = data && data.online === true;
-      var p = (data && data.players) || {};
-      var now = p.now || 0;
-      var max = p.max || 0;
+    // 人数 / 名单以本地 online.json 为准；第三方接口只用来补延迟、版本、MOTD
+    fetchLocalOnline(function (d) {
+      var ok = !!(d && d.online);
+      var now = (d && d.now) || 0;
+      var max = (d && d.max) || 0;
       var pill = $id('stPill'), on = $id('stOnline');
       if (pill) { pill.textContent = ok ? '● 在线' : '● 离线'; pill.className = 'status-pill ' + (ok ? 'on' : 'off'); }
       if (on) on.textContent = ok ? now : '0';
-      var stats = $id('stStats');
-      if (stats) {
-        var ping = (data.latency != null) ? data.latency : '—';
-        var ver = data.version || data.name || '—';
-        stats.innerHTML = '<div class="stat-box"><div class="k">在线/最大</div><div class="v">' + now + ' / ' + max + '</div></div>' +
-          '<div class="stat-box"><div class="k">延迟</div><div class="v">' + (ping === '—' ? '—' : ping + 'ms') + '</div></div>' +
-          '<div class="stat-box"><div class="k">版本</div><div class="v">' + esc(ver || '—') + '</div></div>' +
-          '<div class="stat-box"><div class="k">地址</div><div class="v" style="font-size:14px">' + esc(SITE.javaIp) + '</div></div>';
-      }
-      var motd = $id('stMotd');
-      if (motd) motd.textContent = data.description || (ok ? 'MOTD 未返回' : '服务器离线或不可达');
       var pg = $id('stPlayers');
-      if (pg) loadOnlineInto(pg, ok, p.now);
-    }).catch(function () {
-      var pill = $id('stPill'); if (pill) { pill.textContent = '● 离线'; pill.className = 'status-pill off'; }
-      var on = $id('stOnline'); if (on) on.textContent = '0';
-      var motd = $id('stMotd'); if (motd) motd.textContent = '无法获取服务器状态（请检查网络）';
-      var pg = $id('stPlayers'); if (pg) pg.innerHTML = emptyState('🕹️', '服务器离线或不可达');
+      if (pg) {
+        var age = (d && d.updated) ? Math.max(0, Math.round(Date.now() / 1000 - d.updated)) : -1;
+        renderPlayerGrid(pg, (d && d.players) || [], ok, age);
+      }
+      var url = STATUS_API.replace('{host}', JAVA_HOST).replace('{port}', JAVA_PORT);
+      fetch(url).then(function (r) { return r.json(); }).then(function (x) {
+        fillStatusStats(now, max, (x && x.data) ? x.data : x, ok);
+      }).catch(function () { fillStatusStats(now, max, null, ok); });
     });
+  }
+
+  /* 延迟 / 版本 / MOTD 只有第三方接口有，拿不到就显示 — */
+  function fillStatusStats(now, max, data, ok) {
+    var ping = (data && data.latency != null) ? data.latency : '—';
+    var ver = (data && (data.version || data.name)) || '—';
+    var stats = $id('stStats');
+    if (stats) {
+      stats.innerHTML = '<div class="stat-box"><div class="k">在线/最大</div><div class="v">' + now + ' / ' + max + '</div></div>' +
+        '<div class="stat-box"><div class="k">延迟</div><div class="v">' + (ping === '—' ? '—' : ping + 'ms') + '</div></div>' +
+        '<div class="stat-box"><div class="k">版本</div><div class="v">' + esc(ver || '—') + '</div></div>' +
+        '<div class="stat-box"><div class="k">地址</div><div class="v" style="font-size:14px">' + esc(SITE.javaIp) + '</div></div>';
+    }
+    var motd = $id('stMotd');
+    if (motd) motd.textContent = (data && data.description) || (ok ? 'MOTD 未返回' : '服务器离线或不可达');
   }
 
   function renderEmpty(pg, ok, now) {
@@ -438,19 +446,19 @@
     loadOnline._t = setInterval(loadOnline, 30000);
   }
   function loadOnline() {
-    var url = STATUS_API.replace('{host}', JAVA_HOST).replace('{port}', JAVA_PORT);
-    fetch(url).then(function (r) { return r.json(); }).then(function (d) {
-      var data = (d && d.data) ? d.data : d;
-      var ok = data && data.online === true;
-      var p = (data && data.players) || {};
+    fetchLocalOnline(function (d, err) {
       var pill = $id('olPill'), cnt = $id('olCount');
+      if (err || !d) {
+        if (pill) { pill.textContent = '● 离线'; pill.className = 'status-pill off'; }
+        if (cnt) cnt.textContent = '在线 0 / 0 人';
+        var pg0 = $id('olPlayers'); if (pg0) pg0.innerHTML = emptyState('🕹️', '服务器离线或不可达');
+        return;
+      }
+      var ok = !!d.online;
       if (pill) { pill.textContent = ok ? '● 在线' : '● 离线'; pill.className = 'status-pill ' + (ok ? 'on' : 'off'); }
-      if (cnt) cnt.textContent = '在线 ' + (p.now || 0) + ' / ' + (p.max || 0) + ' 人';
-      loadOnlineInto($id('olPlayers'), ok, p.now);
-    }).catch(function () {
-      var pill = $id('olPill'); if (pill) { pill.textContent = '● 离线'; pill.className = 'status-pill off'; }
-      var cnt = $id('olCount'); if (cnt) cnt.textContent = '在线 0 / 0 人';
-      loadOnlineInto($id('olPlayers'), false);
+      if (cnt) cnt.textContent = '在线 ' + (d.now || 0) + ' / ' + (d.max || 0) + ' 人';
+      var age = d.updated ? Math.max(0, Math.round(Date.now() / 1000 - d.updated)) : -1;
+      renderPlayerGrid($id('olPlayers'), d.players || [], ok, age);
     });
   }
 
