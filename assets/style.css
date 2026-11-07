@@ -259,6 +259,37 @@ code{font-family:ui-monospace,Consolas,Menlo,monospace}
 .badge.off .dot{background:var(--off);box-shadow:0 0 0 4px rgba(210,72,60,.18)}
 @keyframes pulse{50%{box-shadow:0 0 0 8px transparent}}
 
+/* ===== 活动与赛季 ===== */
+.event-card{text-align:left}
+
+/* ===== 在线玩家（状态卡内） ===== */
+.ph-block{margin-top:16px;padding-top:14px;border-top:1px dashed var(--line)}
+.ph-head{font-size:13px;font-weight:700;color:var(--ink);margin-bottom:10px}
+.ph-sub{font-weight:500;color:var(--muted);margin-left:6px}
+.ph-block .player-heads{display:flex;flex-wrap:wrap;gap:10px;margin-top:6px}
+.phead{display:flex;flex-direction:column;align-items:center;gap:5px;width:56px}
+.phead img{width:38px;height:38px;border-radius:8px;image-rendering:pixelated;background:var(--card-2);box-shadow:var(--shadow-sm)}
+.phead span{font-size:11px;color:var(--muted);max-width:56px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center}
+.ph-note{font-size:12px;color:var(--muted);margin:10px 0 0}
+
+/* ===== 服主与联系 ===== */
+.owner-card{max-width:640px;margin:0 auto;background:var(--card);border:1px solid var(--line);border-radius:22px;padding:26px;box-shadow:var(--shadow)}
+.owner-head{display:flex;align-items:center;gap:16px}
+.owner-avatar{width:64px;height:64px;border-radius:18px;background:var(--card-2);box-shadow:var(--shadow-sm);object-fit:cover}
+.owner-meta h3{margin:0 0 4px;font-size:20px;color:var(--ink)}
+.owner-meta p{margin:0;font-size:13px;color:var(--muted)}
+.owner-note{margin:16px 0 0;font-size:14px;line-height:1.8;color:var(--muted)}
+.owner-links{display:flex;flex-wrap:wrap;gap:12px;margin-top:18px}
+.owner-link{display:inline-flex;align-items:center;gap:8px;padding:10px 16px;border-radius:11px;border:1px solid var(--line);background:var(--card-2);font-size:14px;font-weight:600;color:var(--ink);transition:.2s}
+.owner-link:hover{border-color:var(--green-line);color:var(--green-deep)}
+.ol-ico{font-size:15px}
+
+/* ===== 画廊空态 ===== */
+.gal-empty{max-width:640px;margin:0 auto;text-align:center;padding:40px 20px;border:1px dashed var(--line);border-radius:18px;background:var(--card)}
+.gal-empty-ico{font-size:40px;margin-bottom:10px}
+.gal-empty p{margin:0;font-size:15px;font-weight:600;color:var(--ink)}
+.gal-empty .gal-empty-sub{margin-top:8px;font-size:13px;font-weight:400;color:var(--muted);line-height:1.7}
+
 /* ===== 响应式 ===== */
 @media(max-width:860px){
   .nav-links{display:none}

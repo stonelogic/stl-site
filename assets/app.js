@@ -63,13 +63,27 @@
       { q: '需要装模组或材质包吗？', a: '基础玩法不需要任何模组。想用语音聊天请安装 Simple Voice Chat 客户端模组；服务器已配置 ForcePack，进服会自动加载材质包。' },
       { q: '被熊了怎么办？', a: '服务器有 CoreProtect 全程记录，联系管理员即可精准回滚并封禁对方；请提前用木牌锁、领地保护好自己的箱子。' }
     ],
+    events: [
+      { icon: '🌸', title: '四季轮转', desc: 'AeternumSeasons 跟随现实季节变化：春华秋实、夏炎冬雪，不同季节有专属作物、生物与氛围。' },
+      { icon: '🌍', title: '世界事件', desc: 'WorldEvents 不定期触发全服事件——钓鱼大赛、丰收节、怪物潮等，参与就能拿限定奖励。' },
+      { icon: '🎣', title: '钓鱼与种田', desc: '休闲党友好：钓鱼有图鉴收集，种田产出可拿去市场交易，慢慢养成不赶进度。' },
+      { icon: '🎁', title: '节日活动', desc: '春节、万圣、圣诞等节点会有特别玩法与登录礼包，留意群公告别错过。' }
+    ],
     links: [
       { label: 'QQ 交流群', url: 'https://qm.qq.com/q/UhSK4yuLGG' },
       { label: '客户端下载', url: 'https://www.minecraft.net/zh-hans/download' },
       { label: '语音模组（Simple Voice Chat）', url: 'https://modrinth.com/plugin/simple-voice-chat' }
     ],
+    owner: {
+      name: 'Stone Logic 管理组',
+      tagline: '长期稳定 · 用心运营',
+      qqGroup: '1094147045',
+      qqGroupUrl: 'https://qm.qq.com/q/UhSK4yuLGG',
+      email: '',
+      note: '任何问题、BUG 反馈或商务合作，欢迎加 QQ 群找管理；被封禁的玩家也可在页面底部提交申诉。'
+    },
     footer: '© 2026 Stone Logic · 由玩家自建运营 · 与 Mojang / Microsoft 无隶属关系',
-    layout: { order: ['hero', 'features', 'worlds', 'status', 'rules', 'faq', 'appeal', 'join'] }
+    layout: { order: ['hero', 'features', 'worlds', 'events', 'status', 'rules', 'faq', 'appeal', 'owner', 'join', 'gallery'] }
   };
 
   /* ---------- 工具 ---------- */
@@ -180,6 +194,8 @@
 
     $('#footerText').textContent = cfg.footer;
 
+    renderEvents();
+    renderOwner();
     renderGallery();
   }
 
@@ -188,15 +204,19 @@
   function renderGallery() {
     shots = (cfg.screenshots || []).slice();
     var list = $('#galleryList');
-    /* 没有截图就整个版块连同导航一起隐藏，避免留一个空白占位卡 */
-    var sec = $('#gallery'), nav = $('#navGallery');
-    if (sec) sec.hidden = !shots.length;
-    if (nav) nav.hidden = !shots.length;
+    var empty = $('#galEmpty');
+    var wrap = $('#galWrap');
+    var dots = $('#galDots');
+    /* 没有截图：展示占位提示，保留版块（不再整体隐藏） */
     if (!shots.length) {
-      list.innerHTML = '';
-      $('#galDots').innerHTML = '';
+      if (list) list.innerHTML = '';
+      if (dots) dots.innerHTML = '';
+      if (empty) empty.hidden = false;
+      if (wrap) wrap.hidden = true;
       return;
     }
+    if (empty) empty.hidden = true;
+    if (wrap) wrap.hidden = false;
     list.innerHTML = shots.map(function (s, i) {
       return '<figure class="shot" data-i="' + i + '" style="margin:0">' +
         '<img loading="lazy" src="' + esc(s.url) + '" alt="' + esc(s.cap) + '">' +
@@ -216,6 +236,34 @@
       $$('#galDots i').forEach(function (d, idx) { d.classList.toggle('on', idx === i); });
     });
   }
+
+  /* ---------- 活动与赛季 ---------- */
+  function renderEvents() {
+    var grid = $('#eventsGrid');
+    if (!grid) return;
+    grid.innerHTML = (cfg.events || []).map(function (e) {
+      return '<div class="card event-card"><span class="feat-icon">' + esc(e.icon) +
+        '</span><h3>' + esc(e.title) + '</h3><p>' + esc(e.desc) + '</p></div>';
+    }).join('');
+  }
+
+  /* ---------- 服主与联系 ---------- */
+  function renderOwner() {
+    var o = cfg.owner || {};
+    var on = $('#ownerName'); if (on && o.name) on.textContent = o.name;
+    var ot = $('#ownerTagline'); if (ot && o.tagline) ot.textContent = o.tagline;
+    var ono = $('#ownerNote'); if (ono && o.note) ono.textContent = o.note;
+    var oa = $('#ownerAvatar'); if (oa && o.icon) oa.src = o.icon;
+    var links = [];
+    if (o.qqGroupUrl) links.push({ icon: '💬', label: 'QQ 群 ' + (o.qqGroup || ''), url: o.qqGroupUrl });
+    if (o.email) links.push({ icon: '✉️', label: '邮箱 ' + o.email, url: 'mailto:' + o.email });
+    var box = $('#ownerLinks');
+    if (box) box.innerHTML = links.map(function (l) {
+      return '<a class="owner-link" href="' + esc(l.url) + '" target="_blank" rel="noopener">' +
+        '<span class="ol-ico">' + l.icon + '</span><span>' + esc(l.label) + '</span></a>';
+    }).join('');
+  }
+
   function scrollToShot(i) {
     var list = $('#galleryList');
     var el = list.children[i];
@@ -446,15 +494,20 @@
     $('#apiNote').textContent = '数据来源：' + src +
       (viaAlt ? ' · 自定义域名暂未生效，已用备用地址 ' + alt + ' 检测' : '') + ' · 每 60 秒自动刷新';
 
-    // 玩家头像
-    var names = data.players.list.slice(0, 24);
+    // 在线玩家：头像 + 名字网格
+    var names = (data.players.list || []).slice(0, 30);
     var box = $('#playerHeads');
-    if (!names.length) { box.innerHTML = '<div class="ph" style="display:none"></div>'; }
-    else {
+    var phSub = $('#phSub'); if (phSub) phSub.textContent = '当前 ' + data.players.online + ' 人在线';
+    var phNote = $('#phNote');
+    if (!names.length) {
+      box.innerHTML = '';
+      if (phNote) phNote.textContent = '暂无玩家在线，来当第一个吧！';
+    } else {
       box.innerHTML = names.map(function (n) {
-        return '<img loading="lazy" title="' + esc(n) + '" alt="' + esc(n) +
-          '" src="https://mc-heads.net/avatar/' + encodeURIComponent(n) + '/32">';
+        return '<div class="phead"><img loading="lazy" alt="' + esc(n) +
+          '" src="https://mc-heads.net/avatar/' + encodeURIComponent(n) + '/32"><span>' + esc(n) + '</span></div>';
       }).join('');
+      if (phNote) phNote.textContent = (names.length >= 30 ? '仅展示部分在线玩家' : '');
     }
   }
   function setOffline(msg) {
