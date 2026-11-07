@@ -95,6 +95,7 @@
   var NAV = [
     { label: '状态', href: '#/status' },
     { label: '在线', href: '#/online' },
+    { label: '榜单', href: '#/rank' },
     { label: '指南', href: '#/guide' },
     { label: '规则', href: '#/rules' },
     { label: '申诉', href: '#/appeal' }
@@ -345,10 +346,59 @@
   }
 
   /* ================= 路由 ================= */
+
+  /* --- 在线时长榜单（cyutime 导出，playtime.json） --- */
+  function renderRank(container) {
+    container.innerHTML = pageHead('首页', '在线时长榜',
+      '统计自服务器 cyutime 插件，由本地脚本定时导出，每数分钟更新一次（略滞后于实时）');
+    var box = el('div', 'card'); container.appendChild(box);
+    box.innerHTML = '<div id="rankMeta" style="font-size:13px;color:var(--muted-foreground);margin-bottom:14px">加载中…</div>' +
+      '<div id="rankList"></div>';
+    var list = box.querySelector('#rankList');
+    list.innerHTML = '<div class="empty"><div class="ico">⏳</div><p>正在加载榜单…</p></div>';
+    fetch('playtime.json?_=' + Date.now(), { cache: 'no-store' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (d) {
+        if (!d || !Array.isArray(d.players) || !d.players.length) {
+          list.innerHTML = emptyState('🏆', '暂无任何在线时长记录');
+          box.querySelector('#rankMeta').textContent = '';
+          return;
+        }
+        var meta = box.querySelector('#rankMeta');
+        var gt = d.generatedAt ? new Date(d.generatedAt * 1000) : null;
+        meta.textContent = '共 ' + d.count + ' 名玩家 · 数据更新于 ' + (gt ? gt.toLocaleString('zh-CN') : '未知');
+        var top = d.players[0].total || 1;
+        var medals = { 1: '🥇', 2: '🥈', 3: '🥉' };
+        list.innerHTML = d.players.map(function (p) {
+          var m = medals[p.rank] || ('#' + p.rank);
+          var pct = Math.max(4, Math.round(p.total / top * 100));
+          var sub = [];
+          if (p.month) sub.push('本月 ' + fmtDur(p.month));
+          if (p.week) sub.push('本周 ' + fmtDur(p.week));
+          var subHtml = sub.length ? '<span style="color:var(--muted-foreground);font-weight:500">· ' + sub.join(' · ') + '</span>' : '';
+          return '<div style="display:flex;align-items:center;gap:14px;padding:12px 4px;border-bottom:1px solid var(--border)">' +
+            '<div style="width:34px;text-align:center;font-size:18px;font-weight:800;flex:none">' + m + '</div>' +
+            '<img src="https://minotar.net/helm/' + encodeURIComponent(p.name) + '/40.png" alt="" loading="lazy" ' +
+            'style="width:36px;height:36px;border-radius:8px;background:var(--muted);flex:none" onerror="this.src=\'assets/icon.png\'">' +
+            '<div style="flex:1;min-width:0">' +
+            '<div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap"><span style="font-weight:700;font-size:15px">' + esc(p.name) + '</span>' + subHtml + '</div>' +
+            '<div style="margin-top:6px;height:8px;border-radius:6px;background:var(--muted);overflow:hidden">' +
+            '<div style="height:100%;width:' + pct + '%;background:linear-gradient(90deg,var(--primary),oklch(62% .14 160));border-radius:6px"></div></div>' +
+            '</div>' +
+            '<div style="flex:none;text-align:right;font-weight:800;font-size:15px;color:var(--primary);white-space:nowrap">' + fmtDur(p.total) + '</div>' +
+            '</div>';
+        }).join('');
+      })
+      .catch(function () {
+        list.innerHTML = emptyState('📡', '榜单加载失败，请稍后刷新');
+      });
+  }
+
   var routes = {
     '/': renderHome,
     '/status': renderStatus,
     '/online': renderOnline,
+    '/rank': renderRank,
     '/guide': renderGuide,
     '/rules': renderRules,
     '/appeal': renderAppeal

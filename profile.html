@@ -183,8 +183,8 @@
   var names = session.names || [];
   $('accCnt').textContent = '共 ' + names.length + ' 个';
   var grid = $('accGrid');
-  var statsApi = (cfg.statsApi || '').trim();
-  $('accNote').textContent = statsApi ? '' : '皮肤按游戏 ID 渲染（离线服可能显示默认皮肤）；游戏时长需接入服务器统计后才会显示真实数据。';
+  $('accNote').innerHTML = '皮肤按游戏 ID 渲染（离线服可能显示默认皮肤）；在线时长来自服务器 cyutime 统计。' +
+    ' <a href="index.html#/rank" style="color:var(--primary);font-weight:600">查看完整时长榜单 →</a>';
 
   if (!names.length) {
     grid.innerHTML = '<div class="empty" style="grid-column:1/-1"><div class="big">🎮</div>该 QQ 尚未绑定任何游戏账号，到 QQ 群完成绑定后即可在这里看到。</div>';
@@ -197,22 +197,26 @@
         '<div class="pt" data-name="' + esc(n) + '">游戏时长：加载中…</div>' +
         '</div>';
     }).join('');
-    if (statsApi) {
-      names.forEach(function (n) {
-        var url = statsApi.indexOf('{name}') >= 0 ? statsApi.replace('{name}', encodeURIComponent(n)) : statsApi + encodeURIComponent(n);
-        fetch(url, { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; })
-          .then(function (d) {
-            var v = d && (d.playtime || d.play_time || d.playTime || (d.data && (d.data.playtime || d.data.play_time)));
-            var cell = grid.querySelector('.pt[data-name="' + n + '"]');
-            if (cell) cell.textContent = '游戏时长：' + (v != null ? formatPlaytime(v) : '未接入');
-          }).catch(function () {
-            var cell = grid.querySelector('.pt[data-name="' + n + '"]');
-            if (cell) cell.textContent = '游戏时长：未接入';
-          });
+    // 拉取一次共享的 playtime.json（cyutime 导出），按账号名匹配
+    fetch('playtime.json?_=' + Date.now(), { cache: 'no-store' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (d) {
+        var map = {};
+        if (d && Array.isArray(d.players)) {
+          d.players.forEach(function (p) { map[String(p.name).toLowerCase()] = p; });
+        }
+        Array.prototype.forEach.call(grid.querySelectorAll('.pt'), function (cell) {
+          var n = cell.getAttribute('data-name');
+          var p = map[String(n).toLowerCase()];
+          if (!p) { cell.textContent = '游戏时长：暂无记录'; return; }
+          var txt = '游戏时长：' + formatPlaytime(p.total);
+          if (p.month) txt += '（本月 ' + formatPlaytime(p.month) + '）';
+          cell.textContent = txt;
+        });
+      })
+      .catch(function () {
+        Array.prototype.forEach.call(grid.querySelectorAll('.pt'), function (c) { c.textContent = '游戏时长：未接入'; });
       });
-    } else {
-      Array.prototype.forEach.call(grid.querySelectorAll('.pt'), function (c) { c.textContent = '游戏时长：未接入'; });
-    }
   }
 
   $('logoutBtn').addEventListener('click', function () {
