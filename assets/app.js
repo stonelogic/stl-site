@@ -93,7 +93,7 @@
   /* ---------- 导航 ---------- */
   var NAV = [
     { label: '状态', href: '#/status' },
-    { label: '玩家', href: '#/players' },
+    { label: '在线', href: '#/online' },
     { label: '指南', href: '#/guide' },
     { label: '规则', href: '#/rules' },
     { label: '申诉', href: '#/appeal' }
@@ -134,11 +134,20 @@
       '<p class="hero-slogan">生存 or 小游戏 你想要的，都在STL！</p>' +
       '<div class="hero-actions">' +
       '<a class="btn btn-primary" href="' + SITE.groupUrl + '" target="_blank" rel="noopener">加入 QQ 群</a>' +
-      '<a class="btn btn-outline" href="#/players">查玩家皮肤</a>' +
+      '<a class="btn btn-outline" href="#/online">查看在线玩家</a>' +
       '</div>' +
       '<div><span class="hero-ip">' + esc(SITE.javaIp) + '</span></div>' +
-      '</div>';
+      '</div><div class="hero-glow"></div>';
     container.appendChild(hero);
+    // 鼠标跟随光晕
+    var glow = hero.querySelector('.hero-glow');
+    hero.addEventListener('mousemove', function (e) {
+      var r = hero.getBoundingClientRect();
+      glow.style.left = (e.clientX - r.left) + 'px';
+      glow.style.top = (e.clientY - r.top) + 'px';
+      glow.style.opacity = '1';
+    });
+    hero.addEventListener('mouseleave', function () { glow.style.opacity = '0'; });
 
     // 简介
     var intro = el('div', 'card'); container.appendChild(intro);
@@ -186,37 +195,31 @@
     clearInterval(loadStatus._t);
     loadStatus._t = setInterval(loadStatus, 60000);
   }
+  var ONLINE_TOPIC = 'stl-online-6bd1ae0f4e7e7968';
   function loadStatus() {
     var url = STATUS_API.replace('{host}', JAVA_HOST).replace('{port}', JAVA_PORT);
     fetch(url).then(function (r) { return r.json(); }).then(function (d) {
-      var ok = d && (d.online === true || d.status === true || (d.online !== undefined && d.online !== false));
-      var players = (d && (d.players && d.players.list)) || [];
-      var now = (d && (d.players && d.players.online)) || players.length || 0;
-      var max = (d && d.players && d.players.max) || 0;
+      var data = (d && d.data) ? d.data : d;
+      var ok = data && data.online === true;
+      var p = (data && data.players) || {};
+      var now = p.now || 0;
+      var max = p.max || 0;
       var pill = $id('stPill'), on = $id('stOnline');
       if (pill) { pill.textContent = ok ? '● 在线' : '● 离线'; pill.className = 'status-pill ' + (ok ? 'on' : 'off'); }
       if (on) on.textContent = ok ? now : '0';
       var stats = $id('stStats');
       if (stats) {
-        var ping = (d && (d.ping !== undefined)) ? d.ping : '—';
-        var ver = (d && d.version) ? (typeof d.version === 'string' ? d.version : d.version.name) : '—';
+        var ping = (data.latency != null) ? data.latency : '—';
+        var ver = data.version || data.name || '—';
         stats.innerHTML = '<div class="stat-box"><div class="k">在线/最大</div><div class="v">' + now + ' / ' + max + '</div></div>' +
           '<div class="stat-box"><div class="k">延迟</div><div class="v">' + (ping === '—' ? '—' : ping + 'ms') + '</div></div>' +
           '<div class="stat-box"><div class="k">版本</div><div class="v">' + esc(ver || '—') + '</div></div>' +
           '<div class="stat-box"><div class="k">地址</div><div class="v" style="font-size:14px">' + esc(SITE.javaIp) + '</div></div>';
       }
       var motd = $id('stMotd');
-      if (motd) motd.textContent = (d && d.motd) ? (typeof d.motd === 'string' ? d.motd : JSON.stringify(d.motd)) : (ok ? 'MOTD 未返回' : '服务器离线或不可达');
+      if (motd) motd.textContent = data.description || (ok ? 'MOTD 未返回' : '服务器离线或不可达');
       var pg = $id('stPlayers');
-      if (pg) {
-        if (!players.length) pg.innerHTML = emptyState('🕹️', ok ? '暂无在线玩家' : '服务器离线');
-        else pg.innerHTML = players.map(function (n) {
-          var name = (typeof n === 'string') ? n : (n.name || '');
-          var id = (typeof n === 'string') ? n : (n.uuid || n.id || n.name || '');
-          var face = 'https://minotar.net/helm/' + encodeURIComponent(id) + '/96.png';
-          return '<a class="player-cell" href="#/players?q=' + encodeURIComponent(name) + '"><img src="' + face + '" alt="" loading="lazy" onerror="this.src=\'assets/icon.png\'"><span class="nm">' + esc(name) + '</span></a>';
-        }).join('');
-      }
+      if (pg) loadOnlineInto(pg, ok);
     }).catch(function () {
       var pill = $id('stPill'); if (pill) { pill.textContent = '● 离线'; pill.className = 'status-pill off'; }
       var on = $id('stOnline'); if (on) on.textContent = '0';
@@ -225,60 +228,67 @@
     });
   }
 
-  /* --- 玩家查询页（皮肤 + 在线状态，纯静态） --- */
-  function renderPlayers(container) {
-    container.innerHTML = pageHead('玩家', '玩家查询', '输入游戏 ID，查看皮肤与在线状态');
-    var box = el('div', 'card'); container.appendChild(box);
-    box.innerHTML = '<div style="display:flex;gap:10px;margin-bottom:18px">' +
-      '<input id="plName" type="text" maxlength="16" placeholder="输入游戏 ID（如 Steve）" style="flex:1;min-width:0;padding:11px 14px;border:1px solid var(--border);border-radius:10px;background:var(--muted);color:var(--foreground);font-size:14px;font-family:inherit;outline:none">' +
-      '<button class="btn btn-primary" id="plGo">查询</button></div>' +
-      '<div id="plResult"></div>';
-    var input = box.querySelector('#plName');
-    function go() {
-      var name = input.value.trim();
-      if (!name) { toast('请输入游戏 ID'); return; }
-      renderPlayerResult(box.querySelector('#plResult'), name);
-    }
-    box.querySelector('#plGo').addEventListener('click', go);
-    input.addEventListener('keydown', function (e) { if (e.key === 'Enter') go(); });
-    // 支持 ?q= 参数（可从状态页在线列表点进来）
-    var q = new URLSearchParams(location.search).get('q');
-    if (q) { input.value = q; go(); }
+  /* 从 ntfy 读取本地同步脚本发布的在线玩家名单（SSE 流，since=all 取历史） */
+  function loadOnlineInto(pg, ok) {
+    if (!pg) return;
+    pg.innerHTML = '<div class="empty"><div class="ico">⏳</div><p>正在获取在线玩家…</p></div>';
+    var got = false;
+    var es;
+    try {
+      es = new EventSource('https://ntfy.sh/' + ONLINE_TOPIC + '/json?since=all');
+    } catch (e) { renderPlayerGrid(pg, [], ok); return; }
+    es.onmessage = function (ev) {
+      var msg;
+      try { msg = JSON.parse(ev.data); } catch (e) { return; }
+      if (msg.event !== 'message' || !msg.message) return;
+      var m;
+      try { m = JSON.parse(msg.message); } catch (e) { return; }
+      if (m && Array.isArray(m.players)) {
+        got = true;
+        renderPlayerGrid(pg, m.players, ok);
+      }
+    };
+    es.onerror = function () { es.close(); if (!got) renderPlayerGrid(pg, [], ok); };
+    setTimeout(function () { es.close(); if (!got) renderPlayerGrid(pg, [], ok); }, 2500);
   }
-  function renderPlayerResult(area, name) {
-    var enc = encodeURIComponent(name);
-    var helm = 'https://minotar.net/helm/' + enc + '/128.png';
-    var body = 'https://mc-heads.net/body/' + enc + '/right';
-    area.innerHTML =
-      '<div style="display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start">' +
-      '<div style="text-align:center">' +
-      '<img src="' + helm + '" alt="' + esc(name) + ' 头像" style="width:96px;height:96px;border-radius:12px;background:var(--muted);image-rendering:pixelated" onerror="this.src=\'assets/icon.png\'">' +
-      '<div style="font-size:13px;color:var(--muted-foreground);margin-top:8px">头像</div></div>' +
-      '<div style="text-align:center">' +
-      '<img src="' + body + '" alt="' + esc(name) + ' 全身皮肤" style="height:240px;background:var(--muted);border-radius:8px;image-rendering:pixelated" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'\'">' +
-      '<div style="display:none;padding:60px 20px;color:var(--muted-foreground);font-size:13px">皮肤加载失败（离线服玩家可能无正版皮肤）</div>' +
-      '<div style="font-size:13px;color:var(--muted-foreground);margin-top:8px">正装皮肤</div></div>' +
-      '<div style="flex:1;min-width:200px">' +
-      '<div style="font-size:20px;font-weight:800;margin-bottom:8px">' + esc(name) + '</div>' +
-      '<div id="plOnline" style="font-size:13.5px;color:var(--muted-foreground)">在线状态：检测中…</div>' +
-      '<div style="margin-top:14px;font-size:13px;color:var(--muted-foreground);line-height:1.8">皮肤由 Mojang 公开接口渲染；离线服玩家可能显示默认皮肤（Steve / Alex）。</div>' +
-      '</div></div>';
-    // 在线判断（从服务器状态玩家列表匹配）
+  function renderPlayerGrid(pg, players, ok) {
+    if (!players || !players.length) {
+      pg.innerHTML = emptyState('🕹️', ok ? '暂无在线玩家' : '服务器离线');
+      return;
+    }
+    pg.innerHTML = players.map(function (name) {
+      var face = 'https://minotar.net/helm/' + encodeURIComponent(name) + '/96.png';
+      return '<div class="player-cell"><img src="' + face + '" alt="" loading="lazy" onerror="this.src=\'assets/icon.png\'"><span class="nm">' + esc(name) + '</span></div>';
+    }).join('');
+  }
+
+  /* --- 在线状态页（在线玩家 ID + 头像） --- */
+  function renderOnline(container) {
+    container.innerHTML = pageHead('在线', '在线状态', '当前在线玩家列表，每 30 秒自动刷新');
+    var card = el('div', 'card'); container.appendChild(card);
+    card.innerHTML = '<div style="display:flex;align-items:center;gap:14px;margin-bottom:16px;flex-wrap:wrap">' +
+      '<span class="status-pill" id="olPill">检测中…</span>' +
+      '<span style="font-size:15px;font-weight:700" id="olCount">—</span>' +
+      '</div>' +
+      '<div class="player-grid" id="olPlayers"></div>';
+    loadOnline();
+    clearInterval(loadOnline._t);
+    loadOnline._t = setInterval(loadOnline, 30000);
+  }
+  function loadOnline() {
     var url = STATUS_API.replace('{host}', JAVA_HOST).replace('{port}', JAVA_PORT);
     fetch(url).then(function (r) { return r.json(); }).then(function (d) {
-      var list = (d && d.players && d.players.list) || [];
-      var on = list.some(function (n) {
-        var nm = (typeof n === 'string') ? n : (n.name || '');
-        return nm && nm.toLowerCase() === name.toLowerCase();
-      });
-      var cell = $id('plOnline');
-      if (cell) {
-        cell.textContent = '在线状态：' + (on ? '● 在线' : '○ 离线（或当前不在线）');
-        cell.style.color = on ? 'var(--primary)' : 'var(--muted-foreground)';
-      }
+      var data = (d && d.data) ? d.data : d;
+      var ok = data && data.online === true;
+      var p = (data && data.players) || {};
+      var pill = $id('olPill'), cnt = $id('olCount');
+      if (pill) { pill.textContent = ok ? '● 在线' : '● 离线'; pill.className = 'status-pill ' + (ok ? 'on' : 'off'); }
+      if (cnt) cnt.textContent = '在线 ' + (p.now || 0) + ' / ' + (p.max || 0) + ' 人';
+      loadOnlineInto($id('olPlayers'), ok);
     }).catch(function () {
-      var cell = $id('plOnline');
-      if (cell) cell.textContent = '在线状态：无法获取';
+      var pill = $id('olPill'); if (pill) { pill.textContent = '● 离线'; pill.className = 'status-pill off'; }
+      var cnt = $id('olCount'); if (cnt) cnt.textContent = '在线 0 / 0 人';
+      loadOnlineInto($id('olPlayers'), false);
     });
   }
 
@@ -336,7 +346,7 @@
   var routes = {
     '/': renderHome,
     '/status': renderStatus,
-    '/players': renderPlayers,
+    '/online': renderOnline,
     '/guide': renderGuide,
     '/rules': renderRules,
     '/appeal': renderAppeal

@@ -126,6 +126,12 @@ code{font-family:ui-monospace,Consolas,Menlo,monospace}
   background:linear-gradient(180deg,var(--sky-top) 0%,var(--sky-mid) 48%,var(--sky-bottom) 100%);
 }
 .hero-sky{position:relative;max-width:1080px;margin:0 auto}
+.hero-glow{
+  position:absolute;left:0;top:0;width:360px;height:360px;border-radius:50%;
+  pointer-events:none;opacity:0;z-index:3;
+  background:radial-gradient(circle, rgba(255,255,255,.5) 0%, rgba(170,225,255,.22) 38%, transparent 68%);
+  mix-blend-mode:screen;transform:translate(-50%,-50%);transition:opacity .25s;
+}
 .hero-logo{
   display:block;margin:0 auto;
   width:min(94%,860px);height:auto;
