@@ -111,6 +111,9 @@
   var q = new URLSearchParams(location.search);
   var code = q.get('c') || '';
   var topic = q.get('topic') || 'stl-ql-6bd1ae0f4e7e7968';
+  // 服务端拿不到个人授权码时的兜底入口（多半是该游戏ID还没绑定 QQ）
+  var isFallback = q.get('fallback') === '1';
+  var fbName = q.get('player') || '';
   var rid = sessionStorage.getItem('stl_site_rid');
   if (!rid) { rid = Array.from(crypto.getRandomValues(new Uint8Array(16))).map(function (b) { return ('0' + b.toString(16)).slice(-2); }).join(''); sessionStorage.setItem('stl_site_rid', rid); }
   var ntfy = topic ? 'https://ntfy.sh/' + encodeURIComponent(topic) : '';
@@ -155,7 +158,9 @@
   if (!code) {
     // 从官网「账号登录」入口进入：只登录，不显示任何授权/选号界面，登完直接回首页
     authBox.hidden = true;
-    if (pses) countdownHome('已登录（QQ ' + pses.qq + '）', 5);
+    if (isFallback) {
+      say('游戏账号「' + fbName + '」还没有绑定 QQ。请先在 QQ 群发送「登录 ' + fbName + '」完成绑定，再回游戏重新进入即可。', true);
+    } else if (pses) countdownHome('已登录（QQ ' + pses.qq + '）', 5);
     else say('登录后会直接返回首页');
   }
 
