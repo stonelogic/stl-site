@@ -518,7 +518,8 @@
     if (stats) {
       stats.innerHTML = '<div class="stat-box"><div class="k">在线/最大</div><div class="v">' +
         ((LIVE.known && LIVE.ok) ? LIVE.now : 0) + ' / ' + (LIVE.max || '—') + '</div></div>' +
-        '<div class="stat-box"><div class="k">延迟</div><div class="v">' + ((ping == null || ping <= 0) ? '—' : ping + 'ms') + '</div></div>' +
+        '<div class="stat-box"><div class="k">延迟</div><div class="v">' +
+        ((!LIVE.ok || ping == null || ping <= 0) ? '—' : ping + 'ms') + '</div></div>' +
         '<div class="stat-box"><div class="k">版本</div><div class="v">' + esc(LIVE.ver || '—') + '</div></div>' +
         '<div class="stat-box"><div class="k">地址</div><div class="v" style="font-size:14px">' + esc(SITE.javaIp) + '</div></div>';
     }
@@ -570,6 +571,11 @@
   }
 
   function renderPlayerGrid(pg, players, ok, age) {
+    // 服务器已经离线：不管 online.json 里还留着谁，都不能再显示（那是停机前的快照）
+    if (LIVE.known && !LIVE.ok) {
+      pg.innerHTML = emptyState('🕹️', '服务器离线');
+      return;
+    }
     // 实时接口说现在 0 人，名单里却还有名字 —— 那只是 online.json 滞后，
     // 以实时为准，否则会出现「显示 0 人在线却挂着 1 个头像」的自相矛盾
     if (LIVE.known && LIVE.ok && LIVE.now === 0) {
