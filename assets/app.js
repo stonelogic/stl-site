@@ -1030,11 +1030,26 @@
     for (var i = 0; i < b.length; i++) s += ('0' + b[i].toString(16)).slice(-2);
     return s;
   }
+  /* 读取当前官网登录态（与聊天页共用同一套 session） */
+  function getSession() {
+    try {
+      var raw = JSON.parse(localStorage.getItem('stl_web_session_v1') || 'null');
+      if (raw && raw.token && raw.qq && raw.exp > Date.now()) return raw;
+    } catch (e) {}
+    return null;
+  }
+  /* 未登录时的占位提示卡 */
+  function loginGate(msg) {
+    var d = el('div', 'card forum-gate');
+    d.innerHTML = '<div class="forum-note">' + esc(msg) +
+      ' <a href="confirm.html">去登录</a></div>';
+    return d;
+  }
 
   /* --- 论坛列表页 --- */
   function renderForum(container) {
     container.innerHTML = pageHead('论坛', 'Stone Logic 论坛',
-      '玩法讨论、技术求助、BUG 反馈、建筑晒图，这里都能聊。无需登录，任何人都能发帖。');
+      '玩法讨论、技术求助、BUG 反馈、建筑晒图，这里都能聊。登录官网账号后即可发帖与回复。');
     var wrap = el('div', 'forum-wrap');
     container.appendChild(wrap);
     var side = el('div', 'forum-side');
@@ -1200,10 +1215,10 @@
       var rl = el('div', 'reply-list');
       box.appendChild(rl);
       renderReplies(rl, post);
-      // 回复表单（任何人可回，无需登录）
+      // 回复表单（需登录官网账号）
       var rf = el('div', 'reply-form');
       rf.innerHTML =
-        '<div class="forum-note">无需登录即可回复；留空昵称将以「匿名玩家」发表。</div>' +
+        '<div class="forum-note">登录后即可回复；勾选匿名将以「匿名玩家」发表。</div>' +
         '<div class="field"><label>回复内容</label><textarea id="rfText" maxlength="1000" placeholder="说点什么…"></textarea></div>' +
         '<div class="rf-row">' +
           '<input id="rfName" type="text" maxlength="24" placeholder="昵称（选填）" style="flex:1;min-width:120px;background:var(--card);border:1px solid var(--input);border-radius:9px;padding:9px 11px;color:var(--foreground);outline:none">' +
@@ -1212,6 +1227,13 @@
         '</div>' +
         '<div id="rfMsg" style="font-size:13px;min-height:18px;margin-top:8px"></div>';
       box.appendChild(rf);
+      // 未登录：直接换成「去登录」提示，不再渲染回复框
+      var sess = getSession();
+      if (!sess) {
+        rf.innerHTML = '';
+        rf.appendChild(loginGate('回复需要先登录官网账号。'));
+        return;
+      }
       var rfText = rf.querySelector('#rfText');
       var rfName = rf.querySelector('#rfName');
       var rfAnon = rf.querySelector('#rfAnon');
@@ -1225,7 +1247,7 @@
         rfSend.disabled = true; rfMsg.textContent = '正在发表…'; rfMsg.style.color = 'var(--muted-foreground)';
         fetch(NTFY_BASE + '/' + NTFY_TOPIC, {
           method: 'POST', headers: { 'content-type': 'text/plain' },
-          body: JSON.stringify({ type: 'forum_reply', rid: rid, post_id: post.id, content: text, author: rfName.value.trim(), anonymous: rfAnon.checked, ts: Date.now() })
+          body: JSON.stringify({ type: 'forum_reply', rid: rid, post_id: post.id, content: text, author: rfName.value.trim(), anonymous: rfAnon.checked, token: sess.token, ts: Date.now() })
         }).then(function () {
           waitForumAck(rid, function (m) {
             rfSend.disabled = false;
@@ -1268,7 +1290,12 @@
 
   /* --- 发新贴页 --- */
   function renderForumNew(container) {
-    container.innerHTML = pageHead('论坛', '发新贴', '提个想法、问个问题、晒个作品。无需登录，直接发表（也可填写昵称）。');
+    container.innerHTML = pageHead('论坛', '发新贴', '提个想法、问个问题、晒个作品。登录官网账号后即可发表。');
+    var sess = getSession();
+    if (!sess) {
+      container.appendChild(loginGate('发帖需要先登录官网账号。'));
+      return;
+    }
     var box = el('div', 'card forum-form');
     container.appendChild(box);
     box.innerHTML =
@@ -1320,7 +1347,7 @@
         method: 'POST', headers: { 'content-type': 'text/plain' },
         body: JSON.stringify({
           type: 'forum_post', rid: rid, category: Number(box.querySelector('#fnCat').value),
-          title: t, content: ct, author: name.value.trim(), anonymous: anon.checked, ts: Date.now()
+          title: t, content: ct, author: name.value.trim(), anonymous: anon.checked, token: sess.token, ts: Date.now()
         })
       }).then(function () {
         waitForumAck(rid, function (m) {
