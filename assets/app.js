@@ -344,7 +344,7 @@
     { label: '排行榜', href: '#/rank' },
     { label: '指南', href: '#/guide' },
     { label: '规则', href: '#/rules' },
-    { label: '反馈', href: '#/feedback' },
+    { label: '论坛', href: '#/forum' },
     { label: '聊天', href: '#/chat' },
     { label: '申诉', href: '#/appeal' }
   ];
@@ -353,7 +353,8 @@
     if (!nav) return;
     nav.innerHTML = NAV.map(function (n) {
       var path = n.href.replace('#', '') || '/';
-      var isActive = activePath === path;
+      var isActive = activePath === path ||
+        (path === '/forum' && String(activePath || '').indexOf('/forum') === 0);
       return '<a href="' + n.href + '" class="' + (isActive ? 'active' : '') + '">' + n.label + '</a>';
     }).join('');
   }
@@ -1105,6 +1106,391 @@
     showPlay();
   }
 
+  /* ================= 论坛（纯静态：数据来自仓库内 forum.json） ================= */
+  var FORUM_FAV_KEY = 'stl_forum_fav';
+  var FORUM_LIKE_KEY = 'stl_forum_liked';
+  var forumState = { cat: 0, q: '', favOnly: false };
+
+  function timeAgo(ts) {
+    var s = Math.floor((Date.now() - Number(ts || 0)) / 1000);
+    if (s < 0) s = 0;
+    if (s < 60) return '刚刚';
+    if (s < 3600) return Math.floor(s / 60) + ' 分钟前';
+    if (s < 86400) return Math.floor(s / 3600) + ' 小时前';
+    if (s < 86400 * 30) return Math.floor(s / 86400) + ' 天前';
+    if (s < 86400 * 365) return Math.floor(s / 86400 / 30) + ' 个月前';
+    return Math.floor(s / 86400 / 365) + ' 年前';
+  }
+  function forumFavSet() {
+    try { return new Set(JSON.parse(localStorage.getItem(FORUM_FAV_KEY) || '[]')); } catch (e) { return new Set(); }
+  }
+  function forumToggleFav(id) {
+    var s = forumFavSet();
+    if (s.has(id)) s.delete(id); else s.add(id);
+    try { localStorage.setItem(FORUM_FAV_KEY, JSON.stringify(Array.from(s))); } catch (e) {}
+    return s.has(id);
+  }
+  function forumLikeSet() {
+    try { return new Set(JSON.parse(localStorage.getItem(FORUM_LIKE_KEY) || '[]')); } catch (e) { return new Set(); }
+  }
+  function forumToggleLike(id) {
+    var s = forumLikeSet();
+    if (s.has(id)) s.delete(id); else s.add(id);
+    try { localStorage.setItem(FORUM_LIKE_KEY, JSON.stringify(Array.from(s))); } catch (e) {}
+    return s.has(id);
+  }
+  function catName(data, id) {
+    var c = (data.categories || []).find(function (x) { return x.id === id; });
+    return c ? c.name : '未分类';
+  }
+  function fetchForum(cb) {
+    fetch('forum.json?_=' + Date.now(), { cache: 'no-store' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (d) { cb(d, d ? null : 'http'); })
+      .catch(function (e) { cb(null, e); });
+  }
+  /* 等 ntfy 回执：论坛用 forumOk/forumErr，反馈兼容 fbOk/fbErr */
+  function waitForumAck(rid, cb) {
+    var deadline = Date.now() + 15000;
+    (function tick() {
+      fetch(NTFY_BASE + '/' + NTFY_TOPIC + '/json?poll=1&since=' + Math.floor(Date.now() / 1000 - 120))
+        .then(function (r) { return r.text(); })
+        .then(function (txt) {
+          var lines = txt.split('\n');
+          for (var i = 0; i < lines.length; i++) {
+            if (!lines[i]) continue;
+            try {
+              var o = JSON.parse(lines[i]);
+              if (o.event !== 'message' || !o.message) continue;
+              var m = JSON.parse(o.message);
+              if (!m || m.rid !== rid) continue;
+              if (m.type === 'forumOk' || m.type === 'fbOk' || m.type === 'forumErr' || m.type === 'fbErr') return cb(m);
+            } catch (e) {}
+          }
+          if (Date.now() > deadline) return cb(null);
+          setTimeout(tick, 1500);
+        })
+        .catch(function () { if (Date.now() > deadline) return cb(null); setTimeout(tick, 2000); });
+    })();
+  }
+  function randomHex(n) {
+    var b = new Uint8Array(n || 8);
+    crypto.getRandomValues(b);
+    var s = '';
+    for (var i = 0; i < b.length; i++) s += ('0' + b[i].toString(16)).slice(-2);
+    return s;
+  }
+
+  /* --- 论坛列表页 --- */
+  function renderForum(container) {
+    container.innerHTML = pageHead('论坛', 'Stone Logic 论坛',
+      '玩法讨论、技术求助、BUG 反馈、建筑晒图，这里都能聊。无需登录，任何人都能发帖。');
+    var wrap = el('div', 'forum-wrap');
+    container.appendChild(wrap);
+    var side = el('div', 'forum-side');
+    side.innerHTML =
+      '<a class="btn btn-primary side-new" href="#/forum/new">✏️ 发新贴</a>' +
+      '<h4>导航</h4><div class="forum-nav" id="fNav"></div>' +
+      '<h4>搜索</h4><input class="side-search" id="fSearch" placeholder="搜标题 / 内容 / 作者…">' +
+      '<h4>我的收藏</h4><a class="forum-nav-link" id="fFav" href="#/forum" style="display:block;padding:8px 10px;border-radius:9px;color:var(--foreground);text-decoration:none">⭐ 我收藏的帖子</a>' +
+      '<h4>经验排行</h4><div id="fRank"></div>' +
+      '<h4>分类</h4><div class="forum-cat" id="fCats"></div>';
+    wrap.appendChild(side);
+    var main = el('div', 'forum-main');
+    wrap.appendChild(main);
+
+    fetchForum(function (data, err) {
+      if (err || !data || !Array.isArray(data.posts)) {
+        main.innerHTML = emptyState('📭', '论坛数据加载失败，请刷新重试');
+        return;
+      }
+      // 侧栏：导航（所有分类 + 我的收藏）
+      var nav = side.querySelector('#fNav');
+      nav.innerHTML = '<a href="#/forum" class="' + (forumState.cat === 0 && !forumState.favOnly ? 'active' : '') + '">🗂️ 所有分类</a>';
+      // 侧栏：分类（带数量）
+      var counts = {};
+      data.posts.forEach(function (p) { counts[p.category] = (counts[p.category] || 0) + 1; });
+      var cats = side.querySelector('#fCats');
+      cats.innerHTML = (data.categories || []).map(function (c) {
+        var active = (forumState.cat === c.id && !forumState.favOnly) ? ' style="background:color-mix(in oklab,var(--primary) 14%,transparent);color:var(--primary);font-weight:700"' : '';
+        return '<a href="#/forum" data-cat="' + c.id + '"' + active + '><span>' + esc(c.name) + '</span><span class="cnt">' + (counts[c.id] || 0) + '</span></a>';
+      }).join('');
+      cats.querySelectorAll('a[data-cat]').forEach(function (a) {
+        a.addEventListener('click', function (e) {
+          e.preventDefault();
+          forumState.cat = Number(a.getAttribute('data-cat'));
+          forumState.favOnly = false;
+          renderForum(container);
+        });
+      });
+      // 侧栏：经验排行（排除匿名）
+      var rank = side.querySelector('#fRank');
+      var score = {};
+      data.posts.forEach(function (p) {
+        if (p.author && p.author !== '匿名玩家') score[p.author] = (score[p.author] || 0) + 1;
+        (p.replies || []).forEach(function (r) {
+          if (r.author && r.author !== '匿名玩家') score[r.author] = (score[r.author] || 0) + 1;
+        });
+      });
+      var top = Object.keys(score).map(function (k) { return { n: k, v: score[k] }; })
+        .sort(function (a, b) { return b.v - a.v; }).slice(0, 5);
+      rank.innerHTML = top.length ? top.map(function (t, i) {
+        return '<div class="forum-rank"><img class="rk-av" src="' + avatarUrl(t.n, 32) + '" alt="" loading="lazy" onerror="this.style.visibility=\'hidden\'"><span class="rk-name">' + esc(t.n) + '</span><span class="rk-num">' + t.v + '</span></div>';
+      }).join('') : '<div style="font-size:13px;color:var(--muted-foreground);padding:4px 8px">还没有数据</div>';
+      // 我的收藏 入口
+      var fav = side.querySelector('#fFav');
+      fav.addEventListener('click', function (e) {
+        e.preventDefault();
+        forumState.favOnly = !forumState.favOnly;
+        forumState.cat = 0;
+        renderForum(container);
+      });
+      if (forumState.favOnly) fav.style.background = 'color-mix(in oklab,var(--primary) 14%,transparent)';
+      // 搜索
+      var search = side.querySelector('#fSearch');
+      search.value = forumState.q || '';
+      search.addEventListener('input', function () { forumState.q = search.value.trim(); renderForumList(main, data); });
+
+      renderForumList(main, data);
+    });
+  }
+
+  function renderForumList(main, data) {
+    var posts = (data.posts || []).slice().sort(function (a, b) { return b.created - a.created; });
+    var fav = forumFavSet();
+    if (forumState.cat > 0) posts = posts.filter(function (p) { return p.category === forumState.cat; });
+    if (forumState.favOnly) posts = posts.filter(function (p) { return fav.has(p.id); });
+    if (forumState.q) {
+      var q = forumState.q.toLowerCase();
+      posts = posts.filter(function (p) {
+        return (p.title || '').toLowerCase().indexOf(q) >= 0 ||
+          (p.content || '').toLowerCase().indexOf(q) >= 0 ||
+          (p.author || '').toLowerCase().indexOf(q) >= 0;
+      });
+    }
+    if (!posts.length) {
+      main.innerHTML = '<div class="forum-empty">' +
+        (forumState.favOnly ? '你还没有收藏任何帖子，点开帖子右上角 ⭐ 即可收藏。' : '这个分类下还没有帖子，来发第一条吧！') +
+        '</div>';
+      return;
+    }
+    var html = posts.map(function (p) {
+      var c = catName(data, p.category);
+      var av = avatarUrl(p.author, 44);
+      var excerpt = (p.content || '').replace(/\s+/g, ' ');
+      if (excerpt.length > 80) excerpt = excerpt.slice(0, 80) + '…';
+      return '<a class="post-card" href="#/forum/post/' + esc(p.id) + '">' +
+        '<span class="cat-badge">' + esc(c) + '</span>' +
+        '<h3 class="post-title">' + esc(p.title) + '</h3>' +
+        '<p class="post-excerpt">' + esc(excerpt) + '</p>' +
+        '<div class="post-meta">' +
+          '<img src="' + av + '" alt="" loading="lazy" onerror="this.style.visibility=\'hidden\'">' +
+          '<span class="pm-name">' + esc(p.author || '匿名玩家') + '</span>' +
+          '<span class="dot">·</span><span>' + timeAgo(p.created) + '</span>' +
+          '<span class="dot">·</span><span>💬 ' + ((p.replies || []).length) + '</span>' +
+          '<span class="dot">·</span><span>👍 ' + (p.likes || 0) + '</span>' +
+        '</div></a>';
+    }).join('');
+    main.innerHTML = html;
+  }
+
+  /* --- 帖子详情页 --- */
+  function renderForumPost(container, id) {
+    container.innerHTML = pageHead('论坛', '帖子详情', '');
+    var box = el('div', 'forum-detail');
+    box.innerHTML = '<div class="forum-empty">正在加载…</div>';
+    container.appendChild(box);
+
+    fetchForum(function (data, err) {
+      if (err || !data) { box.innerHTML = emptyState('📭', '加载失败，请返回重试'); return; }
+      var post = (data.posts || []).find(function (p) { return p.id === id; });
+      if (!post) { box.innerHTML = emptyState('🔍', '帖子不存在或已被删除'); return; }
+      var fav = forumFavSet();
+      var liked = forumLikeSet().has(post.id);
+      var c = catName(data, post.category);
+      box.innerHTML = '';
+      // 头部
+      var head = el('div');
+      head.innerHTML = '<span class="fd-cat">' + esc(c) + '</span>' +
+        '<h1 class="fd-title">' + esc(post.title) + '</h1>' +
+        '<div class="fd-meta">' +
+          '<img src="' + avatarUrl(post.author, 56) + '" alt="" onerror="this.style.visibility=\'hidden\'">' +
+          '<span class="pm-name">' + esc(post.author || '匿名玩家') + '</span>' +
+          '<span>·</span><span>' + timeAgo(post.created) + '</span>' +
+          '<span>·</span><span>💬 ' + ((post.replies || []).length) + ' 回复</span>' +
+        '</div>';
+      box.appendChild(head);
+      // 正文（textContent 防 XSS，pre-wrap 保留换行）
+      var body = el('div', 'fd-body');
+      body.textContent = post.content || '';
+      box.appendChild(body);
+      // 操作区：点赞 / 收藏 / 返回
+      var actions = el('div', 'fd-actions');
+      var likeBtn = el('button', 'fd-like' + (liked ? ' on' : ''));
+      likeBtn.textContent = (liked ? '👍 已赞 ' : '👍 点赞 ') + ((post.likes || 0) + (liked ? 1 : 0));
+      var favBtn = el('button', 'fd-like' + (fav.has(post.id) ? ' on' : ''));
+      favBtn.textContent = fav.has(post.id) ? '⭐ 已收藏' : '☆ 收藏';
+      var back = el('a', 'btn btn-outline btn-sm');
+      back.href = '#/forum';
+      back.textContent = '← 返回列表';
+      actions.appendChild(likeBtn); actions.appendChild(favBtn); actions.appendChild(back);
+      box.appendChild(actions);
+      likeBtn.addEventListener('click', function () {
+        var on = forumToggleLike(post.id);
+        likeBtn.classList.toggle('on', on);
+        likeBtn.textContent = (on ? '👍 已赞 ' : '👍 点赞 ') + ((post.likes || 0) + (on ? 1 : 0));
+      });
+      favBtn.addEventListener('click', function () {
+        var on = forumToggleFav(post.id);
+        favBtn.classList.toggle('on', on);
+        favBtn.textContent = on ? '⭐ 已收藏' : '☆ 收藏';
+        toast(on ? '已加入收藏' : '已取消收藏');
+      });
+      // 回复列表
+      var rl = el('div', 'reply-list');
+      box.appendChild(rl);
+      renderReplies(rl, post);
+      // 回复表单（任何人可回，无需登录）
+      var rf = el('div', 'reply-form');
+      rf.innerHTML =
+        '<div class="forum-note">无需登录即可回复；留空昵称将以「匿名玩家」发表。</div>' +
+        '<div class="field"><label>回复内容</label><textarea id="rfText" maxlength="1000" placeholder="说点什么…"></textarea></div>' +
+        '<div class="rf-row">' +
+          '<input id="rfName" type="text" maxlength="24" placeholder="昵称（选填）" style="flex:1;min-width:120px;background:var(--card);border:1px solid var(--input);border-radius:9px;padding:9px 11px;color:var(--foreground);outline:none">' +
+          '<label class="rf-anon"><input id="rfAnon" type="checkbox" checked> 匿名发表</label>' +
+          '<button class="btn btn-primary btn-sm" id="rfSend" type="button">发表回复</button>' +
+        '</div>' +
+        '<div id="rfMsg" style="font-size:13px;min-height:18px;margin-top:8px"></div>';
+      box.appendChild(rf);
+      var rfText = rf.querySelector('#rfText');
+      var rfName = rf.querySelector('#rfName');
+      var rfAnon = rf.querySelector('#rfAnon');
+      var rfSend = rf.querySelector('#rfSend');
+      var rfMsg = rf.querySelector('#rfMsg');
+      rfSend.addEventListener('click', function () {
+        var text = rfText.value.trim();
+        if (text.length < 2) { rfMsg.textContent = '回复至少写 2 个字'; rfMsg.style.color = 'var(--destructive)'; return; }
+        var rid = randomHex();
+        var since = Math.floor(Date.now() / 1000) - 120;
+        rfSend.disabled = true; rfMsg.textContent = '正在发表…'; rfMsg.style.color = 'var(--muted-foreground)';
+        fetch(NTFY_BASE + '/' + NTFY_TOPIC, {
+          method: 'POST', headers: { 'content-type': 'text/plain' },
+          body: JSON.stringify({ type: 'forum_reply', rid: rid, post_id: post.id, content: text, author: rfName.value.trim(), anonymous: rfAnon.checked, ts: Date.now() })
+        }).then(function () {
+          waitForumAck(rid, function (m) {
+            rfSend.disabled = false;
+            if (m && (m.type === 'forumOk')) {
+              rfText.value = ''; rfMsg.textContent = '回复成功！'; rfMsg.style.color = 'var(--primary)';
+              // 重新拉取最新数据再渲染
+              fetchForum(function (nd) {
+                if (nd) { var np = (nd.posts || []).find(function (x) { return x.id === post.id; }); if (np) { post = np; rl.innerHTML = ''; renderReplies(rl, post); } }
+              });
+            } else if (m && (m.type === 'forumErr')) {
+              rfMsg.textContent = '发表失败：' + (m.reason || '未知错误'); rfMsg.style.color = 'var(--destructive)';
+            } else {
+              rfMsg.textContent = '等了 15 秒没收到回执，可能服务端没在线，稍后刷新看看。'; rfMsg.style.color = 'var(--destructive)';
+            }
+          });
+        }).catch(function () {
+          rfSend.disabled = false;
+          rfMsg.textContent = '网络错误，没发出去。'; rfMsg.style.color = 'var(--destructive)';
+        });
+      });
+    });
+  }
+  function renderReplies(container, post) {
+    var list = post.replies || [];
+    if (!list.length) { container.innerHTML = '<div style="font-size:13.5px;color:var(--muted-foreground);padding:6px 2px">还没有回复，来抢沙发～</div>'; return; }
+    container.innerHTML = list.slice().sort(function (a, b) { return a.created - b.created; }).map(function (r) {
+      return '<div class="reply-item">' +
+        '<img src="' + avatarUrl(r.author, 60) + '" alt="" onerror="this.style.visibility=\'hidden\'">' +
+        '<div class="ri-main">' +
+          '<div class="ri-head"><span class="ri-name">' + esc(r.author || '匿名玩家') + '</span><span class="ri-time">' + timeAgo(r.created) + '</span></div>' +
+          '<div class="ri-body"></div>' +
+        '</div></div>';
+    }).join('');
+    // 用 textContent 填充回复正文，避免 XSS
+    var bodies = container.querySelectorAll('.ri-body');
+    list.slice().sort(function (a, b) { return a.created - b.created; }).forEach(function (r, i) {
+      if (bodies[i]) bodies[i].textContent = r.content || '';
+    });
+  }
+
+  /* --- 发新贴页 --- */
+  function renderForumNew(container) {
+    container.innerHTML = pageHead('论坛', '发新贴', '提个想法、问个问题、晒个作品。无需登录，直接发表（也可填写昵称）。');
+    var box = el('div', 'card forum-form');
+    container.appendChild(box);
+    box.innerHTML =
+      '<div class="forum-note">发表内容会公开展示在论坛上，请不要填写密码、手机号等敏感信息。恶意刷屏或违规内容将被删除。</div>' +
+      '<div class="field"><label>选择分类</label><select id="fnCat"></select></div>' +
+      '<div class="field"><label>标题<span id="fnCount" style="float:right;color:var(--muted-foreground)">0 / 100</span></label>' +
+        '<input id="fnTitle" type="text" maxlength="100" placeholder="一句话说清你要聊什么"></div>' +
+      '<div class="field"><label>正文<span id="fnCount2" style="float:right;color:var(--muted-foreground)">0 / 2000</span></label>' +
+        '<textarea id="fnContent" maxlength="2000" placeholder="展开说说，第一行会作为标题的补充说明"></textarea></div>' +
+      '<div class="rf-row" style="margin-bottom:14px">' +
+        '<input id="fnName" type="text" maxlength="24" placeholder="昵称（选填，留空则匿名）" style="flex:1;min-width:120px;background:var(--card);border:1px solid var(--input);border-radius:9px;padding:9px 11px;color:var(--foreground);outline:none">' +
+        '<label class="rf-anon"><input id="fnAnon" type="checkbox" checked> 匿名发表</label>' +
+      '</div>' +
+      '<div id="fnMsg" class="fb-msg"></div>' +
+      '<div class="fb-actions"><button class="btn btn-primary" id="fnSubmit" type="button">发布帖子</button>' +
+        '<a class="btn btn-outline" href="#/forum">取消</a></div>';
+
+    // 分类下拉（默认沿用列表页当前选中的分类）
+    fetchForum(function (data) {
+      var sel = box.querySelector('#fnCat');
+      var cats = (data && data.categories) || [];
+      sel.innerHTML = cats.map(function (c) {
+        var def = (forumState.cat && forumState.cat === c.id) ? ' selected' : '';
+        return '<option value="' + c.id + '"' + def + '>' + esc(c.name) + '</option>';
+      }).join('');
+    });
+
+    var title = box.querySelector('#fnTitle');
+    var content = box.querySelector('#fnContent');
+    var name = box.querySelector('#fnName');
+    var anon = box.querySelector('#fnAnon');
+    var submit = box.querySelector('#fnSubmit');
+    var msg = box.querySelector('#fnMsg');
+    var c1 = box.querySelector('#fnCount');
+    var c2 = box.querySelector('#fnCount2');
+    function setMsg(t, cls) { msg.textContent = t; msg.className = 'fb-msg' + (cls ? ' ' + cls : ''); }
+    title.addEventListener('input', function () { c1.textContent = title.value.length + ' / 100'; });
+    content.addEventListener('input', function () { c2.textContent = content.value.length + ' / 2000'; });
+
+    submit.addEventListener('click', function () {
+      var t = title.value.trim();
+      var ct = content.value.trim();
+      if (t.length < 2) { setMsg('标题至少 2 个字', 'err'); return; }
+      if (ct.length < 2) { setMsg('正文至少 2 个字', 'err'); return; }
+      var rid = randomHex();
+      var since = Math.floor(Date.now() / 1000) - 120;
+      submit.disabled = true; setMsg('正在发布…', 'busy');
+      fetch(NTFY_BASE + '/' + NTFY_TOPIC, {
+        method: 'POST', headers: { 'content-type': 'text/plain' },
+        body: JSON.stringify({
+          type: 'forum_post', rid: rid, category: Number(box.querySelector('#fnCat').value),
+          title: t, content: ct, author: name.value.trim(), anonymous: anon.checked, ts: Date.now()
+        })
+      }).then(function () {
+        waitForumAck(rid, function (m) {
+          submit.disabled = false;
+          if (m && (m.type === 'forumOk')) {
+            setMsg('发布成功！正在跳转…', 'ok');
+            setTimeout(function () { location.hash = '#/forum/post/' + (m.id || ''); }, 600);
+          } else if (m && (m.type === 'forumErr')) {
+            setMsg('发布失败：' + (m.reason || '未知错误'), 'err');
+          } else {
+            setMsg('等了 15 秒没收到回执，可能服务端没在线，请稍后重试。', 'err');
+          }
+        });
+      }).catch(function () {
+        submit.disabled = false;
+        setMsg('网络错误，没发出去。', 'err');
+      });
+    });
+  }
+
   var routes = {
     '/': renderHome,
     '/status': renderStatus,
@@ -1112,7 +1498,8 @@
     '/rank': renderRank,
     '/guide': renderGuide,
     '/rules': renderRules,
-    '/feedback': renderFeedback,
+    '/forum': renderForum,
+    '/forum/new': renderForumNew,
     '/chat': renderChat,
     '/appeal': renderAppeal
   };
@@ -1120,6 +1507,10 @@
   function resolve(hash) {
     var path = (hash || '#/').replace(/^#/, '');
     if (!path || path === '/') return { page: renderHome, param: '' };
+    // 论坛子路由：详情页 /forum/post/<id>
+    if (path.indexOf('/forum/post/') === 0) return { page: renderForumPost, param: path.split('/')[3] || '' };
+    if (path === '/forum/new') return { page: renderForumNew, param: '' };
+    if (path === '/forum') return { page: renderForum, param: '' };
     if (routes[path]) return { page: routes[path], param: '' };
     return { page: renderHome, param: '' };
   }

@@ -1,0 +1,143 @@
+{
+  "version": 1,
+  "updated": 1794105377307,
+  "categories": [
+    {
+      "id": 1,
+      "name": "综合讨论",
+      "desc": "服务器里的大小事，进来随便唠"
+    },
+    {
+      "id": 2,
+      "name": "技术交流",
+      "desc": "插件、红石、指令、建筑技巧都在这聊"
+    },
+    {
+      "id": 3,
+      "name": "反馈建议",
+      "desc": "遇到 BUG 或有好点子？这里告诉我们"
+    },
+    {
+      "id": 4,
+      "name": "举报申诉",
+      "desc": "举报违规玩家，或对封禁有异议请申诉"
+    },
+    {
+      "id": 5,
+      "name": "留言板",
+      "desc": "一句话打卡、许愿、表白服务器都行"
+    },
+    {
+      "id": 6,
+      "name": "建筑展示",
+      "desc": "晒出你的地皮、红石机、像素画"
+    }
+  ],
+  "posts": [
+    {
+      "id": "p_1492ab8c07f2",
+      "category": 1,
+      "title": "最近进服老是卡卡的，大家的延迟也这么高吗？",
+      "content": "这两天晚上高峰期一进服就疯狂掉帧，走路都像在幻灯片里。\n想问问是不是只有我一个人这样，还是最近服务端那边网络不太稳？\n有没有老哥知道大概啥时候能好，或者有没有什么降低延迟的小技巧。",
+      "author": "swad12",
+      "anonymous": false,
+      "created": 1792290977307,
+      "likes": 0,
+      "replies": [
+        {
+          "id": "r_1021fb652763",
+          "author": "xiaoran8083",
+          "anonymous": false,
+          "content": "我昨晚也感觉有点飘，应该是高峰时段带宽被挤了。腐竹说在调隧道节点，再观察两天看看。",
+          "created": 1792377377307
+        }
+      ]
+    },
+    {
+      "id": "p_9366589a46a8",
+      "category": 6,
+      "title": "在地皮里肝了三天，造了座悬浮小花园，求围观",
+      "content": "纯生存手搓，没开创造。主体用石英+玻璃做了个悬浮平台，底下挂了一圈发光珊瑚。\n坐标在地皮世界 /warp garden，路过的大佬随便看，别踩花就行哈哈。\n下次准备在旁边加个小型红石喷泉，有想一起搞的可以喊我。",
+      "author": "xiaoran8083",
+      "anonymous": false,
+      "created": 1793414177307,
+      "likes": 0,
+      "replies": []
+    },
+    {
+      "id": "p_895c14c567e6",
+      "category": 2,
+      "title": "新手求教：怎么给自己的领地设置成仅好友可进？",
+      "content": "刚圈了一块地，不想被路人随便进。看介绍说能用 Residence 或者领地插旗来管权限，\n具体指令是啥来着？有没有大佬贴一下设置仅好友进入的那句。",
+      "author": "feng_56",
+      "anonymous": false,
+      "created": 1793673377307,
+      "likes": 0,
+      "replies": [
+        {
+          "id": "r_5643dc3df8b5",
+          "author": "sjwj12517",
+          "anonymous": false,
+          "content": "领地插件里用 /res set <领地名> enter f 就能把进入权限改成仅好友。先 /res select 圈好范围再 /res create 命名。",
+          "created": 1793676977307
+        },
+        {
+          "id": "r_0af821c1b879",
+          "author": "feng_56",
+          "anonymous": false,
+          "content": "懂了，刚试了下真生效，多谢服主！",
+          "created": 1793759777307
+        }
+      ]
+    },
+    {
+      "id": "p_e1d4fe31087f",
+      "category": 3,
+      "title": "希望生存服能加个每周签到，送点小奖励鼓励活跃",
+      "content": "建议搞个每周签到，连续签到几天送点货币或者随机小道具。\n现在大家上线基本各玩各的，有个签到目标可能更愿意每天来蹲一会儿。",
+      "author": "dashu",
+      "anonymous": false,
+      "created": 1793846177307,
+      "likes": 0,
+      "replies": [
+        {
+          "id": "r_e8e87fa6823e",
+          "author": "xiaoran8083",
+          "anonymous": false,
+          "content": "这个可以有，最好签到还能累计成就，集满一个月发个专属称号。",
+          "created": 1793853377307
+        }
+      ]
+    },
+    {
+      "id": "p_d5e6cd5108e7",
+      "category": 4,
+      "title": "举报：主世界有人恶意拆我辛苦搭的房子",
+      "content": "举报玩家 xxx，今晚发现主世界我家园子被拆了一大块，箱子也被翻了。\n有截图和坐标记录，希望管理能帮忙回滚并核实处理。",
+      "author": "匿名玩家",
+      "anonymous": true,
+      "created": 1793932577307,
+      "likes": 0,
+      "replies": [
+        {
+          "id": "r_a9d912487a08",
+          "author": "xiaoran8083",
+          "anonymous": false,
+          "content": "收到，麻烦把坐标和截图发我私聊，我这边查一下日志帮你回滚。",
+          "created": 1793934377307
+        }
+      ]
+    },
+    {
+      "id": "p_7e159ab0e750",
+      "category": 5,
+      "title": "报到！刚入坑的萌新，请各位大佬多多指教",
+      "content": "今天被朋友拉进来的，第一次玩这种带小游戏的生存服，啥都不懂。\n有没有萌新群或者新手攻略贴，先抱个大腿~",
+      "author": "mcdoudou",
+      "anonymous": false,
+      "created": 1794018977307,
+      "likes": 0,
+      "replies": []
+    }
+  ]
+}
