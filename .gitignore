@@ -5,3 +5,4 @@ repo.json
 *.log
 *.tmp
 _tmp/
+tools/live-status.json

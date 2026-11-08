@@ -303,7 +303,17 @@ code{font-family:ui-monospace,Consolas,Menlo,monospace}
 .stat-box{flex:1;min-width:140px;background:var(--muted);border-radius:12px;padding:14px 16px}
 .stat-box .k{font-size:12px;color:var(--muted-foreground)}
 .stat-box .v{font-size:20px;font-weight:700;margin-top:4px}
+.stat-box .ksub{font-size:11px;color:var(--muted-foreground);margin-top:3px}
+.stat-box .v.warn{color:oklch(62% .14 70)}
+.stat-box .v.bad{color:var(--destructive)}
 .motd{background:var(--muted);border-radius:12px;padding:14px 16px;margin-top:16px;font-size:14px;white-space:pre-wrap;color:var(--muted-foreground)}
+
+/* ===== 在线人数曲线（状态页） ===== */
+.st-chart-wrap{margin-top:20px;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 16px 8px}
+.st-chart-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+.st-chart-head>span:first-child{font-size:14px;font-weight:700}
+.st-chart-note{font-size:12px;color:var(--muted-foreground)}
+.st-chart{width:100%;height:150px;display:block}
 
 /* ===== 玩家列表 ===== */
 .player-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:12px}
@@ -621,3 +631,68 @@ code{font-family:ui-monospace,Consolas,Menlo,monospace}
   .me-hero-act{width:100%}
   .me-hero-act .btn{flex:1}
 }
+
+/* ===== 排行榜扩展：建筑作品 / 成就 ===== */
+.build-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
+.build-card{border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--card);transition:.18s}
+.build-card:hover{border-color:var(--ring);box-shadow:var(--shadow)}
+.build-thumb{width:100%;height:130px;object-fit:cover;display:block;background:var(--muted)}
+.build-body{padding:12px 14px}
+.build-title{font-size:14px;font-weight:700;line-height:1.4}
+.build-meta{font-size:12px;color:var(--muted-foreground);margin-top:4px}
+.build-desc{font-size:12px;color:var(--muted-foreground);margin-top:8px;line-height:1.6}
+.rank2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media(max-width:720px){.rank2{grid-template-columns:1fr}}
+.rank-h4{margin:0 0 10px;font-size:14px;font-weight:700}
+.rank-list{display:grid;gap:2px}
+.rank-line{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 2px;border-bottom:1px solid var(--border);font-size:14px}
+.rank-line:last-child{border-bottom:0}
+.rank-line-name{display:flex;align-items:center;gap:7px;min-width:0;font-weight:600}
+.rank-line-tag{font-size:11px;font-weight:500;color:var(--muted-foreground);background:var(--muted);padding:1px 7px;border-radius:999px}
+.rank-line-val{flex:none;font-weight:800;color:var(--primary);white-space:nowrap}
+.rank-empty{padding:18px;text-align:center;color:var(--muted-foreground);font-size:13px}
+
+/* ===== 公告页（时间线 + RSS） ===== */
+.news-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+  padding-bottom:14px;margin-bottom:16px;border-bottom:1px solid var(--border)}
+.news-sub{font-size:13px;color:var(--muted-foreground)}
+.news-sub code{font-size:12px;background:var(--muted);padding:2px 7px;border-radius:6px;
+  font-family:ui-monospace,SFMono-Regular,Consolas,monospace;word-break:break-all}
+.news-list{display:grid;gap:2px}
+.news-item{display:flex;gap:14px;padding:14px 2px;position:relative}
+.news-item:not(:last-child)::after{content:"";position:absolute;left:5px;top:26px;bottom:-2px;width:1px;background:var(--border)}
+.news-dot{width:11px;height:11px;border-radius:50%;background:var(--primary);flex:none;margin-top:6px;
+  box-shadow:0 0 0 3px color-mix(in oklab, var(--primary) 16%, transparent)}
+.news-body{flex:1;min-width:0}
+.news-title{font-size:15px;font-weight:700;line-height:1.45;display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.news-pin{font-size:11px;font-weight:700;padding:1px 8px;border-radius:999px;background:var(--primary);color:var(--primary-foreground)}
+.news-date{font-size:12px;color:var(--muted-foreground);margin-top:4px}
+.news-text{font-size:13.5px;color:var(--muted-foreground);margin-top:8px;line-height:1.75;white-space:pre-wrap}
+
+/* ===== Wiki / 攻略 ===== */
+.wiki-wrap{display:grid;grid-template-columns:220px 1fr;gap:18px;align-items:start}
+@media(max-width:820px){.wiki-wrap{grid-template-columns:1fr}.wiki-side{position:static!important}}
+.wiki-side{position:sticky;top:76px;padding:16px}
+.wiki-side h4{margin:0 0 10px;font-size:13px;color:var(--muted-foreground);font-weight:600}
+.wiki-nav{display:grid;gap:2px}
+.wiki-nav-link{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:9px;
+  font-size:13.5px;color:var(--foreground);text-decoration:none;transition:.15s}
+.wiki-nav-link:hover{background:var(--accent)}
+.wiki-nav-link.active{background:var(--primary);color:var(--primary-foreground);font-weight:650}
+.wiki-ico{font-size:14px}
+.wiki-main{display:grid;gap:14px;min-width:0}
+.wiki-notice{font-size:13px;color:var(--muted-foreground);line-height:1.7;background:var(--muted);border-style:dashed}
+.wiki-sec{margin-bottom:22px}
+.wiki-sec:last-child{margin-bottom:0}
+.wiki-sec h3{margin:0 0 10px;font-size:16px;font-weight:750}
+.wiki-item{border:1px solid var(--border);border-radius:10px;padding:0 14px;margin-bottom:8px;background:var(--card)}
+.wiki-item[open]{background:var(--accent)}
+.wiki-item summary{cursor:pointer;padding:12px 0;font-size:14px;font-weight:650;list-style:none;
+  display:flex;align-items:center;justify-content:space-between;gap:10px}
+.wiki-item summary::-webkit-details-marker{display:none}
+.wiki-item summary::after{content:"+";color:var(--muted-foreground);font-weight:700;flex:none}
+.wiki-item[open] summary::after{content:"−"}
+.wiki-answer{font-size:13.5px;color:var(--muted-foreground);line-height:1.85;white-space:pre-wrap;
+  padding:0 0 14px;border-top:1px dashed var(--border);padding-top:12px}
+.wiki-foot{font-size:12px;color:var(--muted-foreground);text-align:center;padding:6px 0 2px}
+.wiki-loading{padding:26px}

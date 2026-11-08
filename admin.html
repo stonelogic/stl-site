@@ -52,6 +52,32 @@
   .ad-scroll{max-height:420px;overflow:auto}
   .ad-status{font-size:12px;color:var(--muted-foreground)}
   .ad-err{color:var(--destructive);font-size:13px;margin-top:12px}
+
+  /* 标签页 */
+  .ad-tabs{display:flex;gap:6px;margin-bottom:18px;padding:5px;background:var(--muted);border-radius:12px;width:fit-content;flex-wrap:wrap}
+  .ad-tab{border:0;background:transparent;color:var(--muted-foreground);font-size:13.5px;font-weight:650;
+    padding:8px 16px;border-radius:9px;cursor:pointer;transition:.15s;font-family:var(--font-sans)}
+  .ad-tab:hover{color:var(--foreground)}
+  .ad-tab.active{background:var(--card);color:var(--foreground);box-shadow:var(--shadow-sm)}
+  .ad-tabpane{animation:adFade .22s ease}
+  @keyframes adFade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+  /* 内容管理 */
+  .ad-toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+  .ad-form{background:var(--card);border:1px solid var(--ring);border-radius:var(--radius);padding:16px;margin-bottom:16px}
+  .ad-form h3{margin:0 0 12px;font-size:14px;font-weight:700}
+  .ad-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media(max-width:720px){.ad-form-grid{grid-template-columns:1fr}}
+  .ad-f{display:grid;gap:5px}
+  .ad-f label{font-size:12px;color:var(--muted-foreground)}
+  .ad-f input,.ad-f textarea,.ad-f select{
+    background:var(--background);border:1px solid var(--input);color:var(--foreground);
+    border-radius:8px;padding:8px 10px;font-size:13px;font-family:var(--font-sans);width:100%}
+  .ad-f textarea{min-height:80px;resize:vertical}
+  .ad-f.full{grid-column:1/-1}
+  .ad-form-act{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
+  .btn-danger{background:var(--destructive);color:var(--destructive-foreground)}
+  .ad-mini{padding:4px 10px;font-size:12px;border-radius:7px}
 </style>
 </head>
 <body>
@@ -79,6 +105,13 @@
 
   <!-- 已连接：数据面板 -->
   <div id="panel" hidden>
+    <div class="ad-tabs">
+      <button class="ad-tab active" data-tab="mon" type="button">📊 监控</button>
+      <button class="ad-tab" data-tab="content" type="button">📝 内容管理</button>
+      <button class="ad-tab" data-tab="report" type="button">🚩 举报处理</button>
+    </div>
+
+    <div class="ad-tabpane" id="tabMon">
     <div class="ad-cards" id="cards"></div>
 
     <div class="ad-grid">
@@ -141,6 +174,80 @@
             <tbody id="auditRows"></tbody>
           </table>
         </div>
+      </div>
+    </div>
+    </div><!-- /tabMon -->
+
+    <!-- ===== 内容管理 ===== -->
+    <div class="ad-tabpane" id="tabContent" hidden>
+      <div class="ad-toolbar">
+        <span class="ad-status">新增内容：</span>
+        <button class="btn btn-sm btn-primary" data-form="ann" type="button">公告</button>
+        <button class="btn btn-sm btn-outline" data-form="item" type="button">商品</button>
+        <button class="btn btn-sm btn-outline" data-form="ach" type="button">成就</button>
+        <button class="btn btn-sm btn-outline" data-form="tour" type="button">赛事</button>
+        <button class="btn btn-sm btn-outline" data-form="build" type="button">建筑</button>
+      </div>
+      <div id="cForm"></div>
+
+      <div class="ad-panel" style="margin-bottom:16px">
+        <h2>公告 <small id="annCount"></small></h2>
+        <div class="ad-scroll"><table class="ad-table">
+          <thead><tr><th>时间</th><th>标题</th><th>内容</th><th>置顶</th><th>操作</th></tr></thead>
+          <tbody id="annRows"></tbody>
+        </table></div>
+      </div>
+
+      <div class="ad-panel" style="margin-bottom:16px">
+        <h2>商店商品 <small id="itemCount"></small></h2>
+        <div class="ad-scroll"><table class="ad-table">
+          <thead><tr><th>名称</th><th>价格</th><th>分类</th><th>库存</th><th>操作</th></tr></thead>
+          <tbody id="itemRows"></tbody>
+        </table></div>
+      </div>
+
+      <div class="ad-grid">
+        <div class="ad-panel">
+          <h2>成就 <small id="achCount"></small></h2>
+          <div class="ad-scroll"><table class="ad-table">
+            <thead><tr><th>名称</th><th>分类</th><th>操作</th></tr></thead>
+            <tbody id="achRows"></tbody>
+          </table></div>
+        </div>
+        <div class="ad-panel">
+          <h2>赛事 <small id="tourCount"></small></h2>
+          <div class="ad-scroll"><table class="ad-table">
+            <thead><tr><th>标题</th><th>开始</th><th>状态</th><th>操作</th></tr></thead>
+            <tbody id="tourRows"></tbody>
+          </table></div>
+        </div>
+      </div>
+
+      <div class="ad-panel">
+        <h2>建筑作品 <small id="buildCount"></small></h2>
+        <div class="ad-scroll"><table class="ad-table">
+          <thead><tr><th>标题</th><th>作者</th><th>世界</th><th>操作</th></tr></thead>
+          <tbody id="buildRows"></tbody>
+        </table></div>
+      </div>
+    </div>
+
+    <!-- ===== 举报处理 ===== -->
+    <div class="ad-tabpane" id="tabReport" hidden>
+      <div class="ad-cards" id="rpCards"></div>
+      <div class="ad-panel" style="margin-bottom:16px">
+        <h2>举报队列 <small id="rpCount"></small></h2>
+        <div class="ad-scroll"><table class="ad-table">
+          <thead><tr><th>时间</th><th>帖子</th><th>举报人</th><th>原因</th><th>状态</th><th>操作</th></tr></thead>
+          <tbody id="rpRows"></tbody>
+        </table></div>
+      </div>
+      <div class="ad-panel">
+        <h2>管理操作日志 <small>后台谁做了什么，全部留痕</small></h2>
+        <div class="ad-scroll"><table class="ad-table">
+          <thead><tr><th>时间</th><th>操作</th><th>参数</th></tr></thead>
+          <tbody id="admRows"></tbody>
+        </table></div>
       </div>
     </div>
   </div>
@@ -317,9 +424,320 @@
     }).join('') : '<tr><td colspan="4" class="ad-empty">还没有操作记录</td></tr>';
 
     setStatus('已连接 · 更新于 ' + fmtTime(d.serverTime));
+    renderReports(d);
+    renderAdminAudit(d);
+  }
+
+  /* ================= 举报处理 ================= */
+
+  function renderReports(d) {
+    var reports = Array.isArray(d.reports) ? d.reports : [];
+    var pending = reports.filter(function (r) { return r.status === 'pending'; });
+    var cards = [
+      { k: '待处理', v: pending.length + ' 条', s: '点了「删帖」或「忽略」就消失' },
+      { k: '累计举报', v: reports.length + ' 条', s: '原始记录永久保留' },
+      { k: '已删帖', v: reports.filter(function (r) { return r.status === 'deleted'; }).length + ' 条', s: '' },
+      { k: '已忽略', v: reports.filter(function (r) { return r.status === 'ignored'; }).length + ' 条', s: '' }
+    ];
+    $('rpCards').innerHTML = cards.map(function (c) {
+      return '<div class="ad-card"><div class="k">' + esc(c.k) + '</div><div class="v">' + esc(c.v) + '</div>' +
+        (c.s ? '<div class="s">' + esc(c.s) + '</div>' : '') + '</div>';
+    }).join('');
+
+    $('rpCount').textContent = reports.length ? ('共 ' + reports.length + ' 条') : '';
+    var STATUS = {
+      pending: '<span class="ad-tag bad">待处理</span>',
+      deleted: '<span class="ad-tag ok">已删帖</span>',
+      ignored: '<span class="ad-tag">已忽略</span>'
+    };
+    $('rpRows').innerHTML = reports.length ? reports.map(function (r) {
+      var st = r.status || 'pending';
+      var acts = '';
+      if (st === 'pending') {
+        acts = '<button class="btn ad-mini btn-danger" data-rp="delete" data-t="' + r.t + '" data-p="' + esc(r.post_id || '') + '" type="button">删帖</button> ' +
+          '<button class="btn ad-mini btn-outline" data-rp="ignore" data-t="' + r.t + '" data-p="' + esc(r.post_id || '') + '" type="button">忽略</button>';
+      } else {
+        acts = '<button class="btn ad-mini btn-ghost" data-rp="reopen" data-t="' + r.t + '" data-p="' + esc(r.post_id || '') + '" type="button">撤销处理</button>';
+      }
+      return '<tr><td class="ad-mono" style="white-space:nowrap">' + fmtTime(r.t) + '</td>' +
+        '<td class="ad-mono">' + esc(r.post_id || '—') + '</td>' +
+        '<td class="ad-mono">' + esc(r.qq || '—') + '</td>' +
+        '<td>' + esc(r.reason || '') + '</td>' +
+        '<td>' + (STATUS[st] || esc(st)) + (r.handledAt ? '<div class="ad-status" style="margin-top:3px">' + fmtTime(r.handledAt) + '</div>' : '') + '</td>' +
+        '<td style="white-space:nowrap">' + acts + '</td></tr>';
+    }).join('') : '<tr><td colspan="6" class="ad-empty">没有举报记录</td></tr>';
+  }
+
+  function handleReport(t, postId, action, btn) {
+    var label = action === 'delete' ? '删除这个帖子' : (action === 'ignore' ? '把这条举报标记为忽略' : '撤销处理结果');
+    if (!confirm('确定' + label + '？')) return;
+    btn.disabled = true;
+    adminPost('api/admin/report/handle', { t: Number(t), post_id: postId, action: action })
+      .then(function (r) {
+        if (r.error) { alert('失败：' + r.error); btn.disabled = false; return; }
+        fetchData();
+      })
+      .catch(function (e) { alert('请求失败：' + e.message); btn.disabled = false; });
+  }
+
+  /* 管理操作日志 */
+  function renderAdminAudit(d) {
+    var logs = Array.isArray(d.adminAudit) ? d.adminAudit : [];
+    $('admRows').innerHTML = logs.length ? logs.map(function (a) {
+      var p = a.payload || {};
+      var parts = [];
+      for (var k in p) {
+        if (!Object.prototype.hasOwnProperty.call(p, k)) continue;
+        var v = p[k];
+        if (k === 'content' || k === 'description') v = String(v).slice(0, 40) + (String(v).length > 40 ? '…' : '');
+        parts.push(k + '=' + v);
+      }
+      return '<tr><td class="ad-mono" style="white-space:nowrap">' + fmtTime(a.t) + '</td>' +
+        '<td><span class="ad-tag">' + esc(a.action) + '</span></td>' +
+        '<td class="ad-mono" style="word-break:break-all">' + esc(parts.join(' ') || '—') + '</td></tr>';
+    }).join('') : '<tr><td colspan="3" class="ad-empty">还没有后台操作记录</td></tr>';
+  }
+
+  /* ================= 内容管理 ================= */
+
+  function adminToken() { return localStorage.getItem(TOKEN_KEY) || ''; }
+
+  function adminPost(path, body) {
+    return fetch(path, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-admin-token': adminToken() },
+      body: JSON.stringify(body || {})
+    }).then(function (r) {
+      return r.json().catch(function () { return { error: '返回不是 JSON' }; });
+    });
+  }
+
+  function jget(path) {
+    return fetch(path, { cache: 'no-store' }).then(function (r) {
+      return r.ok ? r.json() : [];
+    }).catch(function () { return []; });
+  }
+
+  var FORMS = {
+    ann: {
+      title: '新增公告',
+      fields: [
+        { k: 'title', l: '标题', ph: '例如：周末双倍经验', cls: 'full' },
+        { k: 'content', l: '正文', type: 'textarea', cls: 'full' },
+        { k: 'action_label', l: '按钮文字（可选）', ph: '查看详情' },
+        { k: 'action_url', l: '按钮链接（可选）', ph: 'https://…' },
+        { k: 'pinned', l: '置顶这条公告', type: 'checkbox' }
+      ],
+      path: 'api/admin/announcement'
+    },
+    item: {
+      title: '新增商品',
+      fields: [
+        { k: 'name', l: '商品名', ph: '例如：钻石×16' },
+        { k: 'price', l: '价格', type: 'number', ph: '100' },
+        { k: 'currency', l: '货币', ph: '点券' },
+        { k: 'category', l: '分类', ph: '材料 / 装备 / 特权' },
+        { k: 'icon', l: '图标（emoji）', ph: '🎁' },
+        { k: 'description', l: '描述', type: 'textarea', cls: 'full' }
+      ],
+      path: 'api/admin/item'
+    },
+    ach: {
+      title: '新增成就',
+      fields: [
+        { k: 'name', l: '成就名', ph: '例如：初次登顶' },
+        { k: 'icon', l: '图标（emoji）', ph: '🏅' },
+        { k: 'category', l: '分类', ph: '探索 / 战斗 / 建筑' },
+        { k: 'description', l: '描述', type: 'textarea', cls: 'full' }
+      ],
+      path: 'api/admin/achievement'
+    },
+    tour: {
+      title: '新增赛事',
+      fields: [
+        { k: 'title', l: '赛事标题', cls: 'full' },
+        { k: 'start_at', l: '开始时间', type: 'datetime-local' },
+        { k: 'end_at', l: '结束时间', type: 'datetime-local' },
+        { k: 'reward', l: '奖励说明', ph: '冠军 5000 点券' },
+        { k: 'status', l: '状态', type: 'select', options: ['upcoming', 'ongoing', 'finished'] },
+        { k: 'description', l: '说明', type: 'textarea', cls: 'full' }
+      ],
+      path: 'api/admin/tournament'
+    },
+    build: {
+      title: '新增建筑作品',
+      fields: [
+        { k: 'title', l: '作品名', cls: 'full' },
+        { k: 'author', l: '作者' },
+        { k: 'world', l: '所在世界 / 坐标' },
+        { k: 'image', l: '图片地址（可选）', ph: 'https://…', cls: 'full' },
+        { k: 'description', l: '介绍', type: 'textarea', cls: 'full' }
+      ],
+      path: 'api/admin/build'
+    }
+  };
+
+  var openForm = '';
+
+  function showForm(key) {
+    var f = FORMS[key];
+    if (!f) return;
+    openForm = key;
+    var html = '<div class="ad-form"><h3>' + esc(f.title) + '</h3><div class="ad-form-grid">';
+    f.fields.forEach(function (fd) {
+      var id = 'f_' + fd.k;
+      html += '<div class="ad-f ' + (fd.cls || '') + '"><label for="' + id + '">' + esc(fd.l) + '</label>';
+      if (fd.type === 'textarea') {
+        html += '<textarea id="' + id + '" placeholder="' + esc(fd.ph || '') + '"></textarea>';
+      } else if (fd.type === 'select') {
+        html += '<select id="' + id + '">' + (fd.options || []).map(function (o) {
+          return '<option value="' + esc(o) + '">' + esc(o) + '</option>';
+        }).join('') + '</select>';
+      } else if (fd.type === 'checkbox') {
+        html += '<label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--foreground)">' +
+          '<input type="checkbox" id="' + id + '" style="width:auto"> ' + esc(fd.l) + '</label>';
+      } else {
+        html += '<input id="' + id + '" type="' + (fd.type || 'text') + '" placeholder="' + esc(fd.ph || '') + '">';
+      }
+      html += '</div>';
+    });
+    html += '</div><div class="ad-form-act">' +
+      '<button class="btn btn-outline" id="fCancel" type="button">取消</button>' +
+      '<button class="btn btn-primary" id="fSave" type="button">保存</button></div></div>';
+    $('cForm').innerHTML = html;
+
+    $('fCancel').addEventListener('click', function () { $('cForm').innerHTML = ''; openForm = ''; });
+    $('fSave').addEventListener('click', function () {
+      var body = {};
+      f.fields.forEach(function (fd) {
+        var el = $('f_' + fd.k);
+        if (!el) return;
+        if (fd.type === 'checkbox') { body[fd.k] = el.checked; return; }
+        var v = String(el.value || '').trim();
+        if (fd.type === 'number') v = Number(v) || 0;
+        if (fd.type === 'datetime-local' && v) {
+          var d = new Date(v);
+          v = isNaN(d.getTime()) ? 0 : d.getTime();
+        }
+        if (v !== '' || fd.type === 'number') body[fd.k] = v;
+      });
+      if (!body.title && !body.name) { alert('标题 / 名称不能为空'); return; }
+      if (!confirm('确认提交这条' + f.title.replace('新增', '') + '？')) return;
+      var btn = this;
+      btn.disabled = true;
+      adminPost(f.path, body).then(function (r) {
+        btn.disabled = false;
+        if (r.error) { alert('失败：' + r.error); return; }
+        $('cForm').innerHTML = '';
+        openForm = '';
+        loadContent();
+        fetchData();
+      }).catch(function (e) { btn.disabled = false; alert('请求失败：' + e.message); });
+    });
+    $('cForm').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  function delRow(path, body, label) {
+    if (!confirm('确定删除：' + label + '？\n删除后不可恢复。')) return;
+    adminPost(path, body).then(function (r) {
+      if (r.error) { alert('失败：' + r.error); return; }
+      loadContent();
+      fetchData();
+    }).catch(function (e) { alert('请求失败：' + e.message); });
+  }
+
+  function loadContent() {
+    Promise.all([
+      jget('api/announcements'),
+      jget('api/store/items'),
+      jget('api/achievements'),
+      jget('api/tournaments'),
+      jget('api/builds')
+    ]).then(function (res) {
+      var anns = res[0] || [], items = res[1] || [], achs = res[2] || [], tours = res[3] || [], builds = res[4] || [];
+
+      $('annCount').textContent = anns.length ? ('共 ' + anns.length + ' 条') : '暂无';
+      $('annRows').innerHTML = anns.length ? anns.map(function (a) {
+        return '<tr><td class="ad-mono" style="white-space:nowrap">' + fmtTime(a.created_at) + '</td>' +
+          '<td style="font-weight:600">' + esc(a.title) + '</td>' +
+          '<td class="ad-mono" style="max-width:340px;word-break:break-all">' + esc(String(a.content || '').slice(0, 80)) + '</td>' +
+          '<td>' + (a.pinned ? '📌' : '—') + '</td>' +
+          '<td><button class="btn ad-mini btn-danger" data-del="ann" data-id="' + a.id + '" data-label="' + esc(a.title) + '" type="button">删除</button></td></tr>';
+      }).join('') : '<tr><td colspan="5" class="ad-empty">还没有公告</td></tr>';
+
+      $('itemCount').textContent = items.length ? ('共 ' + items.length + ' 个') : '暂无';
+      $('itemRows').innerHTML = items.length ? items.map(function (it) {
+        return '<tr><td style="font-weight:600">' + esc(it.icon || '') + ' ' + esc(it.name) + '</td>' +
+          '<td>' + it.price + ' ' + esc(it.currency || '') + '</td>' +
+          '<td>' + esc(it.category || '—') + '</td>' +
+          '<td>' + (it.stock < 0 ? '不限' : it.stock) + '</td>' +
+          '<td><button class="btn ad-mini btn-danger" data-del="item" data-id="' + it.id + '" data-label="' + esc(it.name) + '" type="button">删除</button></td></tr>';
+      }).join('') : '<tr><td colspan="5" class="ad-empty">还没有商品</td></tr>';
+
+      $('achCount').textContent = achs.length ? ('共 ' + achs.length + ' 个') : '暂无';
+      $('achRows').innerHTML = achs.length ? achs.map(function (a) {
+        return '<tr><td>' + esc(a.icon || '🏅') + ' ' + esc(a.name) + '</td>' +
+          '<td>' + esc(a.category || '—') + '</td>' +
+          '<td><button class="btn ad-mini btn-danger" data-del="ach" data-id="' + a.id + '" data-label="' + esc(a.name) + '" type="button">删除</button></td></tr>';
+      }).join('') : '<tr><td colspan="3" class="ad-empty">还没有成就</td></tr>';
+
+      $('tourCount').textContent = tours.length ? ('共 ' + tours.length + ' 场') : '暂无';
+      $('tourRows').innerHTML = tours.length ? tours.map(function (t) {
+        return '<tr><td style="font-weight:600">' + esc(t.title) + '</td>' +
+          '<td class="ad-mono">' + fmtTime(t.start_at) + '</td>' +
+          '<td><span class="ad-tag">' + esc(t.status || '') + '</span></td>' +
+          '<td><button class="btn ad-mini btn-danger" data-del="tour" data-id="' + t.id + '" data-label="' + esc(t.title) + '" type="button">删除</button></td></tr>';
+      }).join('') : '<tr><td colspan="4" class="ad-empty">还没有赛事</td></tr>';
+
+      $('buildCount').textContent = builds.length ? ('共 ' + builds.length + ' 个') : '暂无';
+      $('buildRows').innerHTML = builds.length ? builds.map(function (b) {
+        return '<tr><td style="font-weight:600">' + esc(b.title) + '</td>' +
+          '<td>' + esc(b.author || '—') + '</td>' +
+          '<td>' + esc(b.world || '—') + '</td>' +
+          '<td><button class="btn ad-mini btn-danger" data-del="build" data-id="' + b.id + '" data-label="' + esc(b.title) + '" type="button">删除</button></td></tr>';
+      }).join('') : '<tr><td colspan="4" class="ad-empty">还没有建筑作品</td></tr>';
+    });
+  }
+
+  var DEL_PATH = {
+    ann: 'api/admin/announcement/delete',
+    item: 'api/admin/item/delete',
+    ach: 'api/admin/achievement/delete',
+    tour: 'api/admin/tournament/delete',
+    build: 'api/admin/build/delete'
+  };
+
+  document.addEventListener('click', function (ev) {
+    var t = ev.target;
+    if (!t || !t.getAttribute) return;
+
+    var rp = t.getAttribute('data-rp');
+    if (rp) { handleReport(t.getAttribute('data-t'), t.getAttribute('data-p'), rp, t); return; }
+
+    var del = t.getAttribute('data-del');
+    if (del && DEL_PATH[del]) {
+      delRow(DEL_PATH[del], { id: Number(t.getAttribute('data-id')) }, t.getAttribute('data-label') || '');
+      return;
+    }
+
+    var fm = t.getAttribute('data-form');
+    if (fm) showForm(fm);
+  });
+
+  function switchTab(name) {
+    var tabs = document.querySelectorAll('.ad-tab');
+    for (var i = 0; i < tabs.length; i++) {
+      tabs[i].classList.toggle('active', tabs[i].getAttribute('data-tab') === name);
+    }
+    $('tabMon').hidden = name !== 'mon';
+    $('tabContent').hidden = name !== 'content';
+    $('tabReport').hidden = name !== 'report';
+    if (name === 'content') loadContent();
+    if (last) { renderReports(last); renderAdminAudit(last); }
   }
 
   function fetchData() {
+
     var token = localStorage.getItem(TOKEN_KEY) || '';
     if (!token) return;
     fetch('api/admin/overview?limit=120&token=' + encodeURIComponent(token), { cache: 'no-store' })
@@ -354,6 +772,11 @@
     timer = setInterval(fetchData, 30000);
   }
   function stop() { if (timer) { clearInterval(timer); timer = null; } }
+
+  var tabBtns = document.querySelectorAll('.ad-tab');
+  for (var ti = 0; ti < tabBtns.length; ti++) {
+    tabBtns[ti].addEventListener('click', function () { switchTab(this.getAttribute('data-tab')); });
+  }
 
   $('btnConnect').addEventListener('click', function () {
     var v = ($('tokenInput').value || '').trim();

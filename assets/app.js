@@ -346,6 +346,8 @@
     { label: '规则', href: '#/rules' },
     { label: '论坛', href: '#/forum' },
     { label: '聊天', href: '#/chat' },
+    { label: '公告', href: '#/news' },
+    { label: 'Wiki', href: '#/wiki' },
     { label: '申诉', href: '#/appeal' },
     { label: '我的', href: '#/me' }
   ];
@@ -456,9 +458,9 @@
       document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
     } catch (e) {}
   }
-  function copyText(text, btn) {
+  function copyText(text, btn, label) {
     function done() {
-      toast('已复制服务器地址：' + text);
+      toast('已复制' + (label || '服务器地址') + '：' + text);
       if (btn) {
         var old = btn.innerHTML;
         btn.innerHTML = SVG.check; btn.classList.add('ok');
@@ -472,7 +474,7 @@
 
   /* --- 状态页 --- */
   function renderStatus(container) {
-    container.innerHTML = pageHead('首页', '服务器状态', '每 5 秒自动刷新；在线玩家名单由服务端每 1 分钟同步');
+    container.innerHTML = pageHead('首页', '服务器状态', '每 5 秒自动刷新；TPS、内存与在线曲线来自服务器本机采集');
     var card = el('div', 'card');
     card.innerHTML = '<div class="status-hero">' +
       '<div><div class="online-count" id="stOnline">—</div><div style="font-size:13px;color:var(--muted-foreground);margin-top:4px">当前在线玩家</div></div>' +
@@ -480,10 +482,15 @@
       '</div>' +
       '<div class="stat-row" id="stStats"></div>' +
       '<div class="motd" id="stMotd">正在获取服务器 MOTD…</div>' +
+      '<div class="st-chart-wrap">' +
+      '<div class="st-chart-head"><span>近 24 小时在线人数</span><span class="st-chart-note" id="stChartNote">加载中…</span></div>' +
+      '<canvas class="st-chart" id="stChart"></canvas>' +
+      '</div>' +
       '<div style="margin-top:20px"><div style="font-size:14px;font-weight:700;margin-bottom:12px">在线玩家</div><div class="player-grid" id="stPlayers"></div></div>';
     container.appendChild(card);
     renderLive();               // 先把已知状态铺上去，别等接口
     loadStatus();
+    loadChart();
     LIVE.onUpdate = loadStatus;  // 跟着 5 秒心跳刷（不再单独 setInterval）
   }
   var ONLINE_TOPIC = 'stl-online-6bd1ae0f4e7e7968';
@@ -497,11 +504,15 @@
       .catch(function (e) { cb(null, e); });
   }
 
+  var ST_ONLINE_DATA = null;   // 最近一次读到的 online.json，供状态卡复用
+
   function loadStatus() {
-    // 人数 / 在线判定已由 LIVE（实时接口）负责，这里只补两样东西：
-    //   1) 人数上限（第三方接口给的上限是脏值，用 online.json 的 server.properties 真实值）
+    // 人数 / 在线判定已由 LIVE（实时接口）负责，这里只补几样东西：
+    //   1) 人数上限（第三方接口给的上限是脏值，用 server.properties 真实值）
     //   2) 在线玩家名单（只能靠 RCON 导出的 online.json，天生滞后 1 分钟）
+    //   3) TPS / 内存 / 运行时长 / 重启计划（导出脚本一并采集）
     fetchLocalOnline(function (d) {
+      if (d) ST_ONLINE_DATA = d;
       if (d && Number(d.max)) LIVE.max = Number(d.max);
       // 首次进入、接口还没回来时，先用 online.json 兜个底，别让页面空着
       if (!LIVE.at && d && typeof d.online === 'boolean') {
@@ -520,20 +531,203 @@
     });
   }
 
-  /* 延迟 / 版本 / MOTD 来自实时接口，拿不到就显示 — */
+  /* 下次重启倒计时：restart.times 形如 ["04:00","16:00"] */
+  function nextRestartText(plan) {
+    if (!plan || !plan.times || !plan.times.length) return { text: '未设置', hint: '没有配置自动重启' };
+    var now = new Date();
+    var best = null;
+    for (var i = 0; i < plan.times.length; i++) {
+      var parts = String(plan.times[i]).split(':');
+      var hh = parseInt(parts[0], 10), mm = parseInt(parts[1], 10);
+      if (isNaN(hh) || isNaN(mm)) continue;
+      var t = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hh, mm, 0, 0);
+      if (t <= now) t = new Date(t.getTime() + 86400000);
+      if (!best || t < best) best = t;
+    }
+    if (!best) return { text: '未设置', hint: '计划格式不对' };
+    var left = Math.max(0, Math.round((best - now) / 1000));
+    return { text: fmtDur(left), hint: '每天 ' + plan.times.join(' / ') };
+  }
+
+  function tpsClass(tps) {
+    if (tps == null) return '';
+    if (tps < 15) return 'bad';
+    if (tps < 19) return 'warn';
+    return '';
+  }
+
+  /* 指标卡：优先用导出脚本采到的最新值，缺了就显示 — */
   function fillStatusStats(ok) {
+    var d = ST_ONLINE_DATA || {};
     var ping = LIVE.ping;
+    var online = (LIVE.known && LIVE.ok) ? LIVE.now : (d.now || 0);
+    var tps = d.tps1 != null ? d.tps1 : (d.tps15 != null ? d.tps15 : null);
+    var mem = d.mem || null;
+    var restart = nextRestartText(d.restart);
+
     var stats = $id('stStats');
     if (stats) {
-      stats.innerHTML = '<div class="stat-box"><div class="k">在线/最大</div><div class="v">' +
-        ((LIVE.known && LIVE.ok) ? LIVE.now : 0) + ' / ' + (LIVE.max || '—') + '</div></div>' +
+      stats.innerHTML =
+        '<div class="stat-box"><div class="k">在线 / 最大</div><div class="v">' +
+        online + ' / ' + (LIVE.max || '—') + '</div></div>' +
+        '<div class="stat-box"><div class="k">TPS</div><div class="v ' + tpsClass(tps) + '">' +
+        (tps == null ? '—' : tps.toFixed(1)) + '</div></div>' +
+        '<div class="stat-box"><div class="k">内存占用</div><div class="v ' + (mem && mem.pct >= 85 ? 'bad' : '') + '">' +
+        (mem ? mem.pct + '%' : '—') + '</div>' +
+        (mem ? '<div class="ksub">' + mem.used + ' / ' + mem.max + ' MB</div>' : '') + '</div>' +
         '<div class="stat-box"><div class="k">延迟</div><div class="v">' +
         ((!LIVE.ok || ping == null || ping <= 0) ? '—' : ping + 'ms') + '</div></div>' +
-        '<div class="stat-box"><div class="k">版本</div><div class="v">' + esc(LIVE.ver || '—') + '</div></div>' +
+        '<div class="stat-box"><div class="k">版本</div><div class="v" style="font-size:15px">' + esc(LIVE.ver || '—') + '</div></div>' +
+        '<div class="stat-box"><div class="k">下次重启</div><div class="v" style="font-size:16px">' +
+        esc(restart.text) + '</div><div class="ksub">' + esc(restart.hint) + '</div></div>' +
+        '<div class="stat-box"><div class="k">服务器已运行</div><div class="v" style="font-size:15px">' +
+        esc(d.uptime || '—') + '</div></div>' +
         '<div class="stat-box"><div class="k">地址</div><div class="v" style="font-size:14px">' + esc(SITE.javaIp) + '</div></div>';
     }
     var motd = $id('stMotd');
     if (motd) motd.textContent = LIVE.motd || (ok ? 'MOTD 未返回' : '服务器离线或不可达');
+  }
+
+  /* ---------- 在线人数曲线 ---------- */
+  function drawCurve(canvas, values, opts) {
+    if (!canvas) return;
+    opts = opts || {};
+    var dpr = window.devicePixelRatio || 1;
+    var w = canvas.clientWidth || canvas.parentNode.clientWidth || 600;
+    var h = canvas.clientHeight || 140;
+    canvas.width = Math.round(w * dpr);
+    canvas.height = Math.round(h * dpr);
+    var ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, w, h);
+
+    var vals = (values || []).map(function (v) { return (typeof v === 'number' && isFinite(v)) ? v : null; });
+    var real = vals.filter(function (v) { return v !== null; });
+    if (real.length < 2) {
+      ctx.fillStyle = 'rgba(128,128,128,.55)';
+      ctx.font = '13px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(opts.empty || '数据还在积累，过一会儿再看', w / 2, h / 2);
+      return;
+    }
+
+    var padL = 26, padR = 8, padT = 10, padB = 18;
+    var maxV = Math.max.apply(null, real);
+    var minV = Math.min.apply(null, real);
+    if (maxV - minV < 3) { maxV = minV + 3; }   // 人数少时给点纵向余量，别把线拉平
+    maxV = Math.ceil(maxV * 1.15);
+    if (minV > 0) minV = 0;
+
+    function X(i) { return padL + (w - padL - padR) * (i / (vals.length - 1)); }
+    function Y(v) { return h - padB - (v - minV) / (maxV - minV) * (h - padT - padB); }
+
+    // 网格 + 纵轴刻度
+    ctx.strokeStyle = 'rgba(128,128,128,.16)';
+    ctx.fillStyle = 'rgba(128,128,128,.75)';
+    ctx.font = '10px sans-serif';
+    ctx.textAlign = 'right';
+    ctx.lineWidth = 1;
+    for (var g = 0; g <= 2; g++) {
+      var vv = minV + (maxV - minV) * g / 2;
+      var yy = Y(vv);
+      ctx.beginPath(); ctx.moveTo(padL, yy); ctx.lineTo(w - padR, yy); ctx.stroke();
+      ctx.fillText(String(Math.round(vv)), padL - 6, yy + 3);
+    }
+
+    // 面积 + 折线（遇到 null 断开）
+    var pts = [];
+    for (var i = 0; i < vals.length; i++) if (vals[i] !== null) pts.push([X(i), Y(vals[i])]);
+    if (pts.length >= 2) {
+      var grad = ctx.createLinearGradient(0, padT, 0, h - padB);
+      grad.addColorStop(0, 'rgba(64,150,235,.26)');
+      grad.addColorStop(1, 'rgba(64,150,235,.02)');
+      ctx.beginPath();
+      ctx.moveTo(pts[0][0], h - padB);
+      for (var a = 0; a < pts.length; a++) ctx.lineTo(pts[a][0], pts[a][1]);
+      ctx.lineTo(pts[pts.length - 1][0], h - padB);
+      ctx.closePath();
+      ctx.fillStyle = grad; ctx.fill();
+
+      ctx.beginPath();
+      ctx.moveTo(pts[0][0], pts[0][1]);
+      for (var b = 1; b < pts.length; b++) ctx.lineTo(pts[b][0], pts[b][1]);
+      ctx.strokeStyle = 'rgba(64,150,235,.95)';
+      ctx.lineWidth = 2; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+      ctx.stroke();
+
+      var lastP = pts[pts.length - 1];
+      ctx.beginPath(); ctx.arc(lastP[0], lastP[1], 3, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(64,150,235,1)'; ctx.fill();
+    }
+
+    // 横轴时间标注
+    ctx.fillStyle = 'rgba(128,128,128,.75)';
+    ctx.textAlign = 'left';
+    ctx.fillText(opts.xLabel0 || '', padL, h - 5);
+    ctx.textAlign = 'right';
+    ctx.fillText(opts.xLabel1 || '现在', w - padR, h - 5);
+  }
+
+  function hhmm(ts) {
+    var d = new Date(ts);
+    function p(n) { return (n < 10 ? '0' : '') + n; }
+    return p(d.getHours()) + ':' + p(d.getMinutes());
+  }
+
+  function loadChart() {
+    var cv = $id('stChart');
+    var note = $id('stChartNote');
+    if (!cv) return;
+    var rid = randomHex(8);
+    postBus({ type: 'statsQuery', rid: rid, range: 1440 });
+    waitBus(rid, ['statsOk', 'statsErr'], function (m) {
+      if (!m || m.type === 'statsErr') {
+        // 兜底：如果页面本身就是本地服务托管的，直接读同源接口
+        fetch('api/stats?range=1440', { cache: 'no-store' })
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (d) {
+            if (d && d.ok) return applyChart(cv, note, d);
+            if (note) note.textContent = '曲线暂时取不到（采集服务未运行）';
+            drawCurve(cv, [], {});
+          })
+          .catch(function () {
+            if (note) note.textContent = '曲线暂时取不到（采集服务未运行）';
+            drawCurve(cv, [], {});
+          });
+        return;
+      }
+      applyChart(cv, note, m);
+    });
+  }
+
+  function applyChart(cv, note, d) {
+    var t0 = Number(d.t0) || (Date.now() - 86400000);
+    drawCurve(cv, d.v || [], {
+      xLabel0: hhmm(t0),
+      xLabel1: '现在',
+      empty: d.count < 2 ? '曲线刚开始采集，几分钟后再来看' : '暂无数据'
+    });
+    if (note) {
+      var parts = [];
+      if (d.count != null) parts.push(d.count + ' 个采样点');
+      if (d.step) parts.push('每 ' + d.step + ' 分钟一个点');
+      var n = d.now || {};
+      if (n.tps) parts.push('TPS ' + (n.tps.m1 != null ? n.tps.m1 : '—'));
+      if (n.mem && n.mem.pct != null) parts.push('内存 ' + n.mem.pct + '%');
+      note.textContent = parts.join(' · ') || '';
+    }
+    // 曲线自带的实时状态比 online.json 更新，顺手把卡片也刷新一下
+    if (d.now) {
+      var cur = ST_ONLINE_DATA || {};
+      if (d.now.tps) { cur.tps1 = d.now.tps.m1; cur.tps15 = d.now.tps.m15; }
+      if (d.now.mem && d.now.mem.pct != null) {
+        cur.mem = { used: d.now.mem.used, max: d.now.mem.max, pct: d.now.mem.pct };
+      }
+      if (d.now.uptime) cur.uptime = d.now.uptime;
+      if (d.now.restart) cur.restart = d.now.restart;
+      ST_ONLINE_DATA = cur;
+      fillStatusStats(!!(ST_ONLINE_DATA && ST_ONLINE_DATA.online));
+    }
   }
 
   function renderEmpty(pg, ok, now) {
@@ -862,16 +1056,36 @@
 
   /* ================= 路由 ================= */
 
-  /* --- 排行榜（在线时长 + 起床战绩，两个子榜切换） --- */
+  /* --- 排行榜（时长 / 起床 / 论坛 / 建筑 / 成就） --- */
   function renderRank(container) {
     container.innerHTML = pageHead('首页', '排行榜',
-      '在线时长来自 cyutime，起床战绩来自小游戏服 BedWars；均由本地脚本定时导出，每数分钟更新（略滞后实时）');
+      '在线时长、起床战绩由本地脚本定时导出；论坛活跃、建筑、成就实时来自服务器数据');
     var box = el('div', 'card'); container.appendChild(box);
     box.innerHTML = '<div class="rank-tabs" style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">' +
       '<button class="btn btn-sm rank-tab btn-primary" data-tab="play" type="button">🕒 在线时长</button>' +
       '<button class="btn btn-sm rank-tab" data-tab="bw" type="button">⚔️ 起床战绩</button>' +
+      '<button class="btn btn-sm rank-tab" data-tab="forum" type="button">💬 论坛活跃</button>' +
+      '<button class="btn btn-sm rank-tab" data-tab="build" type="button">🏛️ 建筑作品</button>' +
+      '<button class="btn btn-sm rank-tab" data-tab="ach" type="button">🏅 成就</button>' +
       '</div><div id="rankBody"></div>';
     var body = box.querySelector('#rankBody');
+
+    /* 统一的条形行渲染（时长/论坛/建筑榜复用） */
+    function rankRow(rank, name, value, sub, pct) {
+      var medals = { 1: '🥇', 2: '🥈', 3: '🥉' };
+      var m = medals[rank] || ('#' + rank);
+      return '<div style="display:flex;align-items:center;gap:14px;padding:12px 4px;border-bottom:1px solid var(--border)">' +
+        '<div style="width:34px;text-align:center;font-size:18px;font-weight:800;flex:none">' + m + '</div>' +
+        '<img src="' + avatarUrl(name, 40) + '" alt="" loading="lazy" data-fb="' + identicon(name) + '" style="width:36px;height:36px;border-radius:8px;background:var(--muted);flex:none" onerror="this.onerror=null;this.src=this.getAttribute(\'data-fb\')">' +
+        '<div style="flex:1;min-width:0">' +
+        '<div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap"><span style="font-weight:700;font-size:15px">' + esc(name) + '</span>' +
+        (sub ? '<span style="color:var(--muted-foreground);font-weight:500">· ' + sub + '</span>' : '') + '</div>' +
+        '<div style="margin-top:6px;height:8px;border-radius:6px;background:var(--muted);overflow:hidden">' +
+        '<div style="height:100%;width:' + pct + '%;background:linear-gradient(90deg,var(--primary),oklch(78% .10 238));border-radius:6px"></div></div>' +
+        '</div>' +
+        '<div style="flex:none;text-align:right;font-weight:800;font-size:15px;color:var(--primary);white-space:nowrap">' + value + '</div>' +
+        '</div>';
+    }
 
     function showPlay() {
       body.innerHTML = '<div id="rankMeta" style="font-size:13px;color:var(--muted-foreground);margin-bottom:14px">加载中…</div><div id="rankList"></div>';
@@ -889,24 +1103,12 @@
           var gt = d.generatedAt ? new Date(d.generatedAt * 1000) : null;
           meta.textContent = '共 ' + d.count + ' 名玩家 · 数据更新于 ' + (gt ? gt.toLocaleString('zh-CN') : '未知');
           var top = d.players[0].total || 1;
-          var medals = { 1: '🥇', 2: '🥈', 3: '🥉' };
           list.innerHTML = d.players.map(function (p) {
-            var m = medals[p.rank] || ('#' + p.rank);
-            var pct = Math.max(4, Math.round(p.total / top * 100));
             var sub = [];
             if (p.month) sub.push('本月 ' + fmtDur(p.month));
             if (p.week) sub.push('本周 ' + fmtDur(p.week));
-            var subHtml = sub.length ? '<span style="color:var(--muted-foreground);font-weight:500">· ' + sub.join(' · ') + '</span>' : '';
-            return '<div style="display:flex;align-items:center;gap:14px;padding:12px 4px;border-bottom:1px solid var(--border)">' +
-              '<div style="width:34px;text-align:center;font-size:18px;font-weight:800;flex:none">' + m + '</div>' +
-              '<img src="' + avatarUrl(p.name, 40) + '" alt="" loading="lazy" data-fb="' + identicon(p.name) + '" style="width:36px;height:36px;border-radius:8px;background:var(--muted);flex:none" onerror="this.onerror=null;this.src=this.getAttribute(\'data-fb\')">' +
-              '<div style="flex:1;min-width:0">' +
-              '<div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap"><span style="font-weight:700;font-size:15px">' + esc(p.name) + '</span>' + subHtml + '</div>' +
-              '<div style="margin-top:6px;height:8px;border-radius:6px;background:var(--muted);overflow:hidden">' +
-              '<div style="height:100%;width:' + pct + '%;background:linear-gradient(90deg,var(--primary),oklch(78% .10 238));border-radius:6px"></div></div>' +
-              '</div>' +
-              '<div style="flex:none;text-align:right;font-weight:800;font-size:15px;color:var(--primary);white-space:nowrap">' + fmtDur(p.total) + '</div>' +
-              '</div>';
+            return rankRow(p.rank, p.name, fmtDur(p.total), sub.join(' · '),
+              Math.max(4, Math.round(p.total / top * 100)));
           }).join('');
         })
         .catch(function () { list.innerHTML = emptyState('📡', '榜单加载失败，请稍后刷新'); });
@@ -947,14 +1149,244 @@
         .catch(function () { tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--destructive)">战绩加载失败，请稍后刷新</td></tr>'; });
     }
 
+    /* 论坛活跃：从 forum.json 直接统计，不依赖服务端 */
+    function showForum() {
+      body.innerHTML = '<div id="frMeta" style="font-size:13px;color:var(--muted-foreground);margin-bottom:14px">统计中…</div><div id="frList"></div>';
+      var list = body.querySelector('#frList');
+      list.innerHTML = '<div class="empty"><div class="ico">⏳</div><p>正在统计论坛活跃度…</p></div>';
+      fetch('forum.json?_=' + Date.now(), { cache: 'no-store' })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (d) {
+          var posts = (d && Array.isArray(d.posts)) ? d.posts : [];
+          if (!posts.length) {
+            list.innerHTML = emptyState('💬', '论坛还没有帖子');
+            body.querySelector('#frMeta').textContent = '';
+            return;
+          }
+          var map = {};
+          function bump(name, key, n) {
+            if (!name || name === '匿名玩家') return;
+            if (!map[name]) map[name] = { name: name, posts: 0, replies: 0, likes: 0 };
+            map[name][key] += n;
+          }
+          posts.forEach(function (p) {
+            var author = p.anonymous ? '匿名玩家' : (p.author || '');
+            bump(author, 'posts', 1);
+            bump(author, 'likes', Number(p.likes || 0));
+            (p.replies || []).forEach(function (r) {
+              bump(r.anonymous ? '匿名玩家' : (r.author || ''), 'replies', 1);
+            });
+          });
+          var arr = Object.keys(map).map(function (k) {
+            var v = map[k];
+            // 活跃分：发帖 3 分、回复 1 分、获赞 2 分
+            v.score = v.posts * 3 + v.replies + v.likes * 2;
+            return v;
+          }).sort(function (a, b) { return b.score - a.score; }).slice(0, 30);
+
+          body.querySelector('#frMeta').textContent =
+            '共 ' + arr.length + ' 位活跃用户 · 活跃分 = 发帖×3 + 回复×1 + 获赞×2（匿名不计入）';
+          var top = arr[0].score || 1;
+          list.innerHTML = arr.map(function (u, i) {
+            var sub = '发帖 ' + u.posts + ' · 回复 ' + u.replies + ' · 获赞 ' + u.likes;
+            return rankRow(i + 1, u.name, u.score + ' 分', sub, Math.max(4, Math.round(u.score / top * 100)));
+          }).join('');
+        })
+        .catch(function () { list.innerHTML = emptyState('📡', '论坛数据加载失败'); });
+    }
+
+    /* 建筑 / 成就：数据在服务器 SQLite 里，走总线取 */
+    function loadRanks(btnLabel, render) {
+      body.innerHTML = '<div class="empty"><div class="ico">⏳</div><p>正在从服务器读取…</p></div>';
+      var rid = randomHex(8);
+      postBus({ type: 'rankQuery', rid: rid });
+      waitBus(rid, ['rankOk', 'rankErr'], function (m) {
+        if (!m || m.type === 'rankErr') {
+          body.innerHTML = emptyState('📡', '读取失败：服务器采集服务可能未运行');
+          return;
+        }
+        render(m);
+      });
+    }
+
+    function showBuilds() {
+      loadRanks('建筑', function (d) {
+        var list = Array.isArray(d.builds) ? d.builds : [];
+        if (!list.length) { body.innerHTML = emptyState('🏛️', '还没有登记的建筑作品'); return; }
+        body.innerHTML = '<div style="font-size:13px;color:var(--muted-foreground);margin-bottom:14px">共 ' +
+          list.length + ' 个作品 · 由腐竹在管理后台登记</div>' +
+          '<div class="build-grid">' + list.map(function (b) {
+            var img = b.image ? '<img class="build-thumb" src="' + esc(b.image) + '" alt="" loading="lazy" onerror="this.style.display=\'none\'">' : '';
+            return '<div class="build-card">' + img +
+              '<div class="build-body"><div class="build-title">' + esc(b.title || '未命名') + '</div>' +
+              '<div class="build-meta">' + esc(b.author || '—') + (b.world ? ' · ' + esc(b.world) : '') + '</div>' +
+              (b.desc ? '<div class="build-desc">' + esc(b.desc) + '</div>' : '') +
+              '</div></div>';
+          }).join('') + '</div>';
+      });
+    }
+
+    function showAch() {
+      loadRanks('成就', function (d) {
+        var achs = Array.isArray(d.achievements) ? d.achievements : [];
+        var people = Array.isArray(d.achievers) ? d.achievers : [];
+        if (!achs.length && !people.length) {
+          body.innerHTML = emptyState('🏅', '还没有成就记录');
+          return;
+        }
+        var html = '<div class="rank2">';
+        html += '<div><h4 class="rank-h4">成就解锁排行</h4><div class="rank-list">' +
+          (achs.length ? achs.map(function (a) {
+            return '<div class="rank-line"><span class="rank-line-name">' + esc(a.icon || '🏅') + ' ' + esc(a.name) +
+              (a.category ? '<span class="rank-line-tag">' + esc(a.category) + '</span>' : '') + '</span>' +
+              '<span class="rank-line-val">' + a.unlocks + ' 人</span></div>';
+          }).join('') : '<div class="rank-empty">暂无成就</div>') + '</div></div>';
+        html += '<div><h4 class="rank-h4">成就达人</h4><div class="rank-list">' +
+          (people.length ? people.map(function (p, i) {
+            var medals = { 1: '🥇', 2: '🥈', 3: '🥉' };
+            return '<div class="rank-line"><span class="rank-line-name">' + (medals[i + 1] || '#' + (i + 1)) + ' ' +
+              esc(p.name) + '</span><span class="rank-line-val">' + p.unlocks + ' 个</span></div>';
+          }).join('') : '<div class="rank-empty">还没有人解锁成就</div>') + '</div></div>';
+        html += '</div>';
+        body.innerHTML = html;
+      });
+    }
+
+    var TAB_FN = { play: showPlay, bw: showBw, forum: showForum, build: showBuilds, ach: showAch };
     box.querySelectorAll('.rank-tab').forEach(function (btn) {
       btn.addEventListener('click', function () {
         box.querySelectorAll('.rank-tab').forEach(function (b) { b.classList.remove('btn-primary'); });
         btn.classList.add('btn-primary');
-        if (btn.getAttribute('data-tab') === 'play') showPlay(); else showBw();
+        var fn = TAB_FN[btn.getAttribute('data-tab')] || showPlay;
+        fn();
       });
     });
     showPlay();
+  }
+
+  /* ================= Wiki / 攻略（读 wiki.json，便于直接改文案） ================= */
+  function renderWiki(container) {
+    container.innerHTML = pageHead('首页', 'Wiki 与攻略', '新手入门、玩法说明与常见问题；内容整理自服务器实际玩法');
+    var wrap = el('div', 'wiki-wrap');
+    container.appendChild(wrap);
+    wrap.innerHTML = '<div class="card wiki-loading"><div class="empty"><div class="ico">⏳</div><p>正在加载…</p></div></div>';
+
+    fetch('wiki.json?_=' + Date.now(), { cache: 'no-store' })
+      .then(function (r) { if (!r.ok) throw new Error('no wiki'); return r.json(); })
+      .then(function (d) {
+        var secs = (d && Array.isArray(d.sections)) ? d.sections : [];
+        if (!secs.length) {
+          wrap.innerHTML = emptyState('📖', 'Wiki 内容还没准备好');
+          return;
+        }
+        var side = secs.map(function (s, i) {
+          return '<a class="wiki-nav-link' + (i === 0 ? ' active' : '') + '" href="#/wiki" data-sec="' + esc(s.id) + '">' +
+            (s.icon ? '<span class="wiki-ico">' + esc(s.icon) + '</span>' : '') + esc(s.title) + '</a>';
+        }).join('');
+
+        var body = secs.map(function (s, i) {
+          var items = (s.items || []).map(function (it, j) {
+            return '<details class="wiki-item"' + (i === 0 && j === 0 ? ' open' : '') + '>' +
+              '<summary>' + esc(it.q) + '</summary>' +
+              '<div class="wiki-answer">' + esc(it.a || '') + '</div>' +
+              '</details>';
+          }).join('');
+          return '<section class="wiki-sec" id="wiki-' + esc(s.id) + '">' +
+            '<h3>' + (s.icon ? esc(s.icon) + ' ' : '') + esc(s.title) + '</h3>' + items + '</section>';
+        }).join('');
+
+        wrap.innerHTML =
+          '<aside class="card wiki-side"><h4>目录</h4><div class="wiki-nav">' + side + '</div></aside>' +
+          '<div class="wiki-main">' +
+          (d.notice ? '<div class="card wiki-notice">' + esc(d.notice) + '</div>' : '') +
+          '<div class="card">' + body + '</div>' +
+          '<div class="wiki-foot">内容更新于 ' + esc(d.updated || '—') + ' · 有补充或纠错欢迎到论坛发帖</div>' +
+          '</div>';
+
+        var links = wrap.querySelectorAll('.wiki-nav-link');
+        for (var k = 0; k < links.length; k++) {
+          links[k].addEventListener('click', function (ev) {
+            ev.preventDefault();
+            var id = this.getAttribute('data-sec');
+            for (var m = 0; m < links.length; m++) links[m].classList.remove('active');
+            this.classList.add('active');
+            var target = $id('wiki-' + id);
+            if (target) {
+              var top = target.getBoundingClientRect().top + window.pageYOffset - 80;
+              window.scrollTo({ top: top, behavior: 'smooth' });
+            }
+          });
+        }
+      })
+      .catch(function () {
+        wrap.innerHTML = emptyState('📖', 'Wiki 加载失败，稍后再试');
+      });
+  }
+
+  /* ================= 公告（读取 feed.xml，同时可用于 RSS 订阅） ================= */
+  function renderNews(container) {
+    container.innerHTML = pageHead('首页', '公告', '服务器公告、活动与更新通知；支持 RSS 订阅，有更新会自动出现在阅读器里');
+    var card = el('div', 'card');
+    card.innerHTML =
+      '<div class="news-head">' +
+      '<div class="news-sub">订阅地址：<code id="newsFeedUrl">feed.xml</code></div>' +
+      '<button class="btn btn-sm btn-outline" id="newsCopy" type="button">复制订阅链接</button>' +
+      '</div>' +
+      '<div id="newsList"><div class="empty"><div class="ico">⏳</div><p>正在加载公告…</p></div></div>';
+    container.appendChild(card);
+
+    var feedUrl = (function () {
+      try {
+        var base = location.href.split('?')[0].split('#')[0];
+        base = base.replace(/[^/]*$/, '');
+        return base + 'feed.xml';
+      } catch (e) { return 'feed.xml'; }
+    })();
+    var code = card.querySelector('#newsFeedUrl');
+    if (code) code.textContent = feedUrl;
+    var copyBtn = card.querySelector('#newsCopy');
+    if (copyBtn) copyBtn.addEventListener('click', function () {
+      copyText(feedUrl, copyBtn, '订阅链接');
+    });
+
+    var list = card.querySelector('#newsList');
+    fetch('feed.xml?_=' + Date.now(), { cache: 'no-store' })
+      .then(function (r) { if (!r.ok) throw new Error('no feed'); return r.text(); })
+      .then(function (xml) {
+        var doc = new DOMParser().parseFromString(xml, 'text/xml');
+        var items = doc.querySelectorAll('item');
+        if (!items.length) {
+          list.innerHTML = emptyState('📢', '还没有发布过公告');
+          return;
+        }
+        var html = [];
+        for (var i = 0; i < items.length; i++) {
+          var it = items[i];
+          function t(tag) {
+            var n = it.getElementsByTagName(tag)[0];
+            return n ? (n.textContent || '') : '';
+          }
+          var title = t('title') || '无标题';
+          var desc = t('description') || '';
+          var pub = t('pubDate');
+          var pinned = t('category') === '置顶';
+          var d = pub ? new Date(pub) : null;
+          var dateText = (d && !isNaN(d.getTime()))
+            ? (d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2))
+            : '';
+          html.push('<div class="news-item">' +
+            '<div class="news-dot"></div>' +
+            '<div class="news-body">' +
+            '<div class="news-title">' + (pinned ? '<span class="news-pin">置顶</span>' : '') + esc(title) + '</div>' +
+            (dateText ? '<div class="news-date">' + esc(dateText) + '</div>' : '') +
+            (desc ? '<div class="news-text">' + esc(desc) + '</div>' : '') +
+            '</div></div>');
+        }
+        list.innerHTML = '<div class="news-list">' + html.join('') + '</div>';
+      })
+      .catch(function () {
+        list.innerHTML = emptyState('📡', '公告加载失败，稍后再试');
+      });
   }
 
   /* ================= 论坛（纯静态：数据来自仓库内 forum.json） ================= */
@@ -1629,6 +2061,8 @@
     '/forum/new': renderForumNew,
     '/chat': renderChat,
     '/appeal': renderAppeal,
+    '/news': renderNews,
+    '/wiki': renderWiki,
     '/me': renderMe
   };
 
