@@ -345,6 +345,7 @@
     { label: '指南', href: '#/guide' },
     { label: '规则', href: '#/rules' },
     { label: '反馈', href: '#/feedback' },
+    { label: '聊天', href: '#/chat' },
     { label: '申诉', href: '#/appeal' }
   ];
   function renderNav(activePath) {
@@ -843,6 +844,170 @@
     });
   }
 
+  /* --- 三端聊天（官网 ⇄ QQ 群 ⇄ 游戏服） --- */
+  function renderChat(container) {
+    container.innerHTML = pageHead('聊天', '三端聊天',
+      '服务器里、QQ 群里、官网上说的话实时互通；用已登录的官网账号发言');
+    var box = el('div', 'card');
+    container.appendChild(box);
+    box.innerHTML =
+      '<div class="chat-note">消息由本地服务转发，服务器 / QQ 群 / 网页三端互通。请文明发言。</div>' +
+      '<div id="chatList" class="chat-list"><div class="chat-empty">正在加载最近消息…</div></div>' +
+      '<div id="chatLogin" class="chat-login" hidden>' +
+        '发消息需要先登录官网账号。<a href="confirm.html">去登录</a>' +
+      '</div>' +
+      '<div class="chat-compose">' +
+        '<input id="chatInput" type="text" maxlength="500" placeholder="说点什么…" autocomplete="off">' +
+        '<button id="chatSend" class="btn btn-primary" type="button">发送</button>' +
+      '</div>' +
+      '<div id="chatMsg" class="chat-status"></div>';
+
+    var list = box.querySelector('#chatList');
+    var input = box.querySelector('#chatInput');
+    var btn = box.querySelector('#chatSend');
+    var loginTip = box.querySelector('#chatLogin');
+    var status = box.querySelector('#chatMsg');
+    var seen = {};            // msg.id -> true，避免 SSE / 快照 / 缓存重复
+    var items = [];
+    var gotData = false;
+    var myQq = '';
+    var sess = null;
+    var rid = Array.from(crypto.getRandomValues(new Uint8Array(8)))
+      .map(function (b) { return ('0' + b.toString(16)).slice(-2); }).join('');
+    var es = null;
+
+    try {
+      var raw = JSON.parse(localStorage.getItem('stl_web_session_v1') || 'null');
+      if (raw && raw.token && raw.qq && raw.exp > Date.now()) sess = raw;
+    } catch (e) {}
+    if (sess) myQq = String(sess.qq);
+
+    function say(t, cls) { status.textContent = t; status.className = 'chat-status' + (cls ? ' ' + cls : ''); }
+    function post(obj) {
+      return fetch(NTFY_BASE + '/' + NTFY_TOPIC, {
+        method: 'POST', headers: { 'content-type': 'text/plain' }, body: JSON.stringify(obj)
+      });
+    }
+    function timeOf(ts) {
+      var d = new Date(Number(ts) || Date.now());
+      return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2);
+    }
+    function labelOf(m) {
+      if (m.src === 'qq') return 'QQ群';
+      if (m.src === 'mc') return m.server || '游戏';
+      if (m.src === 'web') return '网页';
+      return '消息';
+    }
+    function nearBottom() {
+      return list.scrollHeight - list.scrollTop - list.clientHeight < 60;
+    }
+
+    /* 全部用 textContent 写：消息来自 QQ 群，绝不能当 HTML 解析 */
+    function appendMsg(m) {
+      if (!m || !m.id || seen[m.id]) return;
+      if (!/^(qq|mc|web)$/.test(m.src)) return;
+      var stick = nearBottom();
+      gotData = true;
+      seen[m.id] = true;
+      items.push(m);
+      var empty = list.querySelector('.chat-empty');
+      if (empty) list.removeChild(empty);
+
+      var row = document.createElement('div');
+      row.className = 'chat-row' + (m.src === 'web' && myQq && String(m.qq) === myQq ? ' mine' : '');
+      var tag = document.createElement('span');
+      tag.className = 'chat-tag src-' + m.src;
+      tag.textContent = labelOf(m);
+      var name = document.createElement('span');
+      name.className = 'chat-name';
+      name.textContent = String(m.name || '匿名');
+      var time = document.createElement('span');
+      time.className = 'chat-time';
+      time.textContent = timeOf(m.ts);
+      var text = document.createElement('span');
+      text.className = 'chat-text';
+      text.textContent = String(m.text || '');
+      row.appendChild(tag); row.appendChild(name); row.appendChild(time); row.appendChild(text);
+      list.appendChild(row);
+      if (stick) list.scrollTop = list.scrollHeight;
+    }
+    function addMany(arr) {
+      if (!Array.isArray(arr)) return;
+      arr.slice().sort(function (a, b) { return (a.seq || 0) - (b.seq || 0); })
+        .forEach(appendMsg);
+      if (!items.length) list.innerHTML = '<div class="chat-empty">还没有消息，来打个招呼吧</div>';
+    }
+
+    /* 历史：先问服务端拿内存快照（最可靠），再补一遍 ntfy 缓存 */
+    post({ type: 'chatHistory', rid: rid, limit: 60 }).catch(function () {});
+    fetch(NTFY_BASE + '/' + NTFY_TOPIC + '/json?poll=1&since=' + (Math.floor(Date.now() / 1000) - 7200))
+      .then(function (r) { return r.text(); })
+      .then(function (t) {
+        var arr = [];
+        t.split('\n').forEach(function (ln) {
+          if (!ln) return;
+          try {
+            var o = JSON.parse(ln);
+            if (o.event !== 'message' || !o.message) return;
+            var m = JSON.parse(o.message);
+            if (m.type === 'chatMsg' && m.msg) arr.push(m.msg);
+          } catch (e) {}
+        });
+        addMany(arr);
+      })
+      .catch(function () {});
+
+    es = new EventSource(NTFY_BASE + '/' + NTFY_TOPIC + '/sse?since=30s');
+    es.onmessage = function (ev) {
+      var d; try { d = JSON.parse(ev.data); } catch (e) { return; }
+      if (d.event !== 'message' || !d.message) return;
+      var m; try { m = JSON.parse(d.message); } catch (e) { return; }
+      if (m.type === 'chatMsg' && m.msg) { appendMsg(m.msg); return; }
+      if (m.type === 'chatSnapshot' && m.rid === rid) { gotData = true; addMany(m.items); return; }
+      if (m.type === 'chatSent' && m.rid === rid) { say('已发送'); return; }
+      if (m.type === 'chatFail' && m.rid === rid) { say(m.reason || '发送失败', 'err'); return; }
+    };
+    es.onerror = function () { say('连接中断，正在自动重连…', 'busy'); };
+    // 服务没重启 / 消息总线不通时，别让用户对着「正在加载」干等
+    setTimeout(function () {
+      if (gotData || !list.isConnected) return;
+      list.innerHTML = '<div class="chat-empty">暂时没收到消息，消息服务可能没在线，稍后再试</div>';
+      say('连不上消息服务', 'busy');
+    }, 12000);
+
+    if (!sess) {
+      loginTip.hidden = false;
+      input.disabled = true;
+      btn.disabled = true;
+      say('登录后即可发言', 'busy');
+    } else {
+      say('以 ' + (sess.names && sess.names[0] ? sess.names[0] : ('QQ ' + myQq)) + ' 的身份发言');
+    }
+
+    function send() {
+      if (!sess) return;
+      var text = input.value.trim();
+      if (!text) { say('先写点什么吧', 'err'); return; }
+      if (text.length > 500) { say('最多 500 字', 'err'); return; }
+      btn.disabled = true;
+      say('正在发送…', 'busy');
+      post({ type: 'chatSend', rid: rid, token: sess.token, text: text })
+        .then(function () {
+          input.value = '';
+          btn.disabled = false;
+          // 消息本身由服务端以 chatMsg 广播回来，这里不做乐观显示
+        })
+        .catch(function () {
+          btn.disabled = false;
+          say('网络错误，没发出去', 'err');
+        });
+    }
+    btn.addEventListener('click', send);
+    input.addEventListener('keydown', function (ev) {
+      if (ev.key === 'Enter') { ev.preventDefault(); send(); }
+    });
+  }
+
   /* ================= 路由 ================= */
 
   /* --- 排行榜（在线时长 + 起床战绩，两个子榜切换） --- */
@@ -948,6 +1113,7 @@
     '/guide': renderGuide,
     '/rules': renderRules,
     '/feedback': renderFeedback,
+    '/chat': renderChat,
     '/appeal': renderAppeal
   };
 
