@@ -201,7 +201,7 @@
   var scanPanel = document.getElementById('scanPanel');
   var scanHint = document.getElementById('scanHint');
   var scanCancel = document.getElementById('scanCancel');
-  var scanSid = '', scanDeadline = 0, scanCountdown = null;
+  var scanSid = '', scanDeadline = 0, scanCountdown = null, scanWait = null;
 
   function drawQr(text) {
     var cv = document.getElementById('scanQr');
@@ -224,6 +224,7 @@
 
   function stopScan(reason) {
     if (scanCountdown) { clearInterval(scanCountdown); scanCountdown = null; }
+    if (scanWait) { clearTimeout(scanWait); scanWait = null; }
     if (scanSid) { post({ type: 'scanCancel', sid: scanSid, rid: rid }); scanSid = ''; }
     scanDeadline = 0;
     scanPanel.hidden = true;
@@ -236,15 +237,25 @@
     if (scanSid) post({ type: 'scanCancel', sid: scanSid, rid: rid });
     scanEntry.hidden = true;
     scanPanel.hidden = false;
+    scanDeadline = 0;
     scanHint.textContent = '正在生成二维码…';
     scanCancel.textContent = '← 返回验证码登录';
     var b = crypto.getRandomValues(new Uint8Array(16));
     scanSid = Array.from(b).map(function (x) { return ('0' + x.toString(16)).slice(-2); }).join('');
+    // 服务端没重启时不能一直卡着；8 秒没拿到二维码就明确告诉用户改用验证码
+    if (scanWait) clearTimeout(scanWait);
+    var waitingFor = scanSid;
+    scanWait = setTimeout(function () {
+      if (scanSid !== waitingFor || scanDeadline) return;   // 已经出码了
+      scanHint.innerHTML = '没收到服务端响应，授权服务可能还没重启。<br>请先用验证码登录，或稍后再试。';
+      scanCancel.textContent = '← 返回验证码登录';
+    }, 8000);
     post({ type: 'scanCreate', sid: scanSid, rid: rid });
   }
 
   function onScanReady(m) {
     if (m.sid !== scanSid) return;
+    if (scanWait) { clearTimeout(scanWait); scanWait = null; }
     try { drawQr(m.url); } catch (e) { stopScan('二维码生成失败，请用验证码登录。'); return; }
     scanDeadline = Date.now() + (Number(m.seconds) || 180) * 1000;
     if (scanCountdown) clearInterval(scanCountdown);
@@ -264,6 +275,7 @@
 
   function onScanOk(m) {
     if (m.sid && m.sid !== scanSid) return;
+    if (scanWait) { clearTimeout(scanWait); scanWait = null; }
     scanSid = ''; scanDeadline = 0;
     if (scanCountdown) { clearInterval(scanCountdown); scanCountdown = null; }
     scanPanel.hidden = true;
