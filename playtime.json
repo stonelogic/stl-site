@@ -1,5 +1,5 @@
 {
-  "generatedAt": 1794153240,
+  "generatedAt": 1794154140,
   "source": "cyutime",
   "count": 26,
   "players": [
@@ -8,7 +8,7 @@
       "rank": 1,
       "total": 490622,
       "month": 166,
-      "week": 166,
+      "week": 0,
       "year": 490622
     },
     {
@@ -16,7 +16,7 @@
       "rank": 2,
       "total": 412413,
       "month": 34451,
-      "week": 29985,
+      "week": 0,
       "year": 412413
     },
     {
@@ -24,7 +24,7 @@
       "rank": 3,
       "total": 118279,
       "month": 27778,
-      "week": 27778,
+      "week": 0,
       "year": 118279
     },
     {
@@ -32,7 +32,7 @@
       "rank": 4,
       "total": 86578,
       "month": 19971,
-      "week": 15250,
+      "week": 0,
       "year": 86578
     },
     {
@@ -40,7 +40,7 @@
       "rank": 5,
       "total": 71100,
       "month": 1018,
-      "week": 1018,
+      "week": 0,
       "year": 71100
     },
     {
@@ -48,7 +48,7 @@
       "rank": 6,
       "total": 14715,
       "month": 2265,
-      "week": 2265,
+      "week": 0,
       "year": 14715
     },
     {
@@ -80,7 +80,7 @@
       "rank": 10,
       "total": 7761,
       "month": 349,
-      "week": 349,
+      "week": 0,
       "year": 7761
     },
     {
@@ -88,7 +88,7 @@
       "rank": 11,
       "total": 3781,
       "month": 3314,
-      "week": 3314,
+      "week": 0,
       "year": 3781
     },
     {
@@ -160,7 +160,7 @@
       "rank": 20,
       "total": 505,
       "month": 505,
-      "week": 505,
+      "week": 0,
       "year": 505
     },
     {
@@ -184,7 +184,7 @@
       "rank": 23,
       "total": 236,
       "month": 236,
-      "week": 236,
+      "week": 0,
       "year": 236
     },
     {
@@ -208,7 +208,7 @@
       "rank": 26,
       "total": 22,
       "month": 22,
-      "week": 22,
+      "week": 0,
       "year": 22
     }
   ]
