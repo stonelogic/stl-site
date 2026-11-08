@@ -346,7 +346,8 @@
     { label: '规则', href: '#/rules' },
     { label: '论坛', href: '#/forum' },
     { label: '聊天', href: '#/chat' },
-    { label: '申诉', href: '#/appeal' }
+    { label: '申诉', href: '#/appeal' },
+    { label: '我的', href: '#/me' }
   ];
   function renderNav(activePath) {
     var nav = $id('navMain');
@@ -1046,6 +1047,171 @@
     return d;
   }
 
+  /* ---------- 个人中心（资料 / 时长 / 登录设备） ---------- */
+
+  /* 往 ntfy 总线发一条请求 */
+  function postBus(obj) {
+    return fetch(NTFY_BASE + '/' + NTFY_TOPIC, {
+      method: 'POST',
+      headers: { 'content-type': 'text/plain' },
+      body: JSON.stringify(obj)
+    });
+  }
+  /* 等总线上与自己 rid 匹配的回执（论坛/个人中心共用同一套玩法） */
+  function waitBus(rid, types, cb) {
+    var deadline = Date.now() + 15000;
+    (function tick() {
+      fetch(NTFY_BASE + '/' + NTFY_TOPIC + '/json?poll=1&since=' + Math.floor(Date.now() / 1000 - 120))
+        .then(function (r) { return r.text(); })
+        .then(function (txt) {
+          var lines = txt.split('\n');
+          for (var i = 0; i < lines.length; i++) {
+            if (!lines[i]) continue;
+            try {
+              var o = JSON.parse(lines[i]);
+              if (o.event !== 'message' || !o.message) continue;
+              var m = JSON.parse(o.message);
+              if (!m || m.rid !== rid) continue;
+              if (types.indexOf(m.type) >= 0) return cb(m);
+            } catch (e) {}
+          }
+          if (Date.now() > deadline) return cb(null);
+          setTimeout(tick, 1500);
+        })
+        .catch(function () { if (Date.now() > deadline) return cb(null); setTimeout(tick, 2000); });
+    })();
+  }
+  function fmtTime(ms) {
+    var n = Number(ms) || 0;
+    if (!n) return '未知';
+    var d = new Date(n);
+    function p(x) { return (x < 10 ? '0' : '') + x; }
+    return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+  }
+
+  function renderMe(container) {
+    var sess = getSession();
+    container.innerHTML = pageHead('我的', '个人中心', '查看游戏时长与论坛活跃度，管理已登录的设备。');
+    if (!sess) { container.appendChild(loginGate('个人中心需要先登录官网账号。')); return; }
+
+    var box = el('div', 'me-wrap');
+    box.innerHTML = '<div class="card me-loading">正在读取你的资料…</div>';
+    container.appendChild(box);
+
+    function load(notice) {
+      var rid = randomHex(8);
+      postBus({ type: 'meQuery', rid: rid, token: sess.token });
+      waitBus(rid, ['meOk', 'meErr'], function (m) {
+        if (!m) {
+          box.innerHTML = '<div class="card me-loading">读取超时，请检查网络后刷新重试。</div>';
+          return;
+        }
+        if (m.type === 'meErr') {
+          box.innerHTML = '<div class="card me-loading">' + esc(m.reason || '读取失败') + '</div>';
+          return;
+        }
+        drawMe(box, m, sess, notice);
+      });
+    }
+
+    function act(kind, id, done) {
+      var rid = randomHex(8);
+      var obj = { type: kind, rid: rid, token: sess.token };
+      if (id) obj.id = id;
+      postBus(obj);
+      waitBus(rid, ['meOk', 'meErr'], function (m) {
+        if (!m) { toast('操作超时，请重试'); done && done(null); return; }
+        if (m.type === 'meErr') { toast(m.reason || '操作失败'); done && done(null); return; }
+        toast(m.notice || '已更新');
+        done && done(m);
+      });
+    }
+
+    function drawMe(box, d, sess, notice) {
+      var pt = d.playtime;
+      var fm = d.forum || { posts: 0, replies: 0 };
+      var name = (d.names && d.names[0]) || ('QQ' + d.qq);
+
+      var html = '';
+      if (notice) html += '<div class="me-notice">' + esc(notice) + '</div>';
+      html +=
+        '<div class="card me-hero">' +
+        '<img class="me-avatar" src="' + esc(d.avatar) + '" alt="" onerror="this.style.visibility=\'hidden\'">' +
+        '<div class="me-id">' +
+        '<div class="me-name">' + esc(name) + '</div>' +
+        '<div class="me-sub">QQ ' + esc(d.qqMask) + ' · 身份标识 ' + esc(String(d.uid || '').slice(0, 8)) + '</div>' +
+        '<div class="me-accs">' + ((d.names || []).map(function (n) { return '<span class="me-tag">' + esc(n) + '</span>'; }).join('') || '<span class="me-tag">未绑定游戏账号</span>') + '</div>' +
+        '</div>' +
+        '<div class="me-hero-act">' +
+        '<a class="btn" href="profile.html">详细资料</a>' +
+        '<button class="btn me-logout" type="button">退出登录</button>' +
+        '</div>' +
+        '</div>';
+
+      html +=
+        '<div class="me-stats">' +
+        '<div class="card me-stat"><div class="k">游戏总时长</div><div class="v">' + (pt ? esc(fmtDur(pt.total)) : '暂无记录') + '</div>' +
+        '<div class="s">' + (pt ? ('本月 ' + esc(fmtDur(pt.month)) + (pt.rank ? ' · 排名 #' + pt.rank : '')) : '未在时长榜中匹配到你的账号') + '</div></div>' +
+        '<div class="card me-stat"><div class="k">论坛发帖</div><div class="v">' + fm.posts + ' 篇</div><div class="s">回复 ' + fm.replies + ' 条</div></div>' +
+        '<div class="card me-stat"><div class="k">登录设备</div><div class="v">' + (d.sessionCount || 0) + ' 台</div><div class="s">含当前这台</div></div>' +
+        '</div>';
+
+      var devs = Array.isArray(d.sessions) ? d.sessions : [];
+      html += '<div class="card me-devices"><div class="me-dev-head"><h3>登录设备</h3>' +
+        (devs.length > 1 ? '<button class="btn btn-primary me-revoke-others" type="button">退出其他所有设备</button>' : '') +
+        '</div>';
+      if (!devs.length) {
+        html += emptyState('🖥️', '没有可显示的登录记录');
+      } else {
+        html += '<div class="me-dev-list">';
+        for (var i = 0; i < devs.length; i++) {
+          var s = devs[i];
+          html += '<div class="me-dev' + (s.current ? ' is-current' : '') + '">' +
+            '<div class="me-dev-main">' +
+            '<div class="me-dev-name">' + esc(s.device || '未知设备') +
+            (s.current ? '<span class="me-badge">当前设备</span>' : '') + '</div>' +
+            '<div class="me-dev-meta">' + esc(s.from || '登录') + ' · 最近活跃 ' + esc(fmtTime(s.last)) +
+            ' · 还剩 ' + s.daysLeft + ' 天</div>' +
+            '</div>' +
+            (s.current ? '' : '<button class="btn me-dev-out" type="button" data-id="' + esc(s.id) + '">退出</button>') +
+            '</div>';
+        }
+        html += '</div>';
+      }
+      html += '<p class="me-tip">发现不认识的设备？先改 QQ 密码，再点「退出其他所有设备」把它们踢下线。</p></div>';
+
+      box.innerHTML = html;
+
+      var lo = box.querySelector('.me-logout');
+      if (lo) lo.addEventListener('click', function () {
+        if (!confirm('退出登录后需要重新验证，确定继续？')) return;
+        try { localStorage.removeItem('stl_web_session_v1'); } catch (e) {}
+        toast('已退出登录');
+        location.hash = '#/';
+      });
+
+      var others = box.querySelector('.me-revoke-others');
+      if (others) others.addEventListener('click', function () {
+        if (!confirm('将退出除当前设备外的所有登录，确定继续？')) return;
+        others.disabled = true;
+        act('meRevokeOthers', '', function (m) { if (m) load(m.notice); else others.disabled = false; });
+      });
+
+      var outs = box.querySelectorAll('.me-dev-out');
+      for (var j = 0; j < outs.length; j++) {
+        outs[j].addEventListener('click', function () {
+          var id = this.getAttribute('data-id');
+          if (!confirm('确定让这台设备退出登录？')) return;
+          var btn = this;
+          btn.disabled = true;
+          act('meRevoke', id, function (m) { if (m) load(m.notice); else btn.disabled = false; });
+        });
+      }
+    }
+
+    load('');
+  }
+
   /* --- 论坛列表页 --- */
   function renderForum(container) {
     container.innerHTML = pageHead('论坛', 'Stone Logic 论坛',
@@ -1462,7 +1628,8 @@
     '/forum': renderForum,
     '/forum/new': renderForumNew,
     '/chat': renderChat,
-    '/appeal': renderAppeal
+    '/appeal': renderAppeal,
+    '/me': renderMe
   };
 
   function resolve(hash) {

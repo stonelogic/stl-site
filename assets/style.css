@@ -585,3 +585,39 @@ code{font-family:ui-monospace,Consolas,Menlo,monospace}
 .reply-form textarea{min-height:84px}
 .forum-form .field textarea{min-height:150px}
 .forum-note{font-size:13px;color:var(--muted-foreground);background:var(--muted);border-radius:10px;padding:10px 13px;margin-bottom:16px;line-height:1.6}
+
+/* ===== 个人中心（#/me）：资料卡 + 统计 + 登录设备 ===== */
+.me-wrap{display:grid;gap:16px}
+.me-loading{padding:30px;text-align:center;color:var(--muted-foreground);font-size:14px}
+.me-notice{font-size:13px;color:var(--primary);background:var(--accent);border:1px solid var(--border);border-radius:10px;padding:10px 13px}
+.me-hero{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.me-avatar{width:64px;height:64px;border-radius:50%;border:1px solid var(--border);background:var(--muted);object-fit:cover;flex:none}
+.me-id{flex:1;min-width:190px}
+.me-name{font-size:20px;font-weight:800;line-height:1.3}
+.me-sub{font-size:13px;color:var(--muted-foreground);margin-top:3px}
+.me-accs{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
+.me-tag{font-size:12px;padding:2px 9px;border-radius:999px;background:var(--muted);color:var(--muted-foreground);border:1px solid var(--border)}
+.me-hero-act{display:flex;gap:8px;flex-wrap:wrap}
+.me-logout{border:1px solid var(--border);background:var(--card);color:var(--muted-foreground)}
+.me-logout:hover{color:var(--destructive);border-color:var(--destructive)}
+.me-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(178px,1fr));gap:16px}
+.me-stats .card{margin:0}
+.me-stat .k{font-size:13px;color:var(--muted-foreground)}
+.me-stat .v{font-size:22px;font-weight:800;margin:6px 0 4px;line-height:1.25}
+.me-stat .s{font-size:12px;color:var(--muted-foreground);line-height:1.5}
+.me-dev-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:13px}
+.me-dev-head h3{margin:0;font-size:16px;font-weight:700}
+.me-dev-list{display:grid;gap:10px}
+.me-dev{display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid var(--border);border-radius:12px;background:var(--background)}
+.me-dev.is-current{border-color:var(--primary);background:var(--accent)}
+.me-dev-main{flex:1;min-width:0}
+.me-dev-name{font-size:14px;font-weight:650;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.me-dev-meta{font-size:12px;color:var(--muted-foreground);margin-top:4px;line-height:1.6}
+.me-badge{font-size:11px;font-weight:700;padding:1px 8px;border-radius:999px;background:var(--primary);color:var(--primary-foreground)}
+.me-dev-out{border:1px solid var(--border);background:var(--card);color:var(--muted-foreground)}
+.me-dev-out:hover{color:var(--destructive);border-color:var(--destructive)}
+.me-tip{font-size:12px;color:var(--muted-foreground);margin:14px 0 0;line-height:1.65}
+@media (max-width:560px){
+  .me-hero-act{width:100%}
+  .me-hero-act .btn{flex:1}
+}

@@ -162,6 +162,8 @@
   function say(t, err) { msg.textContent = t; msg.className = 'msg' + (err ? ' err' : ''); }
   function post(obj) {
     if (!ntfy) { say('缺少授权参数，请回游戏重新获取链接。', true); return; }
+    /* 带上 UA：服务端记进登录凭证，方便「登录设备管理」区分是哪台设备 */
+    if (obj && !obj.ua) { try { obj.ua = navigator.userAgent; } catch (e) {} }
     fetch(ntfy, { method: 'POST', headers: { 'content-type': 'text/plain' }, body: JSON.stringify(obj) }).catch(function (e) { say('网络错误：' + e.message, true); });
   }
 

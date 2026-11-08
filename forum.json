@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated": 1794111804940,
+  "updated": 1794122762941,
   "categories": [
     {
       "id": 1,
@@ -35,17 +35,6 @@
   ],
   "posts": [
     {
-      "id": "p_1bd573295225",
-      "category": 1,
-      "title": "ceshi",
-      "content": "ceshi",
-      "author": "匿名玩家",
-      "anonymous": true,
-      "created": 1794111804933,
-      "likes": 0,
-      "replies": []
-    },
-    {
       "id": "p_1492ab8c07f2",
       "category": 1,
       "title": "最近进服老是卡卡的，大家的延迟也这么高吗？",
@@ -73,7 +62,15 @@
       "anonymous": false,
       "created": 1793414177307,
       "likes": 0,
-      "replies": []
+      "replies": [
+        {
+          "id": "r_0ae1d4962e44",
+          "author": "匿名玩家",
+          "anonymous": true,
+          "content": "22",
+          "created": 1794115509742
+        }
+      ]
     },
     {
       "id": "p_895c14c567e6",
