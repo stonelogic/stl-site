@@ -1,7 +1,7 @@
 {
-  "generatedAt": 1794144240,
+  "generatedAt": 1794145140,
   "source": "cyutime",
-  "count": 25,
+  "count": 26,
   "players": [
     {
       "name": "mnbhjk",
@@ -46,10 +46,10 @@
     {
       "name": "qrnb",
       "rank": 6,
-      "total": 14211,
-      "month": 1761,
-      "week": 1761,
-      "year": 14211
+      "total": 14715,
+      "month": 2265,
+      "week": 2265,
+      "year": 14715
     },
     {
       "name": "lijidan",
@@ -202,6 +202,14 @@
       "month": 0,
       "week": 0,
       "year": 60
+    },
+    {
+      "name": "qrnb_mc",
+      "rank": 26,
+      "total": 22,
+      "month": 22,
+      "week": 22,
+      "year": 22
     }
   ]
 }
