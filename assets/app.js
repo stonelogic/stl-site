@@ -1183,13 +1183,14 @@
           '<span class="pm-name">' + esc(post.author || '匿名玩家') + '</span>' +
           '<span>·</span><span>' + timeAgo(post.created) + '</span>' +
           '<span>·</span><span>💬 ' + ((post.replies || []).length) + ' 回复</span>' +
+          (post.edited ? '<span>·</span><span>已编辑</span>' : '') +
         '</div>';
       box.appendChild(head);
       // 正文（textContent 防 XSS，pre-wrap 保留换行）
       var body = el('div', 'fd-body');
       body.textContent = post.content || '';
       box.appendChild(body);
-      // 操作区：点赞 / 收藏 / 返回
+      // 操作区：点赞 / 收藏 / 举报 / 作者编辑删除 / 返回
       var actions = el('div', 'fd-actions');
       var likeBtn = el('button', 'fd-like' + (liked ? ' on' : ''));
       likeBtn.textContent = (liked ? '👍 已赞 ' : '👍 点赞 ') + ((post.likes || 0) + (liked ? 1 : 0));
@@ -1198,7 +1199,53 @@
       var back = el('a', 'btn btn-outline btn-sm');
       back.href = '#/forum';
       back.textContent = '← 返回列表';
-      actions.appendChild(likeBtn); actions.appendChild(favBtn); actions.appendChild(back);
+      actions.appendChild(likeBtn); actions.appendChild(favBtn);
+      var msess = getSession();
+      var isMine = !!(msess && post.author_uid && msess.uid && post.author_uid === msess.uid);
+      if (msess) {
+        var reportBtn = el('button', 'fd-like');
+        reportBtn.textContent = '🚩 举报';
+        reportBtn.addEventListener('click', function () {
+          var reason = window.prompt('举报原因（如：广告 / 辱骂 / 违规），提交后腐竹会处理：', '');
+          if (reason === null) return;
+          reportBtn.disabled = true; reportBtn.textContent = '提交中…';
+          var rid = randomHex();
+          fetch(NTFY_BASE + '/' + NTFY_TOPIC, {
+            method: 'POST', headers: { 'content-type': 'text/plain' },
+            body: JSON.stringify({ type: 'forum_report', rid: rid, post_id: post.id, reason: reason, token: msess.token, ts: Date.now() })
+          }).then(function () {
+            waitForumAck(rid, function (m) {
+              reportBtn.disabled = false; reportBtn.textContent = '🚩 举报';
+              if (m && m.type === 'forumOk') toast('已提交举报，感谢反馈');
+              else toast('举报提交失败：' + ((m && m.reason) || '无回执'));
+            });
+          }).catch(function () { reportBtn.disabled = false; reportBtn.textContent = '🚩 举报'; toast('网络错误'); });
+        });
+        actions.appendChild(reportBtn);
+        if (isMine) {
+          var editBtn = el('button', 'fd-like');
+          editBtn.textContent = '✏️ 编辑';
+          editBtn.addEventListener('click', function () { openForumEdit(box, post); });
+          var delBtn = el('button', 'fd-like');
+          delBtn.textContent = '🗑️ 删除';
+          delBtn.addEventListener('click', function () {
+            if (!window.confirm('确定删除这条帖子？删除后不可恢复。')) return;
+            delBtn.disabled = true; delBtn.textContent = '删除中…';
+            var rid = randomHex();
+            fetch(NTFY_BASE + '/' + NTFY_TOPIC, {
+              method: 'POST', headers: { 'content-type': 'text/plain' },
+              body: JSON.stringify({ type: 'forum_del', rid: rid, post_id: post.id, token: msess.token, ts: Date.now() })
+            }).then(function () {
+              waitForumAck(rid, function (m) {
+                if (m && m.type === 'forumOk') { toast('已删除'); setTimeout(function () { location.hash = '#/forum'; }, 500); }
+                else { delBtn.disabled = false; delBtn.textContent = '🗑️ 删除'; toast('删除失败：' + ((m && m.reason) || '无回执')); }
+              });
+            }).catch(function () { delBtn.disabled = false; delBtn.textContent = '🗑️ 删除'; toast('网络错误'); });
+          });
+          actions.appendChild(editBtn); actions.appendChild(delBtn);
+        }
+      }
+      actions.appendChild(back);
       box.appendChild(actions);
       likeBtn.addEventListener('click', function () {
         var on = forumToggleLike(post.id);
@@ -1270,6 +1317,43 @@
       });
     });
   }
+  /* 内联编辑：作者本人改标题/正文 */
+  function openForumEdit(box, post) {
+    var msess = getSession();
+    if (!msess) { toast('请先登录'); return; }
+    var wrap = el('div', 'card forum-edit');
+    wrap.innerHTML =
+      '<div class="forum-note">编辑帖子（敏感词会被拦截）。</div>' +
+      '<div class="field"><label>标题</label><input id="feTitle" type="text" maxlength="100" style="width:100%;background:var(--card);border:1px solid var(--input);border-radius:9px;padding:9px 11px;color:var(--foreground);outline:none"></div>' +
+      '<div class="field"><label>正文</label><textarea id="feContent" maxlength="2000"></textarea></div>' +
+      '<div id="feMsg" style="font-size:13px;min-height:18px;margin:6px 0"></div>' +
+      '<div class="fb-actions"><button class="btn btn-primary" id="feSave" type="button">保存</button>' +
+      '<button class="btn btn-outline" id="feCancel" type="button">取消</button></div>';
+    var t = wrap.querySelector('#feTitle'), ct = wrap.querySelector('#feContent');
+    t.value = post.title || ''; ct.value = post.content || '';
+    var m = wrap.querySelector('#feMsg');
+    function setM(x, err) { m.textContent = x; m.style.color = err ? 'var(--destructive)' : 'var(--muted-foreground)'; }
+    box.insertBefore(wrap, box.firstChild);
+    wrap.querySelector('#feCancel').addEventListener('click', function () { wrap.remove(); });
+    wrap.querySelector('#feSave').addEventListener('click', function () {
+      var nt = t.value.trim(), nc = ct.value.trim();
+      if (nt.length < 2) { setM('标题至少 2 字', true); return; }
+      if (nc.length < 2) { setM('正文至少 2 字', true); return; }
+      var btn = wrap.querySelector('#feSave'); btn.disabled = true; setM('保存中…', false);
+      var rid = randomHex();
+      fetch(NTFY_BASE + '/' + NTFY_TOPIC, {
+        method: 'POST', headers: { 'content-type': 'text/plain' },
+        body: JSON.stringify({ type: 'forum_edit', rid: rid, post_id: post.id, title: nt, content: nc, token: msess.token, ts: Date.now() })
+      }).then(function () {
+        waitForumAck(rid, function (mm) {
+          btn.disabled = false;
+          if (mm && mm.type === 'forumOk') { toast('已保存'); setTimeout(function () { location.reload(); }, 400); }
+          else setM('保存失败：' + ((mm && mm.reason) || '无回执'), true);
+        });
+      }).catch(function () { btn.disabled = false; setM('网络错误', true); });
+    });
+  }
+
   function renderReplies(container, post) {
     var list = post.replies || [];
     if (!list.length) { container.innerHTML = '<div style="font-size:13.5px;color:var(--muted-foreground);padding:6px 2px">还没有回复，来抢沙发～</div>'; return; }

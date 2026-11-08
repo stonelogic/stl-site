@@ -173,7 +173,7 @@
     var days = Number(m.days) > 0 ? Number(m.days) : 30;
     try {
       localStorage.setItem(SKEY, JSON.stringify({
-        token: token, qq: m.qq, names: myNames, exp: Date.now() + days * 86400000
+        token: token, qq: m.qq, uid: m.uid || '', names: myNames, exp: Date.now() + days * 86400000
       }));
     } catch (e) {}
     var lb = document.getElementById('loginBox');
