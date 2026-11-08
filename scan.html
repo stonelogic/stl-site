@@ -115,6 +115,8 @@
   }
   function post(obj) {
     if (!ntfy) { say('缺少消息通道参数，请重新扫码。', 'err'); return; }
+    /* 带上 UA：扫码确认登录时，服务端会把设备信息记进新签发的凭证 */
+    if (obj && !obj.ua) { try { obj.ua = navigator.userAgent; } catch (e) {} }
     fetch(ntfy, { method: 'POST', headers: { 'content-type': 'text/plain' },
                   body: JSON.stringify(obj) }).catch(function (e) { say('网络错误：' + e.message, 'err'); });
   }
