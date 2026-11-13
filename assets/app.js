@@ -361,6 +361,104 @@
     return 'https://q1.qlogo.cn/g?b=qq&nk=' + encodeURIComponent(qq) + '&s=' + (size || 100);
   }
 
+  /* 玩家名片：canvas 画一张 840×440 的图，可以直接发群里。
+     头像优先用仓库里的本地皮肤图（同源，不会把 canvas 污染成安全错误） */
+  function makePlayerCardBlob(name, o) {
+    o = o || {};
+    return new Promise(function (resolve, reject) {
+      var W = 840, H = 440, dpr = 2;
+      var cv = document.createElement('canvas');
+      cv.width = W * dpr; cv.height = H * dpr;
+      var ctx = cv.getContext('2d');
+      ctx.scale(dpr, dpr);
+
+      function rr(x, y, w, h, r) {
+        ctx.beginPath();
+        ctx.moveTo(x + r, y);
+        ctx.arcTo(x + w, y, x + w, y + h, r);
+        ctx.arcTo(x + w, y + h, x, y + h, r);
+        ctx.arcTo(x, y + h, x, y, r);
+        ctx.arcTo(x, y, x + w, y, r);
+        ctx.closePath();
+      }
+      function text(t, x, y, size, weight, color, align) {
+        ctx.font = weight + ' ' + size + 'px "PingFang SC","Microsoft YaHei",system-ui,sans-serif';
+        ctx.fillStyle = color;
+        ctx.textAlign = align || 'left';
+        ctx.fillText(String(t), x, y);
+      }
+
+      function paint() {
+        var g = ctx.createLinearGradient(0, 0, W, H);
+        g.addColorStop(0, '#0c1e30');
+        g.addColorStop(0.55, '#123a5e');
+        g.addColorStop(1, '#0a2740');
+        ctx.fillStyle = g;
+        ctx.fillRect(0, 0, W, H);
+
+        // 雪花点缀
+        for (var i = 0; i < 70; i++) {
+          ctx.beginPath();
+          ctx.arc(Math.random() * W, Math.random() * H, Math.random() * 1.8 + 0.4, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(255,255,255,' + (0.04 + Math.random() * 0.12).toFixed(2) + ')';
+          ctx.fill();
+        }
+
+        // 头像
+        ctx.save();
+        rr(48, 66, 120, 120, 18);
+        ctx.clip();
+        ctx.fillStyle = 'rgba(255,255,255,.08)';
+        ctx.fillRect(48, 66, 120, 120);
+        if (img && img.width) ctx.drawImage(img, 48, 66, 120, 120);
+        else text(String(name).slice(0, 1).toUpperCase(), 108, 142, 48, '700', 'rgba(255,255,255,.8)', 'center');
+        ctx.restore();
+        ctx.strokeStyle = 'rgba(255,255,255,.22)';
+        ctx.lineWidth = 2;
+        rr(48, 66, 120, 120, 18);
+        ctx.stroke();
+
+        text(name, 196, 118, 34, '800', '#ffffff');
+        var sub = [];
+        if (o.online) sub.push('● 在线');
+        if (o.rank) sub.push('在线时长第 ' + o.rank + ' 名');
+        sub.push('stone logic');
+        text(sub.join('   ·   '), 196, 150, 15, '500', 'rgba(255,255,255,.72)');
+
+        // 分隔线
+        ctx.strokeStyle = 'rgba(255,255,255,.14)';
+        ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(48, 218); ctx.lineTo(W - 48, 218); ctx.stroke();
+
+        // 四格指标
+        var items = o.items || [];
+        var colW = (W - 96) / 4;
+        for (var k = 0; k < 4 && k < items.length; k++) {
+          var x = 48 + colW * k;
+          text(items[k][0], x, 264, 13, '600', 'rgba(255,255,255,.6)');
+          text(items[k][1], x, 300, 26, '800', '#eaf4ff');
+          if (items[k][2]) text(items[k][2], x, 324, 12, '500', 'rgba(255,255,255,.5)');
+        }
+
+        // 底栏
+        ctx.strokeStyle = 'rgba(255,255,255,.14)';
+        ctx.beginPath(); ctx.moveTo(48, 366); ctx.lineTo(W - 48, 366); ctx.stroke();
+        text(SITE.name || 'Stone Logic', 48, 402, 15, '700', 'rgba(255,255,255,.86)');
+        text((location.origin + location.pathname).replace(/index\.html$/, '') + '#/p/' + encodeURIComponent(name),
+          840 - 48, 402, 12, '500', 'rgba(255,255,255,.5)', 'right');
+
+        cv.toBlob(function (b) { b ? resolve(b) : reject(new Error('toBlob failed')); }, 'image/png');
+      }
+
+      var src = avatarLocal(name) ||
+        ('data:image/svg+xml;charset=utf-8,' + encodeURIComponent(identicon(name)));
+      var img = new Image();
+      img.onload = paint;
+      img.onerror = paint;
+      img.src = src;
+    });
+  }
+
   /* 论坛署名是登录的 QQ（形如「QQ 1477211972」），头像就取 QQ 头像；
      其它老帖子还是按游戏 ID 找 MC 头像 */
   function forumAvatar(author, size) {
@@ -428,6 +526,275 @@
     }).join('');
   }
 
+  /* ================= 全站搜索（Ctrl/⌘ + K） =================
+     一次拉齐 playtime / forum / wiki / feed 四份数据建索引，之后在内存里搜。
+     页面导航、玩家、帖子、Wiki 条目、公告都能搜到，回车直达。 */
+  var SIDX = null;              // 建好的索引（只建一次）
+  var SIdxLoading = null;       // 建索引中的 promise，避免重复请求
+  var SPendingScroll = null;    // 搜索跳 Wiki 后要滚到的锚点 id
+
+  function buildSearchIndex() {
+    if (SIDX) return Promise.resolve(SIDX);
+    if (SIdxLoading) return SIdxLoading;
+    var idx = [];
+    NAV.forEach(function (n) {
+      idx.push({ k: 'page', t: n.label, s: '页面', u: n.href, w: 1 });
+    });
+    idx.push({ k: 'page', t: '首页', s: '服务器介绍与入口', u: '#/', w: 1 });
+    idx.push({ k: 'page', t: '我的账号', s: 'QQ 登录 / 绑定 / 我的主页', u: '#/me', w: 1 });
+    idx.push({ k: 'page', t: '本周战报', s: '本周上线、发帖与战绩汇总', u: '#/weekly', w: 1 });
+    idx.push({ k: 'page', t: '活动日历', s: '赛事安排 / 导出 .ics', u: '#/events', w: 1 });
+    idx.push({ k: 'page', t: '服务器体检', s: '端口探活 / 内存 / 告警', u: '#/health', w: 1 });
+    idx.push({ k: 'page', t: '玩家对比', s: '两个人的数据并排看', u: '#/vs', w: 1 });
+
+    SIdxLoading = Promise.all([
+      getJsonFile('playtime.json'),
+      new Promise(function (res) { fetchForum(function (d) { res(d); }); }),
+      getJsonFile('wiki.json'),
+      fetch('feed.xml?_=' + Date.now(), { cache: 'no-store' }).then(function (r) {
+        return r.ok ? r.text() : '';
+      }).catch(function () { return ''; })
+    ]).then(function (r) {
+      /* 玩家 */
+      ((r[0] && r[0].players) || []).forEach(function (p) {
+        idx.push({
+          k: 'player', t: p.name,
+          s: '总时长 ' + fmtDur(p.total) + (p.rank ? ' · 总榜第 ' + p.rank + ' 名' : ''),
+          u: '#/p/' + encodeURIComponent(p.name), w: 5
+        });
+      });
+      /* 论坛帖（含正文，正文命中排后面） */
+      ((r[1] && r[1].posts) || []).forEach(function (p) {
+        idx.push({
+          k: 'post', t: p.title || '(无标题)',
+          s: '论坛 · ' + (p.author || '') + ' · ' + fmtTime(p.created),
+          x: String(p.content || '').slice(0, 1200) + ' ' + (p.author_names || []).join(' '),
+          u: '#/forum/post/' + encodeURIComponent(p.id), w: 4
+        });
+      });
+      /* Wiki 条目：q 是标题，a 是答案 */
+      ((r[2] && r[2].sections) || []).forEach(function (s) {
+        (s.items || []).forEach(function (it) {
+          idx.push({
+            k: 'wiki', t: it.q, s: 'Wiki · ' + (s.title || ''),
+            x: String(it.a || '').slice(0, 1200),
+            u: '#/wiki', anchor: 'wiki-' + s.id, w: 3
+          });
+        });
+      });
+      /* 公告：直接从 RSS 里拆 */
+      if (r[3]) {
+        try {
+          var doc = new DOMParser().parseFromString(r[3], 'text/xml');
+          Array.prototype.forEach.call(doc.querySelectorAll('item'), function (it) {
+            var g = function (tag) {
+              var n = it.querySelector(tag);
+              return n ? (n.textContent || '').trim() : '';
+            };
+            idx.push({
+              k: 'news', t: g('title') || '(无标题公告)',
+              s: '公告 · ' + (g('pubDate') || '').slice(0, 16),
+              x: g('description'), u: '#/news', w: 2
+            });
+          });
+        } catch (e) {}
+      }
+      SIDX = idx;
+      return idx;
+    }).catch(function () { SIDX = idx; return idx; });
+
+    return SIdxLoading;
+  }
+
+  /* 相关度：标题全等 > 标题前缀 > 标题包含 > 副标题 > 正文命中；同级按类型权重 */
+  function searchScore(it, q) {
+    var t = String(it.t || '').toLowerCase();
+    var base = 0;
+    if (t === q) base = 1000;
+    else if (t.indexOf(q) === 0) base = 800;
+    else if (t.indexOf(q) > 0) base = 600;
+    else if (String(it.s || '').toLowerCase().indexOf(q) >= 0) base = 400;
+    else if (String(it.x || '').toLowerCase().indexOf(q) >= 0) base = 200;
+    return base ? base + (it.w || 0) : 0;
+  }
+
+  function initSearch() {
+    var box = $id('sbox');
+    if (!box) return;
+    var input = $id('sboxInput'), list = $id('sboxBody'), hint = $id('sboxHint');
+    var flat = [], cur = -1, shown = false;
+
+    function rows() { return list ? list.querySelectorAll('.sitem') : []; }
+    function setCur(i) {
+      var r = rows();
+      if (!r.length) { cur = -1; return; }
+      cur = (i + r.length) % r.length;
+      for (var n = 0; n < r.length; n++) r[n].classList.toggle('on', n === cur);
+      var act = r[cur];
+      if (act && act.scrollIntoView) act.scrollIntoView({ block: 'nearest' });
+    }
+
+    function goto(it) {
+      if (!it) return;
+      close();
+      if (it.anchor) SPendingScroll = it.anchor;
+      location.hash = it.u;
+      /* 已经在目标页时 hash 不变、不会触发路由，这里补一次 */
+      if (it.anchor) setTimeout(function () { applyPendingScroll(); }, 120);
+    }
+
+    function drawEmptyState() {
+      buildSearchIndex().then(function (idx) {
+        var pages = idx.filter(function (x) { return x.k === 'page'; }).slice(0, 6);
+        var posts = idx.filter(function (x) { return x.k === 'post'; }).slice(0, 4);
+        var h = '<div class="sgroup">快捷入口</div>';
+        h += pages.map(function (p) {
+          return '<div class="sitem" data-u="' + esc(p.u) + '" data-t="' + esc(p.t) + '">' +
+            '<span class="sico">' + (S_ICON[p.k] || '') + '</span>' +
+            '<span class="stxt"><b>' + esc(p.t) + '</b><i>' + esc(p.s) + '</i></span></div>';
+        }).join('');
+        if (posts.length) {
+          h += '<div class="sgroup">最新帖子</div>';
+          h += posts.map(function (p) {
+            return '<div class="sitem" data-u="' + esc(p.u) + '" data-t="' + esc(p.t) + '">' +
+              '<span class="sico">💬</span>' +
+              '<span class="stxt"><b>' + esc(p.t) + '</b><i>' + esc(p.s) + '</i></span></div>';
+          }).join('');
+        }
+        list.innerHTML = h;
+        if (hint) hint.textContent = '试试搜玩家名、帖子标题、Wiki 问题';
+        bindRows();
+        cur = -1;
+      });
+    }
+
+    function bindRows() {
+      Array.prototype.forEach.call(rows(), function (r) {
+        r.addEventListener('click', function () {
+          var u = r.getAttribute('data-u');
+          var anchor = r.getAttribute('data-anchor') || null;
+          close();
+          if (anchor) SPendingScroll = anchor;
+          if (u) location.hash = u;
+          if (anchor) setTimeout(applyPendingScroll, 150);
+        });
+      });
+    }
+
+    var S_ICON = { page: '📄', player: '🧊', post: '💬', wiki: '📖', news: '📢' };
+    var S_NAME = { page: '页面', player: '玩家', post: '论坛', wiki: 'Wiki', news: '公告' };
+
+    function search(q) {
+      q = String(q || '').trim().toLowerCase();
+      if (!q) { drawEmptyState(); return; }
+      buildSearchIndex().then(function (idx) {
+        var hits = [];
+        for (var i = 0; i < idx.length; i++) {
+          var sc = searchScore(idx[i], q);
+          if (sc) hits.push({ it: idx[i], sc: sc });
+        }
+        hits.sort(function (a, b) { return b.sc - a.sc; });
+        hits = hits.slice(0, 40);
+
+        if (!hits.length) {
+          list.innerHTML = '<div class="sempty">没找到「' + esc(q) + '」<br>' +
+            '<span>换个关键词，或者去<a href="#/forum" data-close="1">论坛</a>发帖问问</span></div>';
+          if (hint) hint.textContent = '0 条结果';
+          var a = list.querySelector('a[data-close]');
+          if (a) a.addEventListener('click', function () { close(); });
+          cur = -1;
+          return;
+        }
+
+        /* 按类型分组，组内保持相关度顺序 */
+        var order = ['player', 'page', 'post', 'wiki', 'news'];
+        var buckets = {};
+        hits.forEach(function (h) { (buckets[h.it.k] = buckets[h.it.k] || []).push(h.it); });
+        var html = '';
+        order.forEach(function (k) {
+          var arr = buckets[k];
+          if (!arr || !arr.length) return;
+          html += '<div class="sgroup">' + S_NAME[k] + ' · ' + arr.length + '</div>';
+          html += arr.slice(0, 8).map(function (it) {
+            return '<div class="sitem" data-u="' + esc(it.u) + '"' +
+              (it.anchor ? ' data-anchor="' + esc(it.anchor) + '"' : '') + '>' +
+              '<span class="sico">' + (S_ICON[k] || '') + '</span>' +
+              '<span class="stxt"><b>' + esc(it.t) + '</b><i>' + esc(it.s || '') + '</i></span>' +
+              '<span class="sgok">↵</span></div>';
+          }).join('');
+        });
+        list.innerHTML = html;
+        if (hint) hint.textContent = hits.length + ' 条结果 · ↑↓ 选择 · Enter 打开';
+        bindRows();
+        flat = [];
+        cur = -1;
+        setCur(0);
+      });
+    }
+
+    function open() {
+      if (shown) return;
+      shown = true;
+      box.hidden = false;
+      document.body.style.overflow = 'hidden';
+      if (input) { input.value = ''; input.focus(); }
+      drawEmptyState();
+    }
+    function close() {
+      if (!shown) return;
+      shown = false;
+      box.hidden = true;
+      document.body.style.overflow = '';
+      if (input) input.blur();
+    }
+
+    var deb;
+    if (input) {
+      input.addEventListener('input', function () {
+        clearTimeout(deb);
+        var v = input.value;
+        deb = setTimeout(function () { search(v); }, 110);
+      });
+      input.addEventListener('keydown', function (ev) {
+        if (ev.key === 'ArrowDown') { ev.preventDefault(); setCur(cur + 1); }
+        else if (ev.key === 'ArrowUp') { ev.preventDefault(); setCur(cur - 1); }
+        else if (ev.key === 'Enter') {
+          ev.preventDefault();
+          var r = rows()[cur];
+          if (r) r.click();
+        } else if (ev.key === 'Escape') { ev.preventDefault(); close(); }
+      });
+    }
+    $id('sboxMask').addEventListener('click', close);
+    var sb = $id('searchBtn');
+    if (sb) sb.addEventListener('click', function () { shown ? close() : open(); });
+
+    document.addEventListener('keydown', function (ev) {
+      var k = ev.key || '';
+      var inField = /^(INPUT|TEXTAREA|SELECT)$/.test((ev.target && ev.target.tagName) || '') ||
+        (ev.target && ev.target.isContentEditable);
+      if ((ev.metaKey || ev.ctrlKey) && (k === 'k' || k === 'K')) {
+        ev.preventDefault();
+        shown ? close() : open();
+        return;
+      }
+      if (k === 'Escape' && shown) { close(); return; }
+      if (k === '/' && !shown && !inField) { ev.preventDefault(); open(); }
+    });
+  }
+
+  /* Wiki 深链：搜索跳到某个条目后，把那一节滚到眼前并展开对应问答 */
+  function applyPendingScroll() {
+    var id = SPendingScroll;
+    if (!id) return;
+    var t = $id(id);
+    if (!t) return;
+    SPendingScroll = null;
+    t.querySelectorAll('details').forEach(function (d, i) { d.open = i === 0; });
+    var top = t.getBoundingClientRect().top + window.pageYOffset - 80;
+    window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+  }
+
   /* ---------- 通用页面外壳 ---------- */
   function pageHead(crumb, title, desc) {
     return '<div class="page-head">' +
@@ -441,6 +808,142 @@
   }
 
   /* ================= 各页面 ================= */
+
+  /* ================= 首页动态：群聊跑马灯 + 你不在的这段时间 ================= */
+
+  /* 群聊跑马灯：服务端把最近 40 条闲聊导出成 chat-recent.json（Pages 读不到本机端口） */
+  function buildMarquee() {
+    var wrap = el('div', 'marquee');
+    wrap.id = 'chatMarquee';
+    wrap.hidden = true;
+    wrap.innerHTML = '<span class="mq-tag">💬 群里在聊</span>' +
+      '<div class="mq-track"><div class="mq-run" id="mqRun"></div></div>' +
+      '<a class="mq-more" href="#/chat">去聊天 →</a>';
+    fetch('chat-recent.json?_=' + Date.now(), { cache: 'no-store' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (d) {
+        var items = (d && d.items) || [];
+        if (!items.length) return;
+        var SRC = { qq: '群', mc: '游戏', web: '网页' };
+        var line = items.map(function (m) {
+          return '<span class="mq-i"><i class="mq-src s-' + esc(m.src || 'web') + '">' +
+            (SRC[m.src] || '网页') + '</i><b>' + esc(m.name || '匿名') + '</b> ' +
+            esc(m.text || '') + '</span>';
+        }).join('<span class="mq-dot">·</span>');
+        var run = wrap.querySelector('#mqRun');
+        run.innerHTML = line + '<span class="mq-dot">·</span>' + line;  // 复制一份，无缝循环
+        run.style.animationDuration = Math.max(26, items.length * 4.2) + 's';
+        wrap.hidden = false;
+      })
+      .catch(function () {});
+    return wrap;
+  }
+
+  /* 「你不在的这段时间」：拿上次访问存在本地的快照做差，算出这段时间谁最肝、多了几帖 */
+  var SNAP_KEY = 'stl_snap_v1';
+
+  function loadSnap() {
+    try { return JSON.parse(localStorage.getItem(SNAP_KEY) || 'null'); } catch (e) { return null; }
+  }
+  function saveSnap(o) {
+    try { localStorage.setItem(SNAP_KEY, JSON.stringify(o)); } catch (e) {}
+  }
+  function snapNow() {
+    return Promise.all([
+      getJsonFile('playtime.json'), getJsonFile('bedwars.json'),
+      getJsonFile('forum.json'), getJsonFile('online.json')
+    ]).then(function (r) {
+      var o = { t: Date.now(), pt: {}, bw: {}, posts: 0, online: 0 };
+      ((r[0] && r[0].players) || []).forEach(function (p) { o.pt[p.name] = Number(p.total) || 0; });
+      ((r[1] && r[1].players) || []).forEach(function (p) { o.bw[p.name] = Number(p.score) || 0; });
+      o.posts = ((r[2] && r[2].posts) || []).length;
+      o.online = Number((r[3] && r[3].now) || 0);
+      return o;
+    }).catch(function () { return null; });
+  }
+  /* 时长差转人话（比 fmtDur 更口语，只说到小时/分钟） */
+  function durGap(sec) {
+    sec = Math.max(0, Math.round(sec));
+    if (sec < 60) return sec + ' 秒';
+    if (sec < 3600) return Math.round(sec / 60) + ' 分钟';
+    var h = Math.floor(sec / 3600), m = Math.round((sec % 3600) / 60);
+    return h + ' 小时' + (m ? ' ' + m + ' 分' : '');
+  }
+  function agoText(ms) {
+    var s = Math.max(0, Math.round(ms / 1000));
+    if (s < 90) return '刚刚';
+    if (s < 5400) return Math.round(s / 60) + ' 分钟';
+    if (s < 86400 * 2) return Math.round(s / 3600) + ' 小时';
+    return Math.round(s / 86400) + ' 天';
+  }
+
+  function renderDigest(box) {
+    box.innerHTML = '<h2 class="section-title"><span class="sec-ico">🕒</span>你不在的这段时间</h2>' +
+      '<div class="digest" id="digestBody"><div class="digest-load">正在算…</div></div>';
+    var body = box.querySelector('#digestBody');
+    snapNow().then(function (now) {
+      if (!now) { body.innerHTML = '<div class="digest-load">数据加载失败</div>'; return; }
+      var old = loadSnap();
+      saveSnap(now);
+      if (!old || !old.t) {
+        body.innerHTML = '<div class="digest-first">' +
+          '<p>第一次来？之后每次回来，这里会告诉你——这段时间谁肝得最猛、多了几篇帖子、积分榜有没有换人。</p>' +
+          '<a class="btn btn-sm btn-outline" href="#/rank">先去看看排行榜</a></div>';
+        return;
+      }
+      var gapMs = now.t - old.t;
+      if (gapMs < 60 * 1000) {
+        body.innerHTML = '<div class="digest-first"><p>你刚刚才来过，服务器还没什么新动静。</p></div>';
+        return;
+      }
+
+      /* 玩得最久的增量 top3 */
+      var gain = [];
+      Object.keys(now.pt).forEach(function (n) {
+        var d = (now.pt[n] || 0) - (old.pt[n] || 0);
+        if (d > 0) gain.push({ n: n, d: d });
+      });
+      gain.sort(function (a, b) { return b.d - a.d; });
+
+      /* 起床积分增量 top3 */
+      var bwg = [];
+      Object.keys(now.bw).forEach(function (n) {
+        var d = (now.bw[n] || 0) - (old.bw[n] || 0);
+        if (d > 0) bwg.push({ n: n, d: d });
+      });
+      bwg.sort(function (a, b) { return b.d - a.d; });
+
+      var newPosts = Math.max(0, now.posts - (old.posts || 0));
+      var dOn = (now.online || 0) - (old.online || 0);
+
+      var html = '<div class="digest-top">' +
+        '<div class="digest-big"><b>' + esc(agoText(gapMs)) + '</b><span>没来了</span></div>' +
+        '<div class="digest-big"><b>' + (newPosts ? '+' + newPosts : '0') + '</b><span>篇新帖</span></div>' +
+        '<div class="digest-big"><b>' + (dOn > 0 ? '+' + dOn : String(dOn)) + '</b><span>在线人数变化</span></div>' +
+        '</div>';
+
+      if (gain.length) {
+        html += '<div class="digest-block"><h4>这段时间肝得最猛</h4>' +
+          gain.slice(0, 3).map(function (g, i) {
+            return '<div class="digest-row"><span class="digest-rk">' + (i + 1) + '</span>' +
+              '<a class="digest-nm" href="#/p/' + encodeURIComponent(g.n) + '">' + esc(g.n) + '</a>' +
+              '<span class="digest-val">+' + durGap(g.d) + '</span></div>';
+          }).join('') + '</div>';
+      }
+      if (bwg.length) {
+        html += '<div class="digest-block"><h4>起床积分涨得最快</h4>' +
+          bwg.slice(0, 3).map(function (g, i) {
+            return '<div class="digest-row"><span class="digest-rk">' + (i + 1) + '</span>' +
+              '<a class="digest-nm" href="#/p/' + encodeURIComponent(g.n) + '">' + esc(g.n) + '</a>' +
+              '<span class="digest-val">+' + g.d + ' 分</span></div>';
+          }).join('') + '</div>';
+      }
+      if (!gain.length && !bwg.length && !newPosts) {
+        html += '<div class="digest-load">服务器这段时间挺安静的，可能大家都在忙别的。</div>';
+      }
+      body.innerHTML = html;
+    });
+  }
 
   /* --- 首页（介绍） --- */
   function renderHome(container) {
@@ -480,6 +983,9 @@
     });
     loadHeroOnline();
 
+    // 群聊跑马灯（服务端每分钟导出一份最近闲聊）
+    container.appendChild(buildMarquee());
+
     // 玩法特色（4 张概览卡）
     var feat = el('section', 'home-section'); feat.id = 'features';
     feat.innerHTML = '<h2 class="section-title">玩法特色</h2><div class="feat4">' +
@@ -488,6 +994,11 @@
           '<h3>' + esc(f.title) + '</h3><p>' + esc(f.desc) + '</p></div>';
       }).join('') + '</div>';
     container.appendChild(feat);
+
+    // 「你不在的这段时间」：跟上次访问的快照做差
+    var dig = el('section', 'home-section'); dig.id = 'digest';
+    container.appendChild(dig);
+    renderDigest(dig);
 
     // 服务器管理人员（ID 与头像可在 config 中自定义：name / avatar / roles）
     var stf = el('section', 'home-section'); stf.id = 'staff';
@@ -826,10 +1337,15 @@
       '<div><span class="status-pill" id="stPill">检测中…</span></div>' +
       '</div>' +
       '<div class="stat-row" id="stStats"></div>' +
+      '<div class="st-verdict" id="stVerdict" hidden></div>' +
       '<div class="motd" id="stMotd">正在获取服务器 MOTD…</div>' +
       '<div class="st-chart-wrap">' +
       '<div class="st-chart-head"><span>近 24 小时在线人数</span><span class="st-chart-note" id="stChartNote">加载中…</span></div>' +
       '<canvas class="st-chart" id="stChart"></canvas>' +
+      '</div>' +
+      '<div class="st-heat-wrap">' +
+      '<div class="st-chart-head"><span>在线热力图 · 周几 × 几点</span><span class="st-chart-note" id="stHeatNote">加载中…</span></div>' +
+      '<div class="heat-grid" id="stHeat"></div>' +
       '</div>' +
       '<div style="margin-top:20px"><div style="font-size:14px;font-weight:700;margin-bottom:12px">在线玩家</div><div class="player-grid" id="stPlayers"></div></div>';
     container.appendChild(card);
@@ -1061,6 +1577,8 @@
       xLabel1: '现在',
       empty: d.count < 2 ? '曲线刚开始采集，几分钟后再来看' : '暂无数据'
     });
+    renderVerdict(d);
+    renderHeat(d.heat);
     if (note) {
       var parts = [];
       if (d.count != null) parts.push(d.count + ' 个采样点');
@@ -1082,6 +1600,102 @@
       ST_ONLINE_DATA = cur;
       fillStatusStats(!!(ST_ONLINE_DATA && ST_ONLINE_DATA.online));
     }
+  }
+
+  /* 把 24 小时采样点翻成一句人话，放在状态卡下面。
+     目的不是好看，是让人不用会看曲线也能知道「最近稳不稳」。 */
+  function renderVerdict(d) {
+    var box = $id('stVerdict');
+    if (!box) return;
+    var v = (d.v || []).filter(function (x) { return typeof x === 'number' && isFinite(x); });
+    if (v.length < 6) { box.hidden = true; return; }
+
+    var step = Number(d.step) || 10;
+    var t0 = Number(d.t0) || (Date.now() - 86400000);
+    var sum = 0, peak = -1, peakIdx = 0, busy = 0;
+    for (var i = 0; i < v.length; i++) {
+      sum += v[i];
+      if (v[i] > peak) { peak = v[i]; peakIdx = i; }
+      if (v[i] > 0) busy++;
+    }
+
+    var items = [], level = 'good';
+    if (peak <= 0) {
+      items.push('过去 24 小时基本没人上线');
+      level = 'warn';
+    } else {
+      items.push('过去 24 小时平均在线 ' + (Math.round(sum / v.length * 10) / 10) +
+        ' 人，峰值 ' + peak + ' 人（约 ' + hhmm(t0 + peakIdx * step * 60000) + '）');
+      if (busy < v.length * 0.3) items.push('有人在线的时间只占 ' + Math.round(busy / v.length * 100) + '%');
+    }
+
+    /* 内存趋势：拿头 3 个点和尾 3 个点比，比单点更稳 */
+    var m = (d.m || []).filter(function (x) { return typeof x === 'number' && x > 0; });
+    if (m.length >= 6) {
+      var first = (m[0] + m[1] + m[2]) / 3, last = (m[m.length - 1] + m[m.length - 2] + m[m.length - 3]) / 3;
+      var pct = first ? Math.round((last - first) / first * 100) : 0;
+      if (pct >= 25) { items.push('服务内存涨了 ' + pct + '%，留意是不是泄漏'); level = 'warn'; }
+      else if (pct <= -25) items.push('服务内存降了 ' + Math.abs(pct) + '%（多半重启过）');
+    }
+
+    var n = d.now || {};
+    if (n.liveAge != null && n.liveAge >= 0 && n.liveAge > 300) {
+      items.push('在线数据已 ' + Math.round(n.liveAge / 60) + ' 分钟没更新');
+      level = 'warn';
+    }
+    if (d.count != null && d.range) {
+      var expect = Math.floor(Number(d.range) / step);
+      if (expect && d.count < expect * 0.5) {
+        items.push('采样点只有预期的 ' + Math.round(d.count / expect * 100) + '%，采集可能断过');
+        level = 'warn';
+      }
+    }
+
+    box.hidden = false;
+    box.className = 'st-verdict is-' + level;
+    box.textContent = items.join('；') + '。';
+  }
+
+  /* 7×24 在线热力图：颜色深浅 = 那个时段的平均在线人数 */
+  function renderHeat(h) {
+    var wrap = $id('stHeat'), note = $id('stHeatNote');
+    if (!wrap) return;
+    var cells = h && h.cells, counts = (h && h.counts) || [];
+    if (!Array.isArray(cells) || cells.length !== 168) {
+      wrap.innerHTML = '<div class="heat-empty">热力图在后台慢慢累积，跑上几天就能看出「周几几点最热闹」。</div>';
+      if (note) note.textContent = '';
+      return;
+    }
+    var max = 0, filled = 0, i;
+    for (i = 0; i < 168; i++) {
+      if (cells[i] != null && cells[i] > max) max = cells[i];
+      if (counts[i] > 0) filled++;
+    }
+    if (!filled) {
+      wrap.innerHTML = '<div class="heat-empty">刚开始采集，让它挂着跑一晚吧。</div>';
+      if (note) note.textContent = '';
+      return;
+    }
+    if (note) note.textContent = filled + '/168 格有样本 · 颜色越深人越多';
+
+    var days = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
+    var out = ['<div class="heat-row heat-head"><span class="heat-lb"></span>'];
+    for (var hh = 0; hh < 24; hh++) out.push('<span class="heat-h">' + (hh % 3 === 0 ? hh : '') + '</span>');
+    out.push('</div>');
+    for (var dw = 0; dw < 7; dw++) {
+      out.push('<div class="heat-row"><span class="heat-lb">' + days[dw] + '</span>');
+      for (var hr = 0; hr < 24; hr++) {
+        var val = cells[dw * 24 + hr];
+        var alpha = (val == null || !max) ? 0 : (0.14 + 0.86 * Math.min(1, val / max));
+        /* 没样本的格子留成静音灰（交给 CSS），有样本才上色 */
+        var style = (val == null || !alpha) ? '' : ' style="background:rgba(64,150,235,' + alpha.toFixed(2) + ')"';
+        out.push('<span class="heat-c"' + style + ' title="' +
+          days[dw] + ' ' + (hr < 10 ? '0' : '') + hr + ':00 · ' +
+          (val == null ? '无数据' : val + ' 人') + '"></span>');
+      }
+      out.push('</div>');
+    }
+    wrap.innerHTML = out.join('');
   }
 
   function renderEmpty(pg, ok, now) {
@@ -1174,7 +1788,11 @@
       'onerror="this.onerror=null;this.src=this.getAttribute(\'data-fb\')">' +
       '<div class="pf-id"><div class="pf-name">' + esc(nm || '未知玩家') + '</div>' +
       '<div class="pf-tags" id="pfTags"><span class="badge badge-muted">读取中…</span></div></div>' +
-      '<a class="btn btn-sm" href="#/rank" style="margin-left:auto;flex:none">排行榜</a>' +
+      '<div class="pf-act">' +
+      '<button class="btn btn-sm" id="pfCard" type="button">🖼️ 名片</button>' +
+      '<a class="btn btn-sm" href="#/vs/' + encodeURIComponent(nm) + '">⚖️ 对比</a>' +
+      '<a class="btn btn-sm" href="#/rank">排行榜</a>' +
+      '</div>' +
       '</div>' +
       '<div id="pfBody"><div class="empty"><div class="ico">⏳</div><p>正在读取玩家数据…</p></div></div>';
     container.appendChild(card);
@@ -1228,6 +1846,30 @@
       if (pt && pt.rank) tagHtml += '<span class="badge badge-green">在线时长第 ' + pt.rank + ' 名</span>';
       if (tags) tags.innerHTML = tagHtml;
 
+      /* ---- 名片按钮（数据到位后才绑，卡片要用 pt/bw） ---- */
+      var cardBtn = card.querySelector('#pfCard');
+      if (cardBtn) cardBtn.addEventListener('click', function () {
+        var label = cardBtn.textContent;
+        cardBtn.disabled = true; cardBtn.textContent = '生成中…';
+        var items = [];
+        if (pt) items.push(['在线时长', fmtDur(pt.total), pt.rank ? '第 ' + pt.rank + ' 名' : '']);
+        if (bw) items.push(['起床积分', String(bw.score != null ? bw.score : '—'), bw.rank ? '第 ' + bw.rank + ' 名' : '']);
+        if (bw) items.push(['胜率', (bw.winRate != null ? bw.winRate + '%' : '—'), (bw.wins || 0) + ' 胜 / ' + (bw.loses || 0) + ' 负']);
+        if (bw) items.push(['破床', String(bw.destroyedBeds != null ? bw.destroyedBeds : '—'), 'K/D ' + (bw.kd != null ? bw.kd : '—')]);
+        makePlayerCardBlob(nm, { online: isOn, rank: pt && pt.rank, items: items }).then(function (blob) {
+          var url = URL.createObjectURL(blob);
+          var a = document.createElement('a');
+          a.href = url;
+          a.download = nm + '-名片.png';
+          document.body.appendChild(a); a.click(); a.remove();
+          setTimeout(function () { URL.revokeObjectURL(url); }, 6000);
+          cardBtn.disabled = false; cardBtn.textContent = label;
+        }).catch(function () {
+          cardBtn.disabled = false; cardBtn.textContent = label;
+          toast('名片生成失败，换个浏览器试试');
+        });
+      });
+
       /* ---- 指标卡 ---- */
       var html = '';
       if (pt) {
@@ -1279,6 +1921,112 @@
     }).catch(function () {
       if (body) body.innerHTML = emptyState('📡', '玩家数据加载失败，请稍后刷新');
     });
+  }
+
+  /* --- 玩家对比：#/vs/a/b --- */
+  function renderVs(container, _p, params) {
+    var arr = params || [];
+    var n1 = String(arr[0] || '').trim(), n2 = String(arr[1] || '').trim();
+    container.innerHTML = pageHead('首页', '玩家对比', '两个人的在线时长与起床战绩并排看，谁更肝一目了然');
+    var box = el('div', 'card');
+    container.appendChild(box);
+    if (!n1) {
+      box.innerHTML = '<div class="empty"><div class="ico">⚖️</div><p>用法：<code>#/vs/玩家A/玩家B</code></p>' +
+        '<p style="font-size:13px">在玩家主页点「⚖️ 对比」就会打开这里。</p></div>';
+      return;
+    }
+    if (!n2) {
+      /* 只给了一个人：让他挑对手 */
+      box.innerHTML = '<div class="vs-pick"><img class="vs-av" src="' + avatarUrl(n1, 80) + '" alt="" ' +
+        'data-fb="' + identicon(n1) + '" onerror="this.onerror=null;this.src=this.getAttribute(\'data-fb\')">' +
+        '<div class="vs-pick-main"><div class="vs-pick-t">' + esc(n1) + ' 要和谁比？</div>' +
+        '<div class="rf-row" style="margin-top:10px">' +
+        '<select id="vsPick" class="vs-select"></select>' +
+        '<button class="btn btn-primary btn-sm" id="vsGo" type="button">开始对比</button></div></div></div>';
+      getJsonFile('playtime.json').then(function (d) {
+        var sel = box.querySelector('#vsPick');
+        if (!sel) return;
+        var list = ((d && d.players) || []).filter(function (p) {
+          return String(p.name).toLowerCase() !== n1.toLowerCase();
+        });
+        sel.innerHTML = list.length
+          ? list.map(function (p) { return '<option value="' + esc(p.name) + '">' + esc(p.name) + '（' + fmtDur(p.total) + '）</option>'; }).join('')
+          : '<option value="">还没有别的玩家</option>';
+      });
+      box.querySelector('#vsGo').addEventListener('click', function () {
+        var v = box.querySelector('#vsPick').value;
+        if (!v) return;
+        location.hash = '#/vs/' + encodeURIComponent(n1) + '/' + encodeURIComponent(v);
+      });
+      return;
+    }
+    box.innerHTML = '<div class="empty"><div class="ico">⏳</div><p>正在对比…</p></div>';
+
+    Promise.all([getJsonFile('playtime.json'), getJsonFile('bedwars.json'),
+                 getJsonFile('online.json'), getJsonFile('forum.json')]).then(function (r) {
+      function find(list, n) {
+        var k = String(n).toLowerCase();
+        for (var i = 0; i < list.length; i++) if (String(list[i].name || list[i].author || '').toLowerCase() === k) return list[i];
+        return null;
+      }
+      var ptA = find((r[0] && r[0].players) || [], n1), ptB = find((r[0] && r[0].players) || [], n2);
+      var bwA = find((r[1] && r[1].players) || [], n1), bwB = find((r[1] && r[1].players) || [], n2);
+      var onA = ((r[2] && r[2].players) || []).some(function (x) { return String(x).toLowerCase() === n1.toLowerCase(); });
+      var onB = ((r[2] && r[2].players) || []).some(function (x) { return String(x).toLowerCase() === n2.toLowerCase(); });
+      var posts = (r[3] && r[3].posts) || [];
+      function postCount(n) {
+        return posts.filter(function (p) {
+          if (String(p.author || '').toLowerCase() === n.toLowerCase()) return true;
+          return (p.author_names || []).some(function (x) { return String(x).toLowerCase() === n.toLowerCase(); });
+        }).length;
+      }
+
+      function head(nm, on) {
+        return '<div class="vs-side">' +
+          '<img class="vs-av" src="' + avatarUrl(nm, 80) + '" alt="" data-fb="' + identicon(nm) + '" ' +
+          'onerror="this.onerror=null;this.src=this.getAttribute(\'data-fb\')">' +
+          '<a class="vs-name" href="#/p/' + encodeURIComponent(nm) + '">' + esc(nm) + '</a>' +
+          '<span class="status-pill ' + (on ? 'on' : 'off') + '">' + (on ? '● 在线' : '● 离线') + '</span>' +
+          '</div>';
+      }
+
+      var rows = [
+        ['总时长', ptA && ptA.total, ptB && ptB.total, 'dur'],
+        ['本周', ptA && ptA.week, ptB && ptB.week, 'dur'],
+        ['本月', ptA && ptA.month, ptB && ptB.month, 'dur'],
+        ['起床积分', bwA && bwA.score, bwB && bwB.score, 'num'],
+        ['胜率', bwA && bwA.winRate, bwB && bwB.winRate, 'pct'],
+        ['K/D', bwA && bwA.kd, bwB && bwB.kd, 'dec'],
+        ['破床', bwA && bwA.destroyedBeds, bwB && bwB.destroyedBeds, 'num'],
+        ['论坛发帖', postCount(n1), postCount(n2), 'num']
+      ];
+
+      function cell(v, kind, win) {
+        if (v == null) return '<td class="vs-v">—</td>';
+        var txt = kind === 'dur' ? fmtDur(v) : (kind === 'pct' ? v + '%' : (kind === 'dec' ? (Math.round(Number(v) * 100) / 100) : v));
+        return '<td class="vs-v' + (win ? ' is-win' : '') + '">' + txt + '</td>';
+      }
+
+      var html = '<div class="vs-head">' + head(n1, onA) +
+        '<div class="vs-mid">VS</div>' + head(n2, onB) + '</div><table class="vs-table"><tbody>';
+      rows.forEach(function (row) {
+        var va = row[1], vb = row[2];
+        var winner = (typeof va === 'number' && typeof vb === 'number') ? (va > vb ? 1 : (vb > va ? 2 : 0)) : 0;
+        html += '<tr><th>' + row[0] + '</th>' + cell(va, row[3], winner === 1) +
+          cell(vb, row[3], winner === 2) + '</tr>';
+      });
+      html += '</tbody></table><p class="vs-tip">高亮的是数值更高的一方；数据来自服务器定时导出。</p>';
+      box.innerHTML = html;
+    }).catch(function () {
+      box.innerHTML = emptyState('📡', '对比数据加载失败，请稍后刷新');
+    });
+  }
+
+  /* 简单的 JSON 读取（多处复用） */
+  function getJsonFile(f) {
+    return fetch(f + '?_=' + Date.now(), { cache: 'no-store' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .catch(function () { return null; });
   }
 
   /* --- 在线状态页（在线玩家 ID + 头像） --- */
@@ -1536,7 +2284,9 @@
     var box = el('div', 'card'); container.appendChild(box);
     box.innerHTML = '<div class="rank-tabs" style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">' +
       '<button class="btn btn-sm rank-tab btn-primary" data-tab="play" type="button">🕒 在线时长</button>' +
+      '<button class="btn btn-sm rank-tab" data-tab="prog" type="button">📈 进步榜</button>' +
       '<button class="btn btn-sm rank-tab" data-tab="bw" type="button">⚔️ 起床战绩</button>' +
+      '<button class="btn btn-sm rank-tab" data-tab="lab" type="button">🧪 战力实验室</button>' +
       '<button class="btn btn-sm rank-tab" data-tab="forum" type="button">💬 论坛活跃</button>' +
       '<button class="btn btn-sm rank-tab" data-tab="build" type="button">🏛️ 建筑作品</button>' +
       '<button class="btn btn-sm rank-tab" data-tab="ach" type="button">🏅 成就</button>' +
@@ -1725,7 +2475,132 @@
       });
     }
 
-    var TAB_FN = { play: showPlay, bw: showBw, forum: showForum, build: showBuilds, ach: showAch };
+    /* 进步榜：总时长榜被老人永久占据，这里按「本周 / 本月增量」排，新人才有奔头 */
+    function showProg() {
+      body.innerHTML =
+        '<div class="seg" id="progSeg">' +
+        '<button class="seg-btn on" data-r="week" type="button">本周</button>' +
+        '<button class="seg-btn" data-r="month" type="button">本月</button>' +
+        '</div>' +
+        '<div id="progMeta" style="font-size:13px;color:var(--muted-foreground);margin-bottom:14px">加载中…</div>' +
+        '<div id="progList"></div>';
+      var list = body.querySelector('#progList');
+      var meta = body.querySelector('#progMeta');
+      var range = 'week', data = null;
+
+      function draw() {
+        if (!data) return;
+        var arr = (data.players || []).filter(function (p) { return Number(p[range] || 0) > 0; })
+          .sort(function (a, b) { return Number(b[range]) - Number(a[range]); });
+        if (!arr.length) {
+          list.innerHTML = emptyState('📈', (range === 'week' ? '本周' : '本月') + '还没有人上线过');
+          return;
+        }
+        var top = Number(arr[0][range]) || 1;
+        meta.textContent = '共 ' + arr.length + ' 人' + (range === 'week' ? '本周' : '本月') +
+          '上线过 · 按增量排，和总时长榜无关';
+        list.innerHTML = arr.slice(0, 30).map(function (p, i) {
+          var sub = '累计 ' + fmtDur(p.total) + (p.rank ? ' · 总榜第 ' + p.rank + ' 名' : '');
+          return rankRow(i + 1, p.name, '+' + fmtDur(p[range]), sub,
+            Math.max(4, Math.round(Number(p[range]) / top * 100)));
+        }).join('');
+      }
+
+      body.querySelectorAll('#progSeg .seg-btn').forEach(function (b) {
+        b.addEventListener('click', function () {
+          body.querySelectorAll('#progSeg .seg-btn').forEach(function (x) { x.classList.remove('on'); });
+          b.classList.add('on');
+          range = b.getAttribute('data-r');
+          draw();
+        });
+      });
+
+      fetch('playtime.json?_=' + Date.now(), { cache: 'no-store' })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (d) {
+          if (!d || !Array.isArray(d.players)) { list.innerHTML = emptyState('📡', '数据加载失败'); meta.textContent = ''; return; }
+          data = d;
+          draw();
+        })
+        .catch(function () { list.innerHTML = emptyState('📡', '数据加载失败'); });
+    }
+
+    /* 战力实验室：胜率 × K/D 散点图，一眼看出自己站在哪个象限 */
+    function showLab() {
+      body.innerHTML = '<div id="labMeta" style="font-size:13px;color:var(--muted-foreground);margin-bottom:14px">加载中…</div>' +
+        '<div class="lab-wrap" id="labWrap"></div>';
+      var wrap = body.querySelector('#labWrap');
+      var meta = body.querySelector('#labMeta');
+
+      fetch('bedwars.json?_=' + Date.now(), { cache: 'no-store' })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (d) {
+          var arr = ((d && d.players) || []).filter(function (p) {
+            return (Number(p.wins || 0) + Number(p.loses || 0)) >= 1 && p.winRate != null;
+          });
+          if (arr.length < 3) {
+            wrap.innerHTML = emptyState('🧪', '参与起床战争的玩家还不够多，多打几局再看');
+            meta.textContent = '';
+            return;
+          }
+          meta.textContent = '共 ' + arr.length + ' 人 · 横轴胜率，纵轴 K/D；点越大积分越高，鼠标悬停看名字';
+
+          var W = 720, H = 420, padL = 52, padR = 18, padT = 18, padB = 46;
+          var maxKd = Math.max(2, Math.min(8, Math.ceil(Math.max.apply(null, arr.map(function (p) {
+            return Math.min(8, Number(p.kd) || 0);
+          })) * 1.1)));
+          var maxScore = Math.max(1, Math.max.apply(null, arr.map(function (p) { return Number(p.score) || 0; })));
+
+          function X(rate) { return padL + (W - padL - padR) * (Math.max(0, Math.min(100, rate)) / 100); }
+          function Y(kd) { return H - padB - (H - padT - padB) * (Math.max(0, Math.min(maxKd, kd)) / maxKd); }
+
+          var s = ['<svg viewBox="0 0 ' + W + ' ' + H + '" class="lab-svg" preserveAspectRatio="xMidYMid meet">'];
+          // 网格
+          for (var gx = 0; gx <= 4; gx++) {
+            var xv = gx * 25;
+            s.push('<line x1="' + X(xv) + '" y1="' + padT + '" x2="' + X(xv) + '" y2="' + (H - padB) + '" stroke="currentColor" stroke-opacity=".12"/>');
+            s.push('<text x="' + X(xv) + '" y="' + (H - padB + 16) + '" text-anchor="middle" font-size="11" fill="currentColor" fill-opacity=".6">' + xv + '%</text>');
+          }
+          for (var gy = 0; gy <= 4; gy++) {
+            var yv = maxKd * gy / 4;
+            s.push('<line x1="' + padL + '" y1="' + Y(yv) + '" x2="' + (W - padR) + '" y2="' + Y(yv) + '" stroke="currentColor" stroke-opacity=".12"/>');
+            s.push('<text x="' + (padL - 8) + '" y="' + (Y(yv) + 4) + '" text-anchor="end" font-size="11" fill="currentColor" fill-opacity=".6">' + (Math.round(yv * 10) / 10) + '</text>');
+          }
+          // 分界虚线：胜率 50% / K/D 1.5
+          s.push('<line x1="' + X(50) + '" y1="' + padT + '" x2="' + X(50) + '" y2="' + (H - padB) + '" stroke="currentColor" stroke-opacity=".25" stroke-dasharray="4 4"/>');
+          s.push('<line x1="' + padL + '" y1="' + Y(1.5) + '" x2="' + (W - padR) + '" y2="' + Y(1.5) + '" stroke="currentColor" stroke-opacity=".25" stroke-dasharray="4 4"/>');
+          // 象限标签
+          var qs = [
+            ['孤狼型 · 能打但常输', X(25), Y(maxKd * 0.92)],
+            ['全能王', X(75), Y(maxKd * 0.92)],
+            ['萌新保护区', X(25), Y(maxKd * 0.06)],
+            ['守家型 · 稳但少打架', X(75), Y(maxKd * 0.06)]
+          ];
+          qs.forEach(function (q) {
+            s.push('<text x="' + q[1] + '" y="' + q[2] + '" text-anchor="middle" font-size="11.5" font-weight="700" fill="currentColor" fill-opacity=".32">' + q[0] + '</text>');
+          });
+          // 散点
+          arr.forEach(function (p) {
+            var kd = Math.min(maxKd, Number(p.kd) || 0);
+            var r = 4 + 6 * Math.sqrt((Number(p.score) || 0) / maxScore);
+            s.push('<circle cx="' + X(Number(p.winRate)) + '" cy="' + Y(kd) + '" r="' + r.toFixed(1) + '" ' +
+              'fill="var(--primary)" fill-opacity=".55" stroke="var(--primary)" stroke-opacity=".9" stroke-width="1">' +
+              '<title>' + esc(p.name) + ' · 胜率 ' + p.winRate + '% · K/D ' + kd + ' · 积分 ' + (p.score || 0) + '</title></circle>');
+          });
+          // 标注积分前 3
+          arr.slice().sort(function (a, b) { return (b.score || 0) - (a.score || 0); }).slice(0, 3).forEach(function (p) {
+            var kd = Math.min(maxKd, Number(p.kd) || 0);
+            s.push('<text x="' + X(Number(p.winRate)) + '" y="' + (Y(kd) - 12) + '" text-anchor="middle" font-size="11" font-weight="700" fill="currentColor" fill-opacity=".75">' + esc(p.name) + '</text>');
+          });
+          s.push('<text x="' + (W / 2) + '" y="' + (H - 8) + '" text-anchor="middle" font-size="11.5" fill="currentColor" fill-opacity=".55">胜率 →</text>');
+          s.push('<text x="14" y="' + (H / 2) + '" text-anchor="middle" font-size="11.5" fill="currentColor" fill-opacity=".55" transform="rotate(-90 14 ' + (H / 2) + ')">K/D →</text>');
+          s.push('</svg>');
+          wrap.innerHTML = s.join('');
+        })
+        .catch(function () { wrap.innerHTML = emptyState('📡', '战绩加载失败'); });
+    }
+
+    var TAB_FN = { play: showPlay, prog: showProg, bw: showBw, lab: showLab, forum: showForum, build: showBuilds, ach: showAch };
     box.querySelectorAll('.rank-tab').forEach(function (btn) {
       btn.addEventListener('click', function () {
         box.querySelectorAll('.rank-tab').forEach(function (b) { b.classList.remove('btn-primary'); });
@@ -1790,6 +2665,7 @@
             }
           });
         }
+        applyPendingScroll();   // 从搜索跳过来的，滚到对应条目
       })
       .catch(function () {
         wrap.innerHTML = emptyState('📖', 'Wiki 加载失败，稍后再试');
@@ -2605,6 +3481,303 @@
     });
   }
 
+  /* ================= 每周战报 ================= */
+  function weekStartMs(now) {
+    var d = new Date(now || Date.now());
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() - ((d.getDay() + 6) % 7));   // 周一为一周开始
+    return d.getTime();
+  }
+  function mdText(ms) {
+    var d = new Date(ms);
+    return (d.getMonth() + 1) + ' 月 ' + d.getDate() + ' 日';
+  }
+
+  function renderWeekly(container) {
+    var ws = weekStartMs();
+    container.innerHTML = pageHead('首页', '本周战报',
+      mdText(ws) + ' 起这一周，服务器上发生的事都在这；可以一键复制成文字发群里');
+    var card = el('div', 'card');
+    card.innerHTML = '<div class="empty"><div class="ico">📊</div><p>正在统计…</p></div>';
+    container.appendChild(card);
+
+    Promise.all([getJsonFile('playtime.json'), getJsonFile('bedwars.json'), getJsonFile('forum.json')])
+      .then(function (r) {
+        var pt = (r[0] && r[0].players) || [];
+        var bw = (r[1] && r[1].players) || [];
+        var posts = ((r[2] && r[2].posts) || []).filter(function (p) { return Number(p.created) >= ws; });
+
+        var active = pt.filter(function (p) { return Number(p.week || 0) > 0; });
+        var totalWeek = active.reduce(function (s, p) { return s + Number(p.week || 0); }, 0);
+
+        function top(arr, key, n) {
+          return arr.slice().filter(function (x) { return Number(x[key] || 0) > 0; })
+            .sort(function (a, b) { return Number(b[key]) - Number(a[key]); }).slice(0, n || 5);
+        }
+
+        /* 起床战争本周：没有时间维度，只能给累计榜（说明清楚，不冒充周数据） */
+        var bwTop = top(bw, 'score', 5);
+        var bedTop = top(bw, 'destroyedBeds', 5);
+
+        var postAuthors = {};
+        posts.forEach(function (p) {
+          var k = p.author || '未知';
+          postAuthors[k] = (postAuthors[k] || 0) + 1;
+        });
+        var postTop = Object.keys(postAuthors).map(function (k) { return { name: k, n: postAuthors[k] }; })
+          .sort(function (a, b) { return b.n - a.n; }).slice(0, 5);
+
+        var weekTop = top(active, 'week', 5);
+
+        var html = '<div class="wk-hero">' +
+          '<div class="wk-big"><b>' + esc(mdText(ws)) + ' 起</b><span>统计区间</span></div>' +
+          '<div class="wk-big"><b>' + active.length + '</b><span>本周上线人数</span></div>' +
+          '<div class="wk-big"><b>' + fmtDur(totalWeek) + '</b><span>本周总在线</span></div>' +
+          '<div class="wk-big"><b>' + posts.length + '</b><span>本周新帖</span></div>' +
+          '</div>';
+
+        html += '<div class="wk-cols">';
+
+        html += '<div class="wk-col"><h4>⏱️ 本周在线时长 Top 5</h4>' +
+          (weekTop.length ? weekTop.map(function (p, i) {
+            return '<div class="wk-row"><span class="wk-rk">' + (i + 1) + '</span>' +
+              '<a class="wk-nm" href="#/p/' + encodeURIComponent(p.name) + '">' + esc(p.name) + '</a>' +
+              '<span class="wk-v">' + fmtDur(p.week) + '</span></div>';
+          }).join('') : '<div class="wk-none">本周还没人上线</div>') + '</div>';
+
+        html += '<div class="wk-col"><h4>💬 本周发帖最多</h4>' +
+          (postTop.length ? postTop.map(function (p, i) {
+            return '<div class="wk-row"><span class="wk-rk">' + (i + 1) + '</span>' +
+              '<span class="wk-nm">' + esc(p.name) + '</span>' +
+              '<span class="wk-v">' + p.n + ' 帖</span></div>';
+          }).join('') : '<div class="wk-none">本周还没有新帖</div>') + '</div>';
+
+        html += '<div class="wk-col"><h4>🧮 起床积分榜（累计）</h4>' +
+          (bwTop.length ? bwTop.map(function (p, i) {
+            return '<div class="wk-row"><span class="wk-rk">' + (i + 1) + '</span>' +
+              '<a class="wk-nm" href="#/p/' + encodeURIComponent(p.name) + '">' + esc(p.name) + '</a>' +
+              '<span class="wk-v">' + p.score + ' 分</span></div>';
+          }).join('') : '<div class="wk-none">暂无数据</div>') + '</div>';
+
+        html += '<div class="wk-col"><h4>🛏️ 破床榜（累计）</h4>' +
+          (bedTop.length ? bedTop.map(function (p, i) {
+            return '<div class="wk-row"><span class="wk-rk">' + (i + 1) + '</span>' +
+              '<a class="wk-nm" href="#/p/' + encodeURIComponent(p.name) + '">' + esc(p.name) + '</a>' +
+              '<span class="wk-v">' + p.destroyedBeds + ' 张</span></div>';
+          }).join('') : '<div class="wk-none">暂无数据</div>') + '</div>';
+
+        html += '</div>';
+
+        /* 一键复制成纯文本，方便发群里 */
+        var lines = ['【' + SITE.name + ' 本周战报】' + mdText(ws) + ' 起',
+          '上线 ' + active.length + ' 人，累计在线 ' + fmtDur(totalWeek) + '，新帖 ' + posts.length + ' 篇'];
+        if (weekTop.length) lines.push('肝得最猛：' + weekTop.map(function (p) { return p.name + ' ' + fmtDur(p.week); }).join('、'));
+        if (postTop.length) lines.push('发帖最多：' + postTop.map(function (p) { return p.name + ' ' + p.n + ' 帖'; }).join('、'));
+        html += '<div class="wk-foot"><button class="btn btn-sm btn-outline" id="wkCopy" type="button">复制战报文字</button>' +
+          '<span class="wk-tip">起床积分/破床没有时间维度，展示的是累计榜</span></div>';
+
+        card.innerHTML = html;
+        var btn = card.querySelector('#wkCopy');
+        if (btn) btn.addEventListener('click', function () { copyText(lines.join('\n'), btn, '战报'); });
+      })
+      .catch(function () { card.innerHTML = emptyState('📡', '战报数据加载失败，请稍后刷新'); });
+  }
+
+  /* ================= 活动日历（读服务端导出的 events.json，可导出 .ics） ================= */
+  function icsEsc(s) {
+    return String(s == null ? '' : s)
+      .replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,')
+      .replace(/\r?\n/g, '\\n');
+  }
+  function icsStamp(ms) {
+    var d = new Date(Number(ms) || Date.now());
+    function p(n) { return (n < 10 ? '0' : '') + n; }
+    return d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) + 'T' +
+      p(d.getHours()) + p(d.getMinutes()) + '00';
+  }
+  /* iCalendar 规定每行不超过 75 字节，超了要折行（续行以空格开头） */
+  function icsFold(line) {
+    var out = '', buf = '';
+    for (var i = 0; i < line.length; i++) {
+      var ch = line[i];
+      if (buf.length + ch.length > 72) { out += buf + '\r\n '; buf = ''; }
+      buf += ch;
+    }
+    return out + buf;
+  }
+  function buildIcs(events) {
+    var L = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Stone Logic//Events//CN',
+      'CALSCALE:GREGORIAN', 'METHOD:PUBLISH',
+      'X-WR-CALNAME:' + icsEsc(SITE.name + ' 活动日历'),
+      'X-WR-TIMEZONE:Asia/Shanghai'];
+    events.forEach(function (e) {
+      var end = e.end && e.end > e.start ? e.end : (e.start + 3600000);
+      L.push('BEGIN:VEVENT');
+      L.push('UID:stl-ev-' + (e.id || e.start) + '@stonelogic');
+      L.push('DTSTAMP:' + icsStamp(Date.now()));
+      L.push('DTSTART:' + icsStamp(e.start));
+      L.push('DTEND:' + icsStamp(end));
+      L.push('SUMMARY:' + icsEsc(e.title || '活动'));
+      if (e.desc) L.push('DESCRIPTION:' + icsEsc(e.desc));
+      if (e.reward) L.push('DESCRIPTION:' + icsEsc('奖励：' + e.reward));
+      L.push('STATUS:CONFIRMED');
+      L.push('END:VEVENT');
+    });
+    L.push('END:VCALENDAR');
+    return L.map(icsFold).join('\r\n') + '\r\n';
+  }
+
+  function renderEvents(container) {
+    container.innerHTML = pageHead('首页', '活动日历',
+      '服务器赛事与活动安排；可以导出成日历文件，一次性导入手机日历');
+    var card = el('div', 'card');
+    card.innerHTML = '<div class="empty"><div class="ico">📅</div><p>正在加载活动…</p></div>';
+    container.appendChild(card);
+
+    getJsonFile('events.json').then(function (d) {
+      var list = (d && Array.isArray(d.events)) ? d.events : [];
+      if (!list.length) {
+        card.innerHTML = emptyState('📅', '还没有安排活动。腐竹在后台加赛事后，这里会自动出现');
+        return;
+      }
+      var IC = { ongoing: '进行中', upcoming: '即将开始', ended: '已结束' };
+      var CLS = { ongoing: 'is-on', upcoming: 'is-up', ended: 'is-end' };
+      var groups = { ongoing: [], upcoming: [], ended: [] };
+      list.forEach(function (e) { (groups[e.status] || groups.upcoming).push(e); });
+
+      function fmtRange(e) {
+        var s = new Date(e.start), en = new Date(e.end || e.start);
+        function hm(x) { var h = x.getHours(), m = x.getMinutes(); return (h < 10 ? '0' : '') + h + ':' + (m < 10 ? '0' : '') + m; }
+        if (!e.end || e.end === e.start) return mdText(e.start) + ' ' + hm(s);
+        if (s.toDateString() === en.toDateString()) return mdText(e.start) + ' ' + hm(s) + ' – ' + hm(en);
+        return mdText(e.start) + ' ' + hm(s) + ' – ' + mdText(e.end) + ' ' + hm(en);
+      }
+
+      var html = '<div class="ev-bar">' +
+        '<button class="btn btn-sm btn-primary" id="evIcs" type="button">下载日历 (.ics)</button>' +
+        '<button class="btn btn-sm btn-outline" id="evCopy" type="button">复制为文本</button>' +
+        '<span class="ev-note">共 ' + list.length + ' 项 · ' +
+        (groups.ongoing.length + groups.upcoming.length) + ' 项待参与</span></div>';
+
+      ['ongoing', 'upcoming', 'ended'].forEach(function (k) {
+        if (!groups[k].length) return;
+        html += '<h4 class="ev-h4">' + IC[k] + '</h4>';
+        html += groups[k].map(function (e) {
+          return '<div class="ev-card ' + (CLS[k] || '') + '">' +
+            '<div class="ev-when">' + esc(fmtRange(e)) + '</div>' +
+            '<div class="ev-title">' + esc(e.title || '活动') + '</div>' +
+            (e.desc ? '<div class="ev-desc">' + esc(e.desc) + '</div>' : '') +
+            (e.reward ? '<div class="ev-reward">🎁 ' + esc(e.reward) + '</div>' : '') +
+            '</div>';
+        }).join('');
+      });
+      card.innerHTML = html;
+
+      var icsBtn = card.querySelector('#evIcs');
+      if (icsBtn) icsBtn.addEventListener('click', function () {
+        var ics = buildIcs(list);
+        var blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url; a.download = 'stone-logic-events.ics';
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+        toast('日历文件已下载，双击导入即可');
+      });
+
+      var cpBtn = card.querySelector('#evCopy');
+      if (cpBtn) cpBtn.addEventListener('click', function () {
+        var txt = list.map(function (e) {
+          return '· ' + e.title + ' · ' + fmtRange(e) + (e.desc ? '（' + e.desc + '）' : '');
+        }).join('\n');
+        copyText('【' + SITE.name + ' 活动安排】\n' + txt, cpBtn, '活动列表');
+      });
+    }).catch(function () {
+      card.innerHTML = emptyState('📡', '活动数据加载失败，请稍后刷新');
+    });
+  }
+
+  /* ================= 公开健康页（读服务端每分钟导出的 health.json） ================= */
+  function renderHealth(container) {
+    container.innerHTML = pageHead('首页', '服务器体检',
+      '每 1 分钟自检一次：端口探活、在线数据新鲜度、进程内存、历史告警');
+    var card = el('div', 'card');
+    card.innerHTML = '<div class="empty"><div class="ico">🩺</div><p>正在读取体检结果…</p></div>';
+    container.appendChild(card);
+
+    var timer = 0;
+    function draw() {
+      var rid = randomHex(8);
+      postBus({ type: 'healthQuery', rid: rid });
+      waitBus(rid, ['healthOk', 'healthErr'], function (h) {
+        if (!h || h.type === 'healthErr') {
+          /* 本地直连服务托管时，退回同源接口 */
+          fetch('healthz', { cache: 'no-store' })
+            .then(function (r) { return r.json(); })
+            .then(function (d) { if (d && (d.updated || d.problems)) paint(d); else fail(); })
+            .catch(fail);
+          return;
+        }
+        paint(h);
+      });
+    }
+    function fail() {
+      card.innerHTML = emptyState('📡', '体检服务没响应，可能采集进程未运行');
+    }
+    function paint(h) {
+      if (!h || !h.updated) { fail(); return; }
+      {
+        var ok = !!h.ok;
+        var self = h.self || {}, sv = h.server || {};
+        var age = Math.round((Date.now() - Number(h.updated)) / 1000);
+
+        var html = '<div class="hl-top ' + (ok ? 'is-ok' : 'is-bad') + '">' +
+          '<span class="hl-dot"></span>' +
+          '<div><div class="hl-tt">' + (ok ? '一切正常' : '有情况需要关注') + '</div>' +
+          '<div class="hl-sub">' + (ok ? '端口、在线数据、内存都在正常范围' :
+            esc((h.problems || []).join(' · ') || '未知问题')) + '</div></div>' +
+          '<span class="hl-age">' + (age < 90 ? '刚刚更新' : Math.round(age / 60) + ' 分钟前更新') + '</span>' +
+          '</div>';
+
+        html += '<div class="hl-grid">' +
+          '<div class="hl-cell"><b>' + (sv.online ? sv.players + ' / ' + sv.max : '离线') + '</b><span>在线人数</span></div>' +
+          '<div class="hl-cell"><b>' + (self.rssMb != null ? self.rssMb + ' MB' : '—') + '</b><span>进程内存</span></div>' +
+          '<div class="hl-cell"><b>' + (self.uptimeText || '—') + '</b><span>运行时长</span></div>' +
+          '<div class="hl-cell"><b>' + (sv.dataAgeSec != null ? (sv.dataAgeSec < 60 ? Math.round(sv.dataAgeSec) + ' 秒' : Math.round(sv.dataAgeSec / 60) + ' 分钟') : '—') + '</b><span>在线数据新鲜度</span></div>' +
+          '</div>';
+
+        if ((h.ports || []).length) {
+          html += '<h4 class="hl-h4">端口探活</h4><div class="hl-ports">' +
+            h.ports.map(function (p) {
+              return '<div class="hl-port ' + (p.up ? 'up' : 'down') + '">' +
+                '<span class="hl-pdot"></span>' + esc(p.name) +
+                '<i>:' + p.port + '</i><b>' + (p.up ? '正常' : '无响应 ' + (p.fails || 0) + ' 次') + '</b></div>';
+            }).join('') + '</div>';
+        }
+
+        if (h.heat && h.heat.total) {
+          html += '<div class="hl-line">在线热力图已累积 <b>' + h.heat.filled + ' / ' + h.heat.total +
+            '</b> 格样本 · <a href="#/status">去状态页看</a></div>';
+        }
+
+        if ((h.alarms || []).length) {
+          html += '<h4 class="hl-h4">最近告警</h4><div class="hl-alarms">' +
+            h.alarms.map(function (a) {
+              return '<div class="hl-alarm"><span>' + fmtTime(a.t) + '</span>' + esc(a.text || '') + '</div>';
+            }).join('') + '</div>';
+        } else {
+          html += '<div class="hl-line">最近没有告警记录。</div>';
+        }
+
+        html += '<p class="hl-foot">这是服务器自检结果，每分钟刷新；同一份数据也提供 <code>/healthz</code> 接口，方便接监控。</p>';
+        card.innerHTML = html;
+      }
+    }
+    draw();
+    clearInterval(timer);
+    timer = setInterval(draw, 60000);
+  }
+
   var routes = {
     '/': renderHome,
     '/status': renderStatus,
@@ -2618,6 +3791,9 @@
     '/appeal': renderAppeal,
     '/news': renderNews,
     '/wiki': renderWiki,
+    '/weekly': renderWeekly,
+    '/events': renderEvents,
+    '/health': renderHealth,
     '/me': renderMe
   };
 
@@ -2631,6 +3807,13 @@
       var who = path.slice(3);
       try { who = decodeURIComponent(who); } catch (e) {}
       return { page: renderPlayer, param: who };
+    }
+    // 玩家对比：/vs/<A>/<B>
+    if (path.indexOf('/vs/') === 0) {
+      var seg = path.split('/');
+      var p1 = seg[2] || '', p2 = seg[3] || '';
+      try { p1 = decodeURIComponent(p1); p2 = decodeURIComponent(p2); } catch (e) {}
+      return { page: renderVs, params: [p1, p2] };
     }
     if (path === '/forum/new') return { page: renderForumNew, param: '' };
     if (path === '/forum') return { page: renderForum, param: '' };
@@ -2666,7 +3849,7 @@
     var path = (location.hash || '#/').replace(/^#/, '');
     if (!path) path = '/';
     renderNav(path);
-    r.page(main, r.param);
+    r.page(main, r.param, r.params);
     window.scrollTo(0, 0);
     syncTopbarOverHero();
   }
@@ -2721,6 +3904,7 @@
 
   function init() {
     initTheme();
+    initSearch();
     syncFooter();
     $id('footerYear').textContent = new Date().getFullYear();
     window.addEventListener('hashchange', render);
