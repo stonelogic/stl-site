@@ -964,6 +964,7 @@
       '<span class="live-badge" id="heroLive" title="服务器状态"><i class="live-dot"></i><span class="live-txt">状态检测中…</span></span>' +
       '</div>' +
       '<a class="hero-online" id="heroOnline" href="#/online">查看在线玩家 <span class="ho-arrow">→</span></a>' +
+      '<p class="hero-online-hint">飘动的小雪花是来自各个地方的玩家，点击看看他们是谁吧！</p>' +
       '</div>' +
       '<button class="hero-scroll" id="heroScroll" type="button" aria-label="向下浏览玩法特色">' + SVG.chevron + '</button>' +
       '<div class="hero-glow"></div>';

@@ -202,6 +202,18 @@ code{font-family:ui-monospace,Consolas,Menlo,monospace}
 .hero-online strong{color:var(--primary);font-size:18px;margin:0 2px}
 .ho-arrow{transition:transform .18s}
 .hero-online:hover .ho-arrow{transform:translateX(4px)}
+/* 雪花说明：比上面那条链接轻一档，别抢主文案的注意力；
+   宽度收在 26em 内，窄屏最多折两行 */
+.hero-online-hint{
+  margin:8px auto 0;max-width:min(92vw,34em);text-wrap:balance;
+  font-size:12.5px;line-height:1.65;font-weight:600;letter-spacing:.01em;
+  color:color-mix(in oklab,var(--foreground) 56%,transparent);
+  text-shadow:0 1px 0 rgba(255,255,255,.3);
+  animation:stlFadeUp .6s .46s both;
+}
+[data-theme="dark"] .hero-online-hint{color:color-mix(in oklab,var(--foreground) 60%,transparent);text-shadow:none}
+@media (max-width:560px){ .hero-online-hint{font-size:12px;max-width:min(94vw,24em)} }
+@media (prefers-reduced-motion: reduce){ .hero-online-hint{animation:none!important} }
 .hero-scroll{position:absolute;left:50%;bottom:clamp(16px,3.2vh,30px);transform:translateX(-50%);
   width:48px;height:48px;border-radius:50%;display:grid;place-items:center;cursor:pointer;z-index:4;
   border:2px solid color-mix(in oklab,var(--primary) 55%,transparent);
