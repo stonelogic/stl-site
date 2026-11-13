@@ -362,7 +362,15 @@
       tryAutoAuth();
       return;
     }
-    if (m.type === 'loginSent') { say(m.ok ? '验证码已发送到 QQ 私聊，请注意查收' : '该 QQ 没有绑定任何游戏账号', !m.ok); return; }
+    if (m.type === 'loginSent') {
+      if (!m.ok) { say('该 QQ 没有绑定任何游戏账号', true); return; }
+      if (m.delivered === false) {
+        say('验证码发不进你的 QQ。请到 QQ 群里点机器人头像发任意一条消息，我会立刻把验证码补发给你。', true);
+        return;
+      }
+      say('验证码已发送到 QQ 私聊，请注意查收');
+      return;
+    }
     if (m.type === 'loginFail') { say('登录失败：' + m.reason, true); return; }
     // 扫码登录：二维码已生成 / 手机确认完毕
     if (m.type === 'scanReady') { onScanReady(m); return; }
