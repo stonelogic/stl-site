@@ -1,5 +1,5 @@
 {
-  "generatedAt": 1794582540,
+  "generatedAt": 1794583440,
   "source": "cyutime",
   "count": 26,
   "players": [
@@ -44,20 +44,20 @@
       "year": 71100
     },
     {
-      "name": "qrnb",
+      "name": "Mmm",
       "rank": 6,
+      "total": 14723,
+      "month": 14256,
+      "week": 10942,
+      "year": 14723
+    },
+    {
+      "name": "qrnb",
+      "rank": 7,
       "total": 14715,
       "month": 2265,
       "week": 0,
       "year": 14715
-    },
-    {
-      "name": "Mmm",
-      "rank": 7,
-      "total": 13779,
-      "month": 13312,
-      "week": 9998,
-      "year": 13779
     },
     {
       "name": "lijidan",
