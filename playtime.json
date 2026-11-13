@@ -1,5 +1,5 @@
 {
-  "generatedAt": 1794576240,
+  "generatedAt": 1794577140,
   "source": "cyutime",
   "count": 26,
   "players": [
@@ -76,20 +76,20 @@
       "year": 9242
     },
     {
-      "name": "played",
+      "name": "Mmm",
       "rank": 10,
+      "total": 8469,
+      "month": 8002,
+      "week": 4688,
+      "year": 8469
+    },
+    {
+      "name": "played",
+      "rank": 11,
       "total": 7761,
       "month": 349,
       "week": 0,
       "year": 7761
-    },
-    {
-      "name": "Mmm",
-      "rank": 11,
-      "total": 7642,
-      "month": 7175,
-      "week": 3861,
-      "year": 7642
     },
     {
       "name": "win2016",
