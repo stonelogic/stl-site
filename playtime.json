@@ -1,5 +1,5 @@
 {
-  "generatedAt": 1794578940,
+  "generatedAt": 1794579840,
   "source": "cyutime",
   "count": 26,
   "players": [
@@ -60,20 +60,20 @@
       "year": 12998
     },
     {
-      "name": "GreatBreak5858",
+      "name": "Mmm",
       "rank": 8,
+      "total": 11183,
+      "month": 10716,
+      "week": 7402,
+      "year": 11183
+    },
+    {
+      "name": "GreatBreak5858",
+      "rank": 9,
       "total": 10761,
       "month": 0,
       "week": 0,
       "year": 10761
-    },
-    {
-      "name": "Mmm",
-      "rank": 9,
-      "total": 10238,
-      "month": 9771,
-      "week": 6457,
-      "year": 10238
     },
     {
       "name": "groxpro",
