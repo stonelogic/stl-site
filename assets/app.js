@@ -1763,7 +1763,7 @@
     }
     var html = players.map(function (name) {
       var face = avatarUrl(name, 96);
-      return '<div class="player-cell"><img src="' + face + '" alt="" loading="lazy" data-fb="' + identicon(name) + '" onerror="this.onerror=null;this.src=this.getAttribute(\'data-fb\')"><span class="nm">' + esc(name) + '</span></div>';
+      return '<div class="player-cell" data-name="' + esc(name) + '"><img src="' + face + '" alt="" loading="lazy" data-fb="' + identicon(name) + '" onerror="this.onerror=null;this.src=this.getAttribute(\'data-fb\')"><span class="nm">' + esc(name) + '</span></div>';
     }).join('');
     // 实时人数和名单条数对不上时说明原因（名单靠 RCON 导出，慢约 1 分钟），
     // 否则又会被当成「显示 3 人却只有 2 个头像」的 bug
@@ -2035,7 +2035,7 @@
 
   /* --- 在线状态页（在线玩家 ID + 头像） --- */
   function renderOnline(container) {
-    container.innerHTML = pageHead('在线', '在线状态', '状态自动刷新；玩家名单由服务端每 1 分钟同步');
+    container.innerHTML = pageHead('在线', '在线状态', '状态自动刷新；玩家名单每分钟同步，坐标按 100 格取整，只做大方向参考');
     var card = el('div', 'card'); container.appendChild(card);
     card.innerHTML = '<div style="display:flex;align-items:center;gap:14px;margin-bottom:16px;flex-wrap:wrap">' +
       '<span class="status-pill" id="olPill">检测中…</span>' +
@@ -2060,7 +2060,46 @@
       var ok = LIVE.known ? LIVE.ok : !!d.online;
       var age = d.updated ? Math.max(0, Math.round(Date.now() / 1000 - d.updated)) : -1;
       renderPlayerGrid(pg, d.players || [], ok, age);
+      loadWhere();          // 位置信息异步补上，晚到也不会挡住名单
       renderLive();
+    });
+  }
+
+  /* --- 玩家「现在在哪」：走总线问服务端，服务端用 RCON 查坐标并按 100 格取整 --- */
+  var WHERE = { at: 0, map: null, busy: false };
+
+  function applyWhere() {
+    if (!WHERE.map) return;
+    var cells = document.querySelectorAll('#olPlayers .player-cell');
+    for (var i = 0; i < cells.length; i++) {
+      var cell = cells[i];
+      var n = String(cell.getAttribute('data-name') || '').toLowerCase();
+      var it = WHERE.map[n];
+      if (!it || cell.querySelector('.where')) continue;
+      var s = document.createElement('span');
+      s.className = 'where';
+      s.title = it.dim + ' · 约 ' + it.x + ', ' + it.y + ', ' + it.z + '（按 ' +
+        '100 格取整，只做大方向参考）';
+      s.textContent = it.dim + ' · ' + it.x + ', ' + it.y + ', ' + it.z;
+      cell.appendChild(s);
+    }
+  }
+
+  function loadWhere() {
+    if (!document.getElementById('olPlayers')) return;
+    if (WHERE.map && Date.now() - WHERE.at < 60000) { applyWhere(); return; }
+    if (WHERE.busy) return;
+    WHERE.busy = true;
+    var rid = randomHex(8);
+    postBus({ type: 'whereQuery', rid: rid });
+    waitBus(rid, ['whereOk', 'whereErr'], function (m) {
+      WHERE.busy = false;
+      if (!m || m.type === 'whereErr' || !Array.isArray(m.items)) return;
+      var map = {};
+      m.items.forEach(function (it) { map[String(it.name || '').toLowerCase()] = it; });
+      WHERE.map = map;
+      WHERE.at = Date.now();
+      applyWhere();
     });
   }
 
@@ -2950,6 +2989,59 @@
     ];
   }
 
+  /* 每日签到：状态先问一次，签到时再走一遍总线（奖励由服务端 RCON 发到游戏里） */
+  function loadCheckin(box, sess) {
+    var sub = box.querySelector('#meChkSub');
+    var act = box.querySelector('#meChkAct');
+    if (!sub || !act) return;
+
+    function paint(d) {
+      var st = d.stats || { total: 0, streak: 0, todayDone: false };
+      var parts = [];
+      if (d.names && d.names.length) parts.push('主号 ' + d.names[0]);
+      parts.push('连续 ' + st.streak + ' 天');
+      parts.push('累计 ' + st.total + ' 天');
+      sub.textContent = parts.join(' · ') + '　' + (d.reward ? ('奖励：' + d.reward) : '（暂未配置奖励）');
+      if (d.enabled === false) { act.innerHTML = '<span class="me-chk-off">签到暂未开放</span>'; return; }
+      if (st.todayDone) { act.innerHTML = '<span class="me-chk-done">✓ 今天已签</span>'; return; }
+      act.innerHTML = '<button class="btn btn-primary me-chk-btn" type="button">签到</button>';
+      act.querySelector('.me-chk-btn').addEventListener('click', function () { doIt(this); });
+    }
+
+    function doIt(btn) {
+      btn.disabled = true;
+      btn.textContent = '签到中…';
+      var rid = randomHex(8);
+      postBus({ type: 'checkin', rid: rid, token: sess.token });
+      waitBus(rid, ['checkinOk', 'checkinErr'], function (m) {
+        btn.disabled = false;
+        if (!m || m.type === 'checkinErr' || m.ok === false) {
+          toast((m && m.reason) || '签到失败，请稍后重试');
+          btn.textContent = '签到';
+          if (m && m.stats) paint(m);
+          return;
+        }
+        var msg = '签到成功！连续 ' + ((m.stats && m.stats.streak) || 1) + ' 天';
+        if (m.delivery === 'now') msg += '，奖励已发到游戏里';
+        else if (m.delivery === 'queued') msg += '，上线后自动补发奖励';
+        else if (m.delivery === 'failed') msg += '，奖励没发出去，请联系腐竹';
+        else if (m.delivery === 'none') msg += '（当前没有配置奖励）';
+        toast(msg);
+        paint(m);
+      });
+    }
+
+    var rid = randomHex(8);
+    postBus({ type: 'checkinQuery', rid: rid, token: sess.token });
+    waitBus(rid, ['checkinOk', 'checkinErr'], function (m) {
+      if (!m || m.type === 'checkinErr') {
+        sub.textContent = (m && m.reason) || '签到状态读取失败，稍后再试';
+        return;
+      }
+      paint(m);
+    });
+  }
+
   function renderMe(container) {
     var sess = getSession();
     container.innerHTML = pageHead('我的', '个人中心', '查看游戏时长与论坛活跃度，管理已登录的设备。');
@@ -3017,6 +3109,12 @@
         '<div class="card me-stat"><div class="k">登录设备</div><div class="v">' + (d.sessionCount || 0) + ' 台</div><div class="s">含当前这台</div></div>' +
         '</div>';
 
+      /* 每日签到：一天一次，奖励由服务端通过 RCON 发到游戏里 */
+      html += '<div class="card me-checkin" id="meCheckin">' +
+        '<div class="me-chk-main"><div class="me-chk-t">每日签到</div>' +
+        '<div class="me-chk-s" id="meChkSub">正在读取签到状态…</div></div>' +
+        '<div class="me-chk-act" id="meChkAct"></div></div>';
+
       /* 成就徽章墙：服务器发放的徽章 + 按现有数据算出来的里程碑徽章，
          解锁的点亮，没解锁的显示成灰格并写明条件 */
       var bd = d.badges || { items: [] };
@@ -3069,6 +3167,7 @@
       html += '<p class="me-tip">发现不认识的设备？先改 QQ 密码，再点「退出其他所有设备」把它们踢下线。</p></div>';
 
       box.innerHTML = html;
+      loadCheckin(box, sess);
 
       var lo = box.querySelector('.me-logout');
       if (lo) lo.addEventListener('click', function () {

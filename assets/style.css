@@ -1079,3 +1079,26 @@ a.wk-nm:hover{color:var(--primary)}
 .badge-cell.is-got b{color:var(--foreground)}
 .badge-cell.is-got i{color:var(--gold);font-weight:700}
 @media(max-width:520px){.badge-wall{grid-template-columns:repeat(auto-fill,minmax(78px,1fr));gap:7px}}
+
+/* ===== 在线页：玩家「现在去哪了」小字 ===== */
+/* 位置小字：允许折两行，坐标比维度名重要，不能被省略号吃掉 */
+.player-cell .where{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
+  font-size:10.5px;line-height:1.4;color:var(--muted-foreground);text-align:center;
+  max-width:100%;overflow:hidden;word-break:break-word;font-variant-numeric:tabular-nums}
+
+/* ===== 个人中心：每日签到 ===== */
+.me-checkin{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-top:16px;
+  border-left:3px solid var(--primary)}
+.me-chk-main{flex:1;min-width:200px}
+.me-chk-t{font-size:15px;font-weight:750}
+.me-chk-s{font-size:12.5px;color:var(--muted-foreground);margin-top:3px;line-height:1.6}
+.me-chk-act{flex:none;margin-left:auto}
+.me-chk-btn{min-width:88px}
+.me-chk-done{font-size:13px;font-weight:750;color:var(--primary);
+  padding:7px 14px;border-radius:9px;background:color-mix(in oklab,var(--primary) 12%,transparent)}
+.me-chk-off{font-size:12.5px;color:var(--muted-foreground)}
+@media(max-width:560px){
+  .me-checkin{gap:10px}
+  .me-chk-act{margin-left:0;width:100%}
+  .me-chk-btn{width:100%}
+}
