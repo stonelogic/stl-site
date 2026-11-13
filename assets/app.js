@@ -644,6 +644,10 @@
     }
 
     function drawEmptyState() {
+      if (list && !list.querySelector('.sitem')) {
+        list.innerHTML = '<div class="sgroup">快捷入口</div><div class="sitem"><span class="sico">⏳</span>' +
+          '<span class="stxt"><b>正在准备搜索索引…</b><i>第一次打开要把玩家、帖子、Wiki 都拉一遍</i></span></div>';
+      }
       buildSearchIndex().then(function (idx) {
         var pages = idx.filter(function (x) { return x.k === 'page'; }).slice(0, 6);
         var posts = idx.filter(function (x) { return x.k === 'post'; }).slice(0, 4);
