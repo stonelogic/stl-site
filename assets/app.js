@@ -63,8 +63,7 @@
     ],
     staff: [
       { name: 'sjwj12517', roles: [{ t: '服主', c: 'gold' }] },
-      { name: 'xiaoran8083', roles: [{ t: '管理', c: 'red' }] },
-      { name: 'feng_56', roles: [{ t: '工程师', c: 'blue' }] }
+      { name: 'xiaoran8083', roles: [{ t: '管理', c: 'red' }] }
     ]
   };
 
