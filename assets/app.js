@@ -528,7 +528,7 @@
 
   /* --- 状态页 --- */
   function renderStatus(container) {
-    container.innerHTML = pageHead('首页', '服务器状态', '每 5 秒自动刷新；TPS、内存与在线曲线来自服务器本机采集');
+    container.innerHTML = pageHead('首页', '服务器状态', '自动刷新；TPS、内存与在线曲线来自服务器本机采集');
     var card = el('div', 'card');
     card.innerHTML = '<div class="status-hero">' +
       '<div><div class="online-count" id="stOnline">—</div><div style="font-size:13px;color:var(--muted-foreground);margin-top:4px">当前在线玩家</div></div>' +
@@ -545,7 +545,7 @@
     renderLive();               // 先把已知状态铺上去，别等接口
     loadStatus();
     loadChart();
-    LIVE.onUpdate = loadStatus;  // 跟着 5 秒心跳刷（不再单独 setInterval）
+    LIVE.onUpdate = loadStatus;  // 跟着心跳刷（不再单独 setInterval）
   }
   var ONLINE_TOPIC = 'stl-online-6bd1ae0f4e7e7968';
 
@@ -621,7 +621,9 @@
 
     var stats = $id('stStats');
     if (stats) {
-      stats.innerHTML =
+      /* 内容没变就别重写 DOM：每次心跳都 innerHTML= 会让入场动画反复重播，
+         页面看起来一直在发灰闪动。 */
+      var html =
         '<div class="stat-box"><div class="k">在线 / 最大</div><div class="v">' +
         online + ' / ' + (LIVE.max || '—') + '</div></div>' +
         '<div class="stat-box"><div class="k">TPS</div><div class="v ' + tpsClass(tps) + '">' +
@@ -637,6 +639,13 @@
         '<div class="stat-box"><div class="k">服务器已运行</div><div class="v" style="font-size:15px">' +
         esc(d.uptime || '—') + '</div></div>' +
         '<div class="stat-box"><div class="k">地址</div><div class="v" style="font-size:14px">' + esc(SITE.javaIp) + '</div></div>';
+      /* 值没变就别重写 DOM。用 innerHTML 比较不行——读回来会被浏览器规范化
+         （class="v " 变 class="v"），永远不相等，等于每次心跳都重播入场动画。 */
+      var sig = [online, LIVE.max, tps, mem && mem.pct, ping, LIVE.ver, restart.text, d.uptime].join('|');
+      if (stats.getAttribute('data-sig') !== sig) {
+        stats.innerHTML = html;
+        stats.setAttribute('data-sig', sig);
+      }
     }
     var motd = $id('stMotd');
     if (motd) motd.textContent = LIVE.motd || (ok ? 'MOTD 未返回' : '服务器离线或不可达');
@@ -864,7 +873,7 @@
 
   /* --- 在线状态页（在线玩家 ID + 头像） --- */
   function renderOnline(container) {
-    container.innerHTML = pageHead('在线', '在线状态', '状态每 5 秒刷新；玩家名单由服务端每 1 分钟同步');
+    container.innerHTML = pageHead('在线', '在线状态', '状态自动刷新；玩家名单由服务端每 1 分钟同步');
     var card = el('div', 'card'); container.appendChild(card);
     card.innerHTML = '<div style="display:flex;align-items:center;gap:14px;margin-bottom:16px;flex-wrap:wrap">' +
       '<span class="status-pill" id="olPill">检测中…</span>' +
