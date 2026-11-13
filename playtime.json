@@ -1,5 +1,5 @@
 {
-  "generatedAt": 1794581640,
+  "generatedAt": 1794582540,
   "source": "cyutime",
   "count": 26,
   "players": [
@@ -52,20 +52,20 @@
       "year": 14715
     },
     {
-      "name": "lijidan",
+      "name": "Mmm",
       "rank": 7,
+      "total": 13779,
+      "month": 13312,
+      "week": 9998,
+      "year": 13779
+    },
+    {
+      "name": "lijidan",
+      "rank": 8,
       "total": 12998,
       "month": 0,
       "week": 0,
       "year": 12998
-    },
-    {
-      "name": "Mmm",
-      "rank": 8,
-      "total": 12952,
-      "month": 12485,
-      "week": 9171,
-      "year": 12952
     },
     {
       "name": "GreatBreak5858",
