@@ -5,8 +5,16 @@
   <link>https://stonelogic.github.io/stl-site</link>
   <description>服务器公告、活动与更新通知</description>
   <language>zh-CN</language>
-  <lastBuildDate>Sun, 08 Nov 2026 15:46:44 +0800</lastBuildDate>
+  <lastBuildDate>Sun, 08 Nov 2026 16:19:43 +0800</lastBuildDate>
   <generator>stl-site feed.js</generator>
   <atom:link href="https://stonelogic.github.io/stl-site/feed.xml" rel="self" type="application/rss+xml"/>
+  <item>
+    <title>欢迎！</title>
+    <link>https://stonelogic.github.io/stl-site/#/news</link>
+    <guid isPermaLink="false">announcement-6</guid>
+    <pubDate>Sun, 08 Nov 2026 16:19:43 +0800</pubDate>
+    <description>欢迎来到STL服务器！ 生存服地址 frp-top.com:44558 小游戏服地址 frp-top.com:60148 如您遇到问题，或想提出您的想法，欢迎来服务器官网论坛反馈！ 在群内提问务必带日志/截图，务必关注群公告！要不然只能算卦！！！ 服务器官方网站 https://stonelogic.github.io/stl-site 请尽快在网站上登陆你的QQ账号，以后授权登录更加方便 网站以后会更新更多内容，现已有：论坛，快捷登录，服务器状态，排行榜 更多功能敬请期待！ 祝您在STL服务器玩得愉快！</description>
+    <category>置顶</category>
+  </item>
 </channel>
 </rss>
