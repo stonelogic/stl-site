@@ -257,6 +257,10 @@ code{font-family:ui-monospace,Consolas,Menlo,monospace}
   border-radius:10px;font-size:14px;font-weight:600;transition:.16s;min-width:0}
 .pf-post:hover{border-color:var(--ring);background:var(--accent);color:var(--primary)}
 .pf-post span{margin-left:auto;flex:none;font-size:12px;font-weight:500;color:var(--muted-foreground)}
+.pf-post span.pend{color:oklch(52% .13 70);font-weight:700}
+[data-theme="dark"] .pf-post span.pend{color:oklch(80% .13 75)}
+.pf-post.pf-more{color:var(--muted-foreground);font-weight:600;border-style:dashed;justify-content:center}
+.pf-none{font-size:13.5px;color:var(--muted-foreground);padding:14px 2px;line-height:1.7}
 .pf-post{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 @media (max-width:520px){
   .pf-head{flex-wrap:wrap;gap:12px}
@@ -621,6 +625,13 @@ code{font-family:ui-monospace,Consolas,Menlo,monospace}
 .post-card{display:block;text-decoration:none;color:inherit;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:15px 16px;margin-bottom:13px;box-shadow:var(--shadow-sm);transition:transform .15s,box-shadow .15s,border-color .15s}
 .post-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-lg);border-color:var(--ring)}
 .cat-badge{display:inline-block;font-size:11.5px;font-weight:700;padding:2px 9px;border-radius:999px;background:color-mix(in oklab,var(--primary) 12%,transparent);color:var(--primary);margin-bottom:9px}
+/* 刚发布、Pages 还没重建完的帖子，先在本机展示，标个「同步中」 */
+.pend-tag{display:inline-block;font-size:11.5px;font-weight:700;padding:2px 9px;border-radius:999px;margin:0 0 9px 6px;
+  background:color-mix(in oklab,oklch(70% .15 70) 18%,transparent);color:oklch(52% .13 70)}
+[data-theme="dark"] .pend-tag{color:oklch(80% .13 75)}
+.fd-pending{margin:0 0 16px;padding:9px 12px;border-radius:10px;font-size:13px;line-height:1.6;
+  background:color-mix(in oklab,oklch(70% .15 70) 12%,transparent);color:var(--muted-foreground);
+  border:1px solid color-mix(in oklab,oklch(70% .15 70) 26%,transparent)}
 .post-title{font-size:16.5px;font-weight:800;line-height:1.4;margin:0 0 7px}
 .post-excerpt{font-size:13.5px;color:var(--muted-foreground);line-height:1.6;margin:0 0 11px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .post-meta{display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--muted-foreground);flex-wrap:wrap}

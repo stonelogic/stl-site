@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>个人主页 · Stone Logic</title>
+<title>我的主页 · Stone Logic</title>
 <link rel="icon" href="assets/icon.png">
 <style>
   /* 与官网主站一致：服务器名称用方块像素字体 */
@@ -23,6 +23,7 @@
     --muted: oklch(97% 0 0); --muted-foreground: oklch(55.6% 0 0);
     --accent: oklch(97% 0 0); --border: oklch(92.2% 0 0);
     --destructive: oklch(57.7% .245 27.325); --ring: oklch(62% .14 160 / .6);
+    --gold: oklch(70% .14 82);
     --radius: .625rem;
   }
   [data-theme="dark"]{
@@ -32,6 +33,7 @@
     --muted: oklch(26.9% 0 0); --muted-foreground: oklch(70.8% 0 0);
     --accent: oklch(26.9% 0 0); --border: oklch(100% 0 0/.1);
     --destructive: oklch(70.4% .191 22.216); --ring: oklch(72% .12 238);
+    --gold: oklch(78% .13 82);
   }
   *{box-sizing:border-box}
   [hidden]{display:none!important}
@@ -51,6 +53,7 @@
   .btn:hover{border-color:var(--ring)}
   .btn.primary{background:var(--primary);color:var(--primary-foreground);border-color:transparent}
   .btn.primary:hover{opacity:.9}
+  .btn.sm{padding:6px 12px;font-size:12.5px}
   .iconbtn{display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:calc(var(--radius)*.9);
     border:1px solid var(--border);background:var(--card);color:var(--foreground);cursor:pointer;transition:.18s}
   .iconbtn:hover{border-color:var(--ring)}
@@ -59,16 +62,43 @@
   .wrap{max-width:960px;margin:0 auto;padding:30px 20px 60px}
   .card{background:var(--card);border:1px solid var(--border);border-radius:calc(var(--radius)*1.6);padding:24px;margin-bottom:20px;color:var(--card-foreground)}
 
-  .me{display:flex;align-items:center;gap:18px}
-  .me .avatar{width:64px;height:64px;border-radius:calc(var(--radius)*1.4);background:var(--muted);object-fit:cover}
-  .me .avatar.initial{display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:800;color:var(--primary-foreground);
-    background:linear-gradient(135deg,var(--primary),oklch(72% .12 238))}
-  .me h2{margin:0;font-size:20px;color:var(--foreground)}
-  .me .qq{margin:5px 0 0;font-size:13px;color:var(--muted-foreground)}
+  /* ===== 页头（与官网页头同款） ===== */
+  .page-head{margin-bottom:22px}
+  .page-head .crumb{font-size:13px;color:var(--muted-foreground);margin-bottom:6px}
+  .page-head h1{font-size:26px;font-weight:800;margin:0 0 6px;letter-spacing:-.5px}
+  .page-head p{margin:0;font-size:13.5px;color:var(--muted-foreground);line-height:1.7}
 
-  h3.sec{margin:0 0 16px;font-size:15px;font-weight:700;color:var(--foreground);display:flex;align-items:center;gap:8px}
-  h3.sec .cnt{margin-left:auto;font-size:12px;font-weight:600;color:var(--muted-foreground)}
+  /* ===== 头卡 / 指标卡：与玩家主页 #/p/<name> 完全同一套 ===== */
+  .pf-head{display:flex;align-items:center;gap:16px;margin-bottom:22px}
+  .pf-av{width:76px;height:76px;border-radius:16px;background:var(--muted);flex:none;image-rendering:pixelated;
+    border:1px solid var(--border);object-fit:cover}
+  .pf-id{min-width:0}
+  .pf-name{font-size:22px;font-weight:800;line-height:1.2;word-break:break-all}
+  .pf-tags{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:8px}
+  .pf-act{margin-left:auto;flex:none;display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+  .pf-sec{font-size:14px;font-weight:700;margin:22px 0 10px;display:flex;align-items:center;gap:8px}
+  .pf-sec:first-child{margin-top:0}
+  .pf-cnt{font-size:12px;font-weight:600;color:var(--muted-foreground);background:var(--muted);
+    border-radius:99px;padding:1px 8px}
+  .pf-sec .pf-side{margin-left:auto;font-size:12px;font-weight:600;color:var(--muted-foreground)}
 
+  .stat-row{display:flex;gap:16px;flex-wrap:wrap}
+  .stat-box{flex:1;min-width:140px;background:var(--muted);border-radius:12px;padding:14px 16px}
+  .stat-box .k{font-size:12px;color:var(--muted-foreground)}
+  .stat-box .v{font-size:20px;font-weight:700;margin-top:4px}
+  .stat-box .ksub{font-size:11px;color:var(--muted-foreground);margin-top:3px}
+
+  .badge{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:700;line-height:1.5}
+  .badge-green{background:color-mix(in oklab,var(--primary) 12%,transparent);color:var(--primary)}
+  .badge-gold{background:color-mix(in oklab,var(--gold) 16%,transparent);color:var(--gold)}
+  .badge-red{background:color-mix(in oklab,var(--destructive) 12%,transparent);color:var(--destructive)}
+  .badge-blue{background:color-mix(in oklab,#3b82f6 12%,transparent);color:#3b82f6}
+  .badge-muted{background:var(--muted);color:var(--muted-foreground)}
+  .status-pill{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:3px 11px;font-size:12px;font-weight:700}
+  .status-pill.on{background:color-mix(in oklab,var(--primary) 14%,transparent);color:var(--primary)}
+  .status-pill.off{background:color-mix(in oklab,var(--destructive) 14%,transparent);color:var(--destructive)}
+
+  /* ===== 我的游戏账号 ===== */
   .acc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px}
   .acc{background:var(--muted);border:1px solid var(--border);border-radius:calc(var(--radius)*1.4);padding:14px;text-align:center;transition:.2s}
   .acc:hover{border-color:var(--ring)}
@@ -76,10 +106,24 @@
   .acc .line{display:flex;align-items:center;justify-content:center;gap:8px;font-weight:700;font-size:14px;color:var(--foreground)}
   .acc .line img{width:24px;height:24px;border-radius:6px;image-rendering:pixelated;background:var(--card)}
   .acc .pt{margin-top:8px;font-size:12.5px;color:var(--primary);font-weight:600}
+  .acc .go{margin-top:9px;display:inline-block;font-size:12px;font-weight:700;color:var(--primary)}
+  .acc .go:hover{text-decoration:underline}
+
+  /* ===== 我的发帖 ===== */
+  .pf-posts{display:grid;gap:8px}
+  .pf-post{display:flex;align-items:center;gap:12px;padding:11px 14px;border:1px solid var(--border);
+    border-radius:10px;font-size:14px;font-weight:600;transition:.16s;min-width:0;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .pf-post:hover{border-color:var(--ring);background:var(--accent);color:var(--primary)}
+  .pf-post span{margin-left:auto;flex:none;font-size:12px;font-weight:500;color:var(--muted-foreground)}
+  .pf-post span.pend{color:oklch(52% .13 70);font-weight:700}
+  [data-theme="dark"] .pf-post span.pend{color:oklch(80% .13 75)}
+  .pf-none{font-size:13.5px;color:var(--muted-foreground);padding:14px 2px;line-height:1.7}
 
   .empty{padding:30px;text-align:center;color:var(--muted-foreground);font-size:14px;line-height:1.9}
   .empty .big{font-size:40px;margin-bottom:10px}
-  .note{margin-top:10px;font-size:12px;color:var(--muted-foreground);line-height:1.7}
+  .note{margin-top:12px;font-size:12px;color:var(--muted-foreground);line-height:1.7}
+  .note a{color:var(--primary);font-weight:600}
 
   /* 入场动画 */
   @keyframes stlFadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
@@ -88,7 +132,16 @@
   .acc-grid > *:nth-child(2){animation-delay:.06s}
   .acc-grid > *:nth-child(3){animation-delay:.12s}
   .acc-grid > *:nth-child(n+4){animation-delay:.18s}
-  @media (prefers-reduced-motion: reduce){.card,.acc-grid > *{animation:none!important}}
+  .stat-row > *{animation:stlFadeUp .5s both}
+  @media (prefers-reduced-motion: reduce){.card,.acc-grid > *, .stat-row > *{animation:none!important}}
+
+  @media (max-width:520px){
+    .pf-head{flex-wrap:wrap;gap:12px}
+    .pf-av{width:60px;height:60px;border-radius:13px}
+    .pf-name{font-size:18px}
+    .pf-act{margin-left:0;width:100%}
+    .stat-box{min-width:calc(50% - 8px)}
+  }
 </style>
 </head>
 <body>
@@ -111,27 +164,47 @@
   <div class="card" id="loginPrompt" hidden>
     <div class="empty">
       <div class="big">🔐</div>
-      尚未登录。<br>登录后即可在这里查看你的 QQ、绑定的游戏账号、皮肤与游戏时长。
+      尚未登录。<br>登录后即可在这里查看你的游戏时长、绑定账号与论坛动态。
       <div style="margin-top:16px"><a class="btn primary" href="confirm.html">去登录</a></div>
     </div>
   </div>
 
-  <!-- 我的信息 -->
-  <div class="card" id="meCard" hidden>
-    <div class="me">
-      <div id="meAvatar"></div>
-      <div>
-        <h2 id="meName">—</h2>
-        <p class="qq" id="meQq"></p>
-      </div>
+  <!-- 我的主页 -->
+  <div id="mePage" hidden>
+    <div class="page-head">
+      <div class="crumb">首页</div>
+      <h1 id="pageTitle">我的主页</h1>
+      <p>个人资料 · 数据来自服务器定时导出，状态实时</p>
     </div>
-  </div>
 
-  <!-- 我的游戏账号 -->
-  <div class="card" id="accCard" hidden>
-    <h3 class="sec">🎮 我的游戏账号 <span class="cnt" id="accCnt"></span></h3>
-    <div class="acc-grid" id="accGrid"></div>
-    <p class="note" id="accNote"></p>
+    <!-- 头卡 + 战绩 -->
+    <div class="card">
+      <div class="pf-head">
+        <div id="meAvatar"></div>
+        <div class="pf-id">
+          <div class="pf-name" id="meName">QQ 用户</div>
+          <div class="pf-tags" id="meTags"></div>
+        </div>
+        <div class="pf-act">
+          <a class="btn sm" id="mePlayerLink" href="index.html#/">玩家主页</a>
+          <a class="btn sm" href="index.html#/forum">去论坛</a>
+        </div>
+      </div>
+      <div id="meStats"></div>
+    </div>
+
+    <!-- 我的游戏账号 -->
+    <div class="card" id="accCard">
+      <div class="pf-sec">我的游戏账号 <span class="pf-cnt" id="accCnt"></span><span class="pf-side" id="accMain"></span></div>
+      <div class="acc-grid" id="accGrid"></div>
+      <p class="note" id="accNote"></p>
+    </div>
+
+    <!-- 我的发帖 -->
+    <div class="card" id="postCard">
+      <div class="pf-sec">我的发帖 <span class="pf-cnt" id="postCnt"></span><span class="pf-side"><a href="index.html#/forum/new" style="color:var(--primary);font-weight:700">+ 发新贴</a></span></div>
+      <div id="postList"></div>
+    </div>
   </div>
 </div>
 
@@ -140,6 +213,7 @@
   'use strict';
   var SKEY = 'stl_web_session_v1';
   var CFG = 'mc-site-config-v2';
+  var ECHO_KEY = 'stl_forum_echo_v1';
   var cfg = {};
   try { cfg = JSON.parse(localStorage.getItem(CFG) || '{}'); } catch (e) {}
 
@@ -170,17 +244,51 @@
 
   function $(id) { return document.getElementById(id); }
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
-  function formatPlaytime(sec) {
-    sec = Math.max(0, Math.floor(Number(sec) || 0));
-    if (!sec) return '0 分钟';
-    var d = Math.floor(sec / 86400), h = Math.floor(sec % 86400 / 3600), m = Math.floor(sec % 3600 / 60);
-    var out = [];
-    if (d) out.push(d + ' 天');
-    if (h) out.push(h + ' 小时');
-    out.push(m + ' 分钟');
-    return out.join(' ');
-  }
   function avatarUrl(qq) { return 'https://q1.qlogo.cn/g?b=qq&nk=' + encodeURIComponent(qq) + '&s=100'; }
+
+  /* 与官网 app.js 的 fmtDur 保持一致，免得同一个数字两处显示不一样 */
+  function fmtDur(sec) {
+    sec = Number(sec) || 0;
+    if (sec < 60) return sec + ' 秒';
+    if (sec < 3600) return Math.floor(sec / 60) + ' 分钟';
+    if (sec < 86400) return Math.floor(sec / 3600) + ' 小时 ' + Math.floor((sec % 3600) / 60) + ' 分';
+    return Math.floor(sec / 86400) + ' 天 ' + Math.floor((sec % 86400) / 3600) + ' 小时';
+  }
+  function durBox(k, v, sub) {
+    var n = Number(v);
+    var has = (v !== null && v !== undefined && v !== '' && !isNaN(n));
+    return '<div class="stat-box"><div class="k">' + k + '</div>' +
+      '<div class="v">' + (has ? (n > 0 ? fmtDur(n) : '未游玩') : '—') + '</div>' +
+      (sub ? '<div class="ksub">' + sub + '</div>' : '') + '</div>';
+  }
+  function box(k, v, sub) {
+    return '<div class="stat-box"><div class="k">' + k + '</div><div class="v">' + v + '</div>' +
+      (sub ? '<div class="ksub">' + sub + '</div>' : '') + '</div>';
+  }
+  function timeAgo(ts) {
+    var s = Math.floor((Date.now() - Number(ts || 0)) / 1000);
+    if (s < 0) s = 0;
+    if (s < 60) return '刚刚';
+    if (s < 3600) return Math.floor(s / 60) + ' 分钟前';
+    if (s < 86400) return Math.floor(s / 3600) + ' 小时前';
+    if (s < 86400 * 30) return Math.floor(s / 86400) + ' 天前';
+    if (s < 86400 * 365) return Math.floor(s / 86400 / 30) + ' 个月前';
+    return Math.floor(s / 86400 / 365) + ' 年前';
+  }
+  function getJson(f) {
+    return fetch(f + '?_=' + Date.now(), { cache: 'no-store' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .catch(function () { return null; });
+  }
+
+  /* 本机「刚发布还没同步到线上」的帖子，跟 app.js 用同一个键 */
+  function echoPosts() {
+    try {
+      var a = JSON.parse(localStorage.getItem(ECHO_KEY) || '[]');
+      if (!Array.isArray(a)) return [];
+      return a.filter(function (p) { return p && p.id && Date.now() - Number(p.created || 0) < 3 * 3600 * 1000; });
+    } catch (e) { return []; }
+  }
 
   if (!session) {
     $('loginPrompt').hidden = false;
@@ -188,58 +296,140 @@
   }
 
   $('logoutBtn').hidden = false;
-  $('meCard').hidden = false;
-  $('accCard').hidden = false;
+  $('mePage').hidden = false;
 
-  // 我的信息
-  var meA = $('meAvatar');
-  meA.innerHTML = '<img class="avatar" src="' + avatarUrl(session.qq) + '" alt="头像" ' +
-    'onerror="this.outerHTML=\'<div class=&quot;avatar initial&quot;>' + esc(String(session.qq).slice(-2)) + '</div>\'">';
-  $('meName').textContent = 'QQ 用户';
-  $('meQq').textContent = 'QQ ' + session.qq + ' · 已登录';
-
-  // 我的游戏账号
   var names = session.names || [];
-  $('accCnt').textContent = '共 ' + names.length + ' 个';
-  var grid = $('accGrid');
-  $('accNote').innerHTML = '皮肤按游戏 ID 渲染（离线服可能显示默认皮肤）；在线时长来自服务器 cyutime 统计。' +
-    ' <a href="index.html#/rank" style="color:var(--primary);font-weight:600">查看完整时长榜单 →</a>';
+  var uid = String(session.uid || '');
 
-  if (!names.length) {
-    grid.innerHTML = '<div class="empty" style="grid-column:1/-1"><div class="big">🎮</div>该 QQ 尚未绑定任何游戏账号，到 QQ 群完成绑定后即可在这里看到。</div>';
-  } else {
-    grid.innerHTML = names.map(function (n) {
-      return '<div class="acc">' +
-        '<img class="body" loading="lazy" src="https://mc-heads.net/body/' + encodeURIComponent(n) + '/right" alt="' + esc(n) + '">' +
-        '<div class="line"><img loading="lazy" src="assets/avatars/' + encodeURIComponent(n) + '.png" alt="" ' +
-        'onerror="this.onerror=null;this.src=\'https://minotar.net/helm/' + encodeURIComponent(n) + '/32\'">' +
-        '<span>' + esc(n) + '</span></div>' +
-        '<div class="pt" data-name="' + esc(n) + '">游戏时长：加载中…</div>' +
+  /* ---------- 头卡 ---------- */
+  $('meAvatar').innerHTML = '<img class="pf-av" src="' + avatarUrl(session.qq) + '" alt="头像" ' +
+    'onerror="this.outerHTML=\'<div class=&quot;pf-av&quot; style=&quot;display:grid;place-items:center;font-weight:800;color:var(--primary-foreground);background:var(--primary)&quot;>' +
+    esc(String(session.qq).slice(-2)) + '</div>\'">';
+  $('meTags').innerHTML =
+    '<span class="status-pill on">● 已登录</span>' +
+    '<span class="badge badge-muted">QQ ' + esc(session.qq) + '</span>' +
+    (names.length ? '<span class="badge badge-blue">绑定 ' + names.length + ' 个游戏号</span>' : '');
+
+  /* ---------- 拉数据，算主号 ---------- */
+  Promise.all([getJson('playtime.json'), getJson('bedwars.json'),
+               getJson('forum.json'), getJson('online.json')]).then(function (r) {
+    var ptAll = (r[0] && Array.isArray(r[0].players)) ? r[0].players : [];
+    var bwAll = (r[1] && Array.isArray(r[1].players)) ? r[1].players : [];
+    var forum = r[2] || {};
+    var online = r[3] || {};
+
+    function find(list, n) {
+      var k = String(n).toLowerCase();
+      for (var i = 0; i < list.length; i++) if (String(list[i].name).toLowerCase() === k) return list[i];
+      return null;
+    }
+    /* 主号 = 时长最多的那个，没数据就退回第一个绑定号 */
+    var main = names[0] || '';
+    var best = null;
+    names.forEach(function (n) {
+      var p = find(ptAll, n);
+      if (p && (!best || Number(p.total || 0) > Number(best.total || 0))) { best = p; main = n; }
+    });
+
+    var isOn = !!(online.online && (online.players || []).some(function (p) {
+      return String(p).toLowerCase() === String(main).toLowerCase();
+    }));
+    if (main) {
+      $('meTags').innerHTML =
+        '<span class="status-pill ' + (isOn ? 'on' : 'off') + '">' + (isOn ? '● ' + esc(main) + ' 在线' : '● 离线') + '</span>' +
+        '<span class="badge badge-muted">QQ ' + esc(session.qq) + '</span>' +
+        '<span class="badge badge-blue">绑定 ' + names.length + ' 个游戏号</span>';
+      $('pageTitle').textContent = main;
+      $('meName').textContent = main;
+      $('mePlayerLink').href = 'index.html#/p/' + encodeURIComponent(main);
+      $('mePlayerLink').textContent = '完整玩家主页 →';
+    }
+
+    /* ---- 指标卡 ---- */
+    var html = '';
+    if (best) {
+      html += '<div class="pf-sec">在线时长</div><div class="stat-row">' +
+        durBox('总时长', best.total, best.rank ? ('全服第 ' + best.rank + ' 名') : '') +
+        durBox('本周', best.week) +
+        durBox('本月', best.month) +
+        durBox('累计年', best.year) +
         '</div>';
-    }).join('');
-    // 拉取一次共享的 playtime.json（cyutime 导出），按账号名匹配
-    fetch('playtime.json?_=' + Date.now(), { cache: 'no-store' })
-      .then(function (r) { return r.ok ? r.json() : null; })
-      .then(function (d) {
-        var map = {};
-        if (d && Array.isArray(d.players)) {
-          d.players.forEach(function (p) { map[String(p.name).toLowerCase()] = p; });
-        }
-        Array.prototype.forEach.call(grid.querySelectorAll('.pt'), function (cell) {
-          var n = cell.getAttribute('data-name');
-          var p = map[String(n).toLowerCase()];
-          if (!p) { cell.textContent = '游戏时长：暂无记录'; return; }
-          var txt = '游戏时长：' + formatPlaytime(p.total);
-          if (p.month) txt += '（本月 ' + formatPlaytime(p.month) + '）';
-          cell.textContent = txt;
-        });
-      })
-      .catch(function () {
-        Array.prototype.forEach.call(grid.querySelectorAll('.pt'), function (c) { c.textContent = '游戏时长：未接入'; });
+    }
+    var bw = find(bwAll, main);
+    if (bw) {
+      var kd = (typeof bw.kd === 'number') ? (Number.isInteger(bw.kd) ? bw.kd : bw.kd.toFixed(2)) : (bw.kd || '—');
+      html += '<div class="pf-sec">起床战争</div><div class="stat-row">' +
+        box('积分', bw.score != null ? bw.score : '—', bw.rank ? ('第 ' + bw.rank + ' 名') : '') +
+        box('胜率', (bw.winRate != null ? bw.winRate + '%' : '—'), (bw.wins || 0) + ' 胜 / ' + (bw.loses || 0) + ' 负') +
+        box('K/D', kd, (bw.kills || 0) + ' 杀 / ' + (bw.deaths || 0) + ' 死') +
+        box('破床', bw.destroyedBeds != null ? bw.destroyedBeds : '—', '') +
+        '</div>';
+    }
+    if (!best && !bw) {
+      html += '<div class="empty"><div class="big">🫥</div>绑定的账号还没有战绩记录，进服玩一会儿就有了。</div>';
+    }
+    $('meStats').innerHTML = html;
+
+    /* ---- 我的游戏账号 ---- */
+    $('accCnt').textContent = names.length ? ('共 ' + names.length + ' 个') : '';
+    if (main) $('accMain').textContent = '主号 ' + main;
+    $('accNote').innerHTML = '皮肤按游戏 ID 渲染（离线服可能显示默认皮肤）；在线时长来自服务器 cyutime 统计。' +
+      ' <a href="index.html#/rank">查看完整时长榜单 →</a>';
+
+    var grid = $('accGrid');
+    if (!names.length) {
+      grid.innerHTML = '<div class="empty" style="grid-column:1/-1"><div class="big">🎮</div>该 QQ 尚未绑定任何游戏账号，到 QQ 群完成绑定后即可在这里看到。</div>';
+    } else {
+      grid.innerHTML = names.map(function (n) {
+        return '<div class="acc">' +
+          '<img class="body" loading="lazy" src="https://mc-heads.net/body/' + encodeURIComponent(n) + '/right" alt="' + esc(n) + '">' +
+          '<div class="line"><img loading="lazy" src="assets/avatars/' + encodeURIComponent(n) + '.png" alt="" ' +
+          'onerror="this.onerror=null;this.src=\'https://minotar.net/helm/' + encodeURIComponent(n) + '/32\'">' +
+          '<span>' + esc(n) + '</span></div>' +
+          '<div class="pt" data-name="' + esc(n) + '">游戏时长：加载中…</div>' +
+          '<a class="go" href="index.html#/p/' + encodeURIComponent(n) + '">查看玩家主页 →</a>' +
+          '</div>';
+      }).join('');
+      Array.prototype.forEach.call(grid.querySelectorAll('.pt'), function (cell) {
+        var n = cell.getAttribute('data-name');
+        var p = find(ptAll, n);
+        if (!p) { cell.textContent = '游戏时长：暂无记录'; return; }
+        var txt = '游戏时长：' + fmtDur(p.total);
+        if (p.month) txt += '（本月 ' + fmtDur(p.month) + '）';
+        cell.textContent = txt;
       });
-  }
+    }
+
+    /* ---- 我的发帖 ---- */
+    var mine = ((forum.posts) || []).filter(function (p) {
+      return uid && String(p.author_uid || '') === uid;
+    });
+    // 刚发的还没同步到线上，用本机回声补上
+    var have = {};
+    mine.forEach(function (p) { have[p.id] = 1; });
+    echoPosts().forEach(function (p) {
+      if (String(p.author_uid || '') !== uid) return;
+      if (have[p.id]) return;
+      p._pending = true;
+      mine.push(p);
+    });
+    mine.sort(function (a, b) { return Number(b.created || 0) - Number(a.created || 0); });
+
+    $('postCnt').textContent = mine.length ? mine.length + ' 篇' : '';
+    $('postList').innerHTML = mine.length
+      ? '<div class="pf-posts">' + mine.slice(0, 8).map(function (p) {
+          var meta = p._pending ? '同步中' : ((p.replies && p.replies.length) ? (p.replies.length + ' 回复') : '暂无回复');
+          return '<a class="pf-post" href="index.html#/forum/post/' + encodeURIComponent(p.id) + '">' +
+            esc(p.title || '（无标题）') +
+            '<span' + (p._pending ? ' class="pend"' : '') + '>' + meta + ' · ' + timeAgo(p.created) + '</span></a>';
+        }).join('') +
+        (mine.length > 8 ? '<a class="pf-post" href="index.html#/forum">还有 ' + (mine.length - 8) + ' 条，去论坛看全部 →</a>' : '') +
+        '</div>'
+      : '<div class="pf-none">还没有发过帖。<a href="index.html#/forum/new" style="color:var(--primary);font-weight:700">去发第一条 →</a></div>';
+  });
 
   $('logoutBtn').addEventListener('click', function () {
+    if (!confirm('退出登录后需要重新验证，确定继续？')) return;
     try { localStorage.removeItem(SKEY); } catch (e) {}
     location.href = 'index.html';
   });

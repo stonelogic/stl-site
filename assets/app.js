@@ -1175,6 +1175,10 @@
         .then(function (r) { return r.ok ? r.json() : null; })
         .catch(function () { return null; });
     }
+    /* 论坛走 fetchForum，才能带上「刚发布还没同步」的本机回声 */
+    function forumData() {
+      return new Promise(function (res) { fetchForum(function (d) { res(d); }); });
+    }
     function findIn(d, key) {
       var arr = (d && Array.isArray(d.players)) ? d.players : [];
       for (var i = 0; i < arr.length; i++) {
@@ -1194,7 +1198,7 @@
     }
 
     Promise.all([getJson('playtime.json'), getJson('bedwars.json'),
-                 getJson('online.json'), getJson('forum.json')]).then(function (r) {
+                 getJson('online.json'), forumData()]).then(function (r) {
       var pt = findIn(r[0]), bw = findIn(r[1]), ol = r[2], fm = r[3];
 
       /* ---- 顶部标签：在线状态 / 服务器身份 ---- */
@@ -1237,13 +1241,21 @@
       /* ---- 论坛发帖 ---- */
       var posts = ((fm && fm.posts) || []).filter(function (p) {
         return String(p.author || '').toLowerCase() === low;
-      });
+      }).sort(function (a, b) { return Number(b.created || 0) - Number(a.created || 0); });
+      html += '<div class="pf-sec">论坛发帖' +
+        (posts.length ? ' <span class="pf-cnt">' + posts.length + '</span>' : '') + '</div>';
       if (posts.length) {
-        html += '<div class="pf-sec">论坛发帖 <span class="pf-cnt">' + posts.length + '</span></div>' +
-          '<div class="pf-posts">' + posts.slice(0, 5).map(function (p) {
-            return '<a class="pf-post" href="#/forum/post/' + encodeURIComponent(p.id) + '">' +
-              esc(p.title || '（无标题）') + '<span>' + (p.replies && p.replies.length ? p.replies.length + ' 回复' : '暂无回复') + '</span></a>';
-          }).join('') + '</div>';
+        html += '<div class="pf-posts">' + posts.slice(0, 5).map(function (p) {
+          var meta = p._pending ? '同步中' : ((p.replies && p.replies.length) ? (p.replies.length + ' 回复') : '暂无回复');
+          return '<a class="pf-post" href="#/forum/post/' + encodeURIComponent(p.id) + '">' +
+            esc(p.title || '（无标题）') + '<span' + (p._pending ? ' class="pend"' : '') + '>' + meta + '</span></a>';
+        }).join('');
+        if (posts.length > 5) {
+          html += '<a class="pf-post pf-more" href="#/forum">还有 ' + (posts.length - 5) + ' 条，去论坛看全部 →</a>';
+        }
+        html += '</div>';
+      } else {
+        html += '<div class="pf-none">还没有在论坛发过帖。</div>';
       }
       if (body) body.innerHTML = html ||
         '<div class="empty"><div class="ico">🫥</div><p>暂无这位玩家的数据</p></div>';
@@ -1870,10 +1882,65 @@
     var c = (data.categories || []).find(function (x) { return x.id === id; });
     return c ? c.name : '未分类';
   }
+  /* ---------- 刚发布、还没同步到线上的帖子 ----------
+     forum.json 是仓库里的静态文件：服务端写完会立刻 commit + push，
+     但 GitHub Pages 要重新构建（几十秒到几分钟）才有这个文件。
+     这中间详情页按 id 找不到，就会显示「帖子不存在或已被删除」。
+     所以本机留一份回声：先照常展示，等线上同步到了再自动丢掉。 */
+  var FORUM_ECHO_KEY = 'stl_forum_echo_v1';
+  var FORUM_ECHO_TTL = 3 * 3600 * 1000;   // 超过 3 小时还没同步，说明出问题了，别再挂着
+
+  function forumEchoLoad() {
+    try {
+      var a = JSON.parse(localStorage.getItem(FORUM_ECHO_KEY) || '[]');
+      return Array.isArray(a) ? a : [];
+    } catch (e) { return []; }
+  }
+  function forumEchoSave(a) {
+    try { localStorage.setItem(FORUM_ECHO_KEY, JSON.stringify(a)); } catch (e) {}
+  }
+  function forumEchoPut(post) {
+    if (!post || !post.id) return;
+    forumEchoSave(forumEchoLoad().filter(function (p) { return p.id !== post.id; }).concat([post]));
+  }
+  function forumEchoDrop(id) {
+    forumEchoSave(forumEchoLoad().filter(function (p) { return p.id !== id; }));
+  }
+  function forumEchoPatch(id, fields) {
+    var a = forumEchoLoad(), hit = false;
+    a.forEach(function (p) {
+      if (p.id !== id) return;
+      hit = true;
+      for (var k in fields) if (Object.prototype.hasOwnProperty.call(fields, k)) p[k] = fields[k];
+    });
+    if (hit) forumEchoSave(a);
+  }
+  /* 把回声并进 forum.json 的数据；已经同步过来的那条自动丢弃 */
+  function forumMergeEcho(data) {
+    if (!data || !Array.isArray(data.posts)) return data;
+    var echo = forumEchoLoad();
+    if (!echo.length) return data;
+    var have = {};
+    data.posts.forEach(function (p) { have[p.id] = 1; });
+    var keep = [];
+    echo.forEach(function (p) {
+      if (have[p.id]) return;                                    // 线上已经有了
+      if (Date.now() - Number(p.created || 0) > FORUM_ECHO_TTL) return;
+      p._pending = true;
+      keep.push(p);
+    });
+    if (keep.length !== echo.length) forumEchoSave(keep);
+    if (keep.length) data.posts = keep.concat(data.posts);
+    return data;
+  }
+
   function fetchForum(cb) {
     fetch('forum.json?_=' + Date.now(), { cache: 'no-store' })
       .then(function (r) { return r.ok ? r.json() : null; })
-      .then(function (d) { cb(d, d ? null : 'http'); })
+      .then(function (d) {
+        if (d) forumMergeEcho(d);
+        cb(d, d ? null : 'http');
+      })
       .catch(function (e) { cb(null, e); });
   }
   /* 等 ntfy 回执：论坛用 forumOk/forumErr，反馈兼容 fbOk/fbErr */
@@ -2188,6 +2255,7 @@
       if (excerpt.length > 80) excerpt = excerpt.slice(0, 80) + '…';
       return '<a class="post-card" href="#/forum/post/' + esc(p.id) + '">' +
         '<span class="cat-badge">' + esc(c) + '</span>' +
+        (p._pending ? '<span class="pend-tag">同步中</span>' : '') +
         '<h3 class="post-title">' + esc(p.title) + '</h3>' +
         '<p class="post-excerpt">' + esc(excerpt) + '</p>' +
         '<div class="post-meta">' +
@@ -2228,6 +2296,12 @@
           (post.edited ? '<span>·</span><span>已编辑</span>' : '') +
         '</div>';
       box.appendChild(head);
+      // 还没同步到线上的帖子：说清楚，别让人以为丢帖了
+      if (post._pending) {
+        var pend = el('div', 'fd-pending');
+        pend.textContent = '刚发布，正在同步到全站（通常 1 分钟内），这期间别人可能还看不到。';
+        box.appendChild(pend);
+      }
       // 正文（textContent 防 XSS，pre-wrap 保留换行）
       var body = el('div', 'fd-body');
       body.textContent = post.content || '';
@@ -2279,7 +2353,11 @@
               body: JSON.stringify({ type: 'forum_del', rid: rid, post_id: post.id, token: msess.token, ts: Date.now() })
             }).then(function () {
               waitForumAck(rid, function (m) {
-                if (m && m.type === 'forumOk') { toast('已删除'); setTimeout(function () { location.hash = '#/forum'; }, 500); }
+                if (m && m.type === 'forumOk') {
+                  forumEchoDrop(post.id);     // 本机回声也删掉，别留在列表里
+                  toast('已删除');
+                  setTimeout(function () { location.hash = '#/forum'; }, 500);
+                }
                 else { delBtn.disabled = false; delBtn.textContent = '🗑️ 删除'; toast('删除失败：' + ((m && m.reason) || '无回执')); }
               });
             }).catch(function () { delBtn.disabled = false; delBtn.textContent = '🗑️ 删除'; toast('网络错误'); });
@@ -2389,7 +2467,11 @@
       }).then(function () {
         waitForumAck(rid, function (mm) {
           btn.disabled = false;
-          if (mm && mm.type === 'forumOk') { toast('已保存'); setTimeout(function () { location.reload(); }, 400); }
+          if (mm && mm.type === 'forumOk') {
+            forumEchoPatch(post.id, { title: nt, content: nc, edited: true });
+            toast('已保存');
+            setTimeout(function () { location.reload(); }, 400);
+          }
           else setM('保存失败：' + ((mm && mm.reason) || '无回执'), true);
         });
       }).catch(function () { btn.disabled = false; setM('网络错误', true); });
@@ -2479,8 +2561,23 @@
         waitForumAck(rid, function (m) {
           submit.disabled = false;
           if (m && (m.type === 'forumOk')) {
+            // 先在本机留一份，Pages 还没重建时详情页也能打开
+            forumEchoPut({
+              id: String(m.id || ''),
+              category: Number(box.querySelector('#fnCat').value),
+              title: t,
+              content: ct,
+              author: (anon.checked || !name.value.trim()) ? '匿名玩家' : name.value.trim(),
+              author_uid: String(sess.uid || ''),
+              anonymous: anon.checked || !name.value.trim(),
+              created: Date.now(),
+              likes: 0,
+              replies: []
+            });
             setMsg('发布成功！正在跳转…', 'ok');
-            setTimeout(function () { location.hash = '#/forum/post/' + (m.id || ''); }, 600);
+            setTimeout(function () {
+              location.hash = m.id ? ('#/forum/post/' + m.id) : '#/forum';
+            }, 600);
           } else if (m && (m.type === 'forumErr')) {
             setMsg('发布失败：' + (m.reason || '未知错误'), 'err');
           } else {
