@@ -1,5 +1,5 @@
 {
-  "generatedAt": 1794577140,
+  "generatedAt": 1794578040,
   "source": "cyutime",
   "count": 26,
   "players": [
@@ -68,20 +68,20 @@
       "year": 10761
     },
     {
-      "name": "groxpro",
+      "name": "Mmm",
       "rank": 9,
+      "total": 9412,
+      "month": 8945,
+      "week": 5631,
+      "year": 9412
+    },
+    {
+      "name": "groxpro",
+      "rank": 10,
       "total": 9242,
       "month": 0,
       "week": 0,
       "year": 9242
-    },
-    {
-      "name": "Mmm",
-      "rank": 10,
-      "total": 8469,
-      "month": 8002,
-      "week": 4688,
-      "year": 8469
     },
     {
       "name": "played",
