@@ -356,6 +356,19 @@
       ('https://minotar.net/helm/' + encodeURIComponent(name) + '/' + (size || 128) + '.png');
   }
 
+  /* QQ 号 → QQ 头像 */
+  function qqAvatar(qq, size) {
+    return 'https://q1.qlogo.cn/g?b=qq&nk=' + encodeURIComponent(qq) + '&s=' + (size || 100);
+  }
+
+  /* 论坛署名是登录的 QQ（形如「QQ 1477211972」），头像就取 QQ 头像；
+     其它老帖子还是按游戏 ID 找 MC 头像 */
+  function forumAvatar(author, size) {
+    var m = /^QQ\s*(\d{5,12})$/.exec(String(author || '').trim());
+    if (m) return qqAvatar(m[1], size || 100);
+    return avatarUrl(author, size);
+  }
+
   /* 加载本地头像清单；失败也无所谓，退回 minotar */
   function loadAvatars(done) {
     fetch('assets/avatars/index.json?_=' + Date.now(), { cache: 'no-store' })
@@ -1240,7 +1253,11 @@
 
       /* ---- 论坛发帖 ---- */
       var posts = ((fm && fm.posts) || []).filter(function (p) {
-        return String(p.author || '').toLowerCase() === low;
+        // 新帖署名是 QQ，靠 author_names（绑定的游戏号）反查；老帖还是按作者名匹配
+        if (String(p.author || '').toLowerCase() === low) return true;
+        var ns = p.author_names || [];
+        for (var i = 0; i < ns.length; i++) if (String(ns[i]).toLowerCase() === low) return true;
+        return false;
       }).sort(function (a, b) { return Number(b.created || 0) - Number(a.created || 0); });
       html += '<div class="pf-sec">论坛发帖' +
         (posts.length ? ' <span class="pf-cnt">' + posts.length + '</span>' : '') + '</div>';
@@ -2250,7 +2267,7 @@
     }
     var html = posts.map(function (p) {
       var c = catName(data, p.category);
-      var av = avatarUrl(p.author, 44);
+      var av = forumAvatar(p.author, 44);
       var excerpt = (p.content || '').replace(/\s+/g, ' ');
       if (excerpt.length > 80) excerpt = excerpt.slice(0, 80) + '…';
       return '<a class="post-card" href="#/forum/post/' + esc(p.id) + '">' +
@@ -2289,7 +2306,7 @@
       head.innerHTML = '<span class="fd-cat">' + esc(c) + '</span>' +
         '<h1 class="fd-title">' + esc(post.title) + '</h1>' +
         '<div class="fd-meta">' +
-          '<img src="' + avatarUrl(post.author, 56) + '" alt="" onerror="this.style.visibility=\'hidden\'">' +
+          '<img src="' + forumAvatar(post.author, 56) + '" alt="" onerror="this.style.visibility=\'hidden\'">' +
           '<span class="pm-name">' + esc(post.author || '匿名玩家') + '</span>' +
           '<span>·</span><span>' + timeAgo(post.created) + '</span>' +
           '<span>·</span><span>💬 ' + ((post.replies || []).length) + ' 回复</span>' +
@@ -2383,27 +2400,25 @@
       box.appendChild(rl);
       renderReplies(rl, post);
       // 回复表单（需登录官网账号）
+      var sess = getSession();
       var rf = el('div', 'reply-form');
       rf.innerHTML =
-        '<div class="forum-note">登录后即可回复；勾选匿名将以「匿名玩家」发表。</div>' +
+        '<div class="forum-note">登录后即可回复，回复同样以你的 QQ 署名。</div>' +
         '<div class="field"><label>回复内容</label><textarea id="rfText" maxlength="1000" placeholder="说点什么…"></textarea></div>' +
         '<div class="rf-row">' +
-          '<input id="rfName" type="text" maxlength="24" placeholder="昵称（选填）" style="flex:1;min-width:120px;background:var(--card);border:1px solid var(--input);border-radius:9px;padding:9px 11px;color:var(--foreground);outline:none">' +
-          '<label class="rf-anon"><input id="rfAnon" type="checkbox" checked> 匿名发表</label>' +
+          '<div class="fn-who fn-who-sm">' + (sess ? '<img src="' + qqAvatar(sess.qq, 100) + '" alt="" onerror="this.style.visibility=\'hidden\'">' +
+          '<span>QQ ' + esc(String(sess.qq)) + '</span>' : '') + '</div>' +
           '<button class="btn btn-primary btn-sm" id="rfSend" type="button">发表回复</button>' +
         '</div>' +
         '<div id="rfMsg" style="font-size:13px;min-height:18px;margin-top:8px"></div>';
       box.appendChild(rf);
       // 未登录：直接换成「去登录」提示，不再渲染回复框
-      var sess = getSession();
       if (!sess) {
         rf.innerHTML = '';
         rf.appendChild(loginGate('回复需要先登录官网账号。'));
         return;
       }
       var rfText = rf.querySelector('#rfText');
-      var rfName = rf.querySelector('#rfName');
-      var rfAnon = rf.querySelector('#rfAnon');
       var rfSend = rf.querySelector('#rfSend');
       var rfMsg = rf.querySelector('#rfMsg');
       rfSend.addEventListener('click', function () {
@@ -2414,7 +2429,7 @@
         rfSend.disabled = true; rfMsg.textContent = '正在发表…'; rfMsg.style.color = 'var(--muted-foreground)';
         fetch(NTFY_BASE + '/' + NTFY_TOPIC, {
           method: 'POST', headers: { 'content-type': 'text/plain' },
-          body: JSON.stringify({ type: 'forum_reply', rid: rid, post_id: post.id, content: text, author: rfName.value.trim(), anonymous: rfAnon.checked, token: sess.token, ts: Date.now() })
+          body: JSON.stringify({ type: 'forum_reply', rid: rid, post_id: post.id, content: text, token: sess.token, ts: Date.now() })
         }).then(function () {
           waitForumAck(rid, function (m) {
             rfSend.disabled = false;
@@ -2483,7 +2498,7 @@
     if (!list.length) { container.innerHTML = '<div style="font-size:13.5px;color:var(--muted-foreground);padding:6px 2px">还没有回复，来抢沙发～</div>'; return; }
     container.innerHTML = list.slice().sort(function (a, b) { return a.created - b.created; }).map(function (r) {
       return '<div class="reply-item">' +
-        '<img src="' + avatarUrl(r.author, 60) + '" alt="" onerror="this.style.visibility=\'hidden\'">' +
+        '<img src="' + forumAvatar(r.author, 60) + '" alt="" onerror="this.style.visibility=\'hidden\'">' +
         '<div class="ri-main">' +
           '<div class="ri-head"><span class="ri-name">' + esc(r.author || '匿名玩家') + '</span><span class="ri-time">' + timeAgo(r.created) + '</span></div>' +
           '<div class="ri-body"></div>' +
@@ -2498,7 +2513,7 @@
 
   /* --- 发新贴页 --- */
   function renderForumNew(container) {
-    container.innerHTML = pageHead('论坛', '发新贴', '提个想法、问个问题、晒个作品。登录官网账号后即可发表。');
+    container.innerHTML = pageHead('论坛', '发新贴', '提个想法、问个问题、晒个作品。帖子以你登录的 QQ 署名。');
     var sess = getSession();
     if (!sess) {
       container.appendChild(loginGate('发帖需要先登录官网账号。'));
@@ -2508,15 +2523,15 @@
     container.appendChild(box);
     box.innerHTML =
       '<div class="forum-note">发表内容会公开展示在论坛上，请不要填写密码、手机号等敏感信息。恶意刷屏或违规内容将被删除。</div>' +
+      // 不再有昵称 / 匿名选项：署名固定用登录的 QQ
+      '<div class="fn-who"><img src="' + qqAvatar(sess.qq, 100) + '" alt="" onerror="this.style.visibility=\'hidden\'">' +
+        '<div><div class="fn-who-n">以 QQ ' + esc(String(sess.qq)) + ' 的身份发布</div>' +
+        '<div class="fn-who-s">帖子署名固定为你的 QQ，不可匿名或改昵称</div></div></div>' +
       '<div class="field"><label>选择分类</label><select id="fnCat"></select></div>' +
       '<div class="field"><label>标题<span id="fnCount" style="float:right;color:var(--muted-foreground)">0 / 100</span></label>' +
         '<input id="fnTitle" type="text" maxlength="100" placeholder="一句话说清你要聊什么"></div>' +
       '<div class="field"><label>正文<span id="fnCount2" style="float:right;color:var(--muted-foreground)">0 / 2000</span></label>' +
         '<textarea id="fnContent" maxlength="2000" placeholder="展开说说，第一行会作为标题的补充说明"></textarea></div>' +
-      '<div class="rf-row" style="margin-bottom:14px">' +
-        '<input id="fnName" type="text" maxlength="24" placeholder="昵称（选填，留空则匿名）" style="flex:1;min-width:120px;background:var(--card);border:1px solid var(--input);border-radius:9px;padding:9px 11px;color:var(--foreground);outline:none">' +
-        '<label class="rf-anon"><input id="fnAnon" type="checkbox" checked> 匿名发表</label>' +
-      '</div>' +
       '<div id="fnMsg" class="fb-msg"></div>' +
       '<div class="fb-actions"><button class="btn btn-primary" id="fnSubmit" type="button">发布帖子</button>' +
         '<a class="btn btn-outline" href="#/forum">取消</a></div>';
@@ -2533,8 +2548,6 @@
 
     var title = box.querySelector('#fnTitle');
     var content = box.querySelector('#fnContent');
-    var name = box.querySelector('#fnName');
-    var anon = box.querySelector('#fnAnon');
     var submit = box.querySelector('#fnSubmit');
     var msg = box.querySelector('#fnMsg');
     var c1 = box.querySelector('#fnCount');
@@ -2555,7 +2568,7 @@
         method: 'POST', headers: { 'content-type': 'text/plain' },
         body: JSON.stringify({
           type: 'forum_post', rid: rid, category: Number(box.querySelector('#fnCat').value),
-          title: t, content: ct, author: name.value.trim(), anonymous: anon.checked, token: sess.token, ts: Date.now()
+          title: t, content: ct, token: sess.token, ts: Date.now()
         })
       }).then(function () {
         waitForumAck(rid, function (m) {
@@ -2567,9 +2580,10 @@
               category: Number(box.querySelector('#fnCat').value),
               title: t,
               content: ct,
-              author: (anon.checked || !name.value.trim()) ? '匿名玩家' : name.value.trim(),
+              author: 'QQ ' + String(sess.qq),
               author_uid: String(sess.uid || ''),
-              anonymous: anon.checked || !name.value.trim(),
+              author_names: (sess.names || []).slice(0, 8),
+              anonymous: false,
               created: Date.now(),
               likes: 0,
               replies: []

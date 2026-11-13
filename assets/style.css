@@ -666,6 +666,16 @@ code{font-family:ui-monospace,Consolas,Menlo,monospace}
 .forum-form .field textarea{min-height:150px}
 .forum-note{font-size:13px;color:var(--muted-foreground);background:var(--muted);border-radius:10px;padding:10px 13px;margin-bottom:16px;line-height:1.6}
 
+/* 发帖/回帖的身份条：署名固定为登录 QQ，没有昵称与匿名选项 */
+.fn-who{display:flex;align-items:center;gap:11px;padding:11px 13px;margin-bottom:16px;
+  background:var(--muted);border:1px solid var(--border);border-radius:11px}
+.fn-who img{width:38px;height:38px;border-radius:9px;background:var(--card);flex:none}
+.fn-who-n{font-size:13.5px;font-weight:700}
+.fn-who-s{font-size:12px;color:var(--muted-foreground);margin-top:2px}
+.fn-who-sm{padding:0;background:none;border:0;margin:0;gap:8px}
+.fn-who-sm img{width:26px;height:26px;border-radius:7px}
+.fn-who-sm span{font-size:13px;font-weight:700;color:var(--muted-foreground)}
+
 /* ===== 个人中心（#/me）：资料卡 + 统计 + 登录设备 ===== */
 .me-wrap{display:grid;gap:16px}
 .me-loading{padding:30px;text-align:center;color:var(--muted-foreground);font-size:14px}
