@@ -2998,7 +2998,8 @@
     function paint(d) {
       var st = d.stats || { total: 0, streak: 0, todayDone: false };
       var parts = [];
-      if (d.names && d.names.length) parts.push('主号 ' + d.names[0]);
+      if (d.name) parts.push('主号 ' + d.name);
+      else if (d.names && d.names.length) parts.push('主号 ' + d.names[0]);
       parts.push('连续 ' + st.streak + ' 天');
       parts.push('累计 ' + st.total + ' 天');
       sub.textContent = parts.join(' · ') + '　' + (d.reward ? ('奖励：' + d.reward) : '（暂未配置奖励）');
