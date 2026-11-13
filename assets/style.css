@@ -928,11 +928,13 @@ code{font-family:ui-monospace,Consolas,Menlo,monospace}
 .marquee:hover .mq-run{animation-play-state:paused}
 .mq-i{display:inline-flex;align-items:center;gap:6px}
 .mq-i b{font-weight:700}
-.mq-src{font-style:normal;font-size:10px;font-weight:700;padding:1px 5px;border-radius:4px;
+.mq-src{font-style:normal;font-size:10px;font-weight:800;line-height:1.5;padding:1px 6px;border-radius:5px;
   background:var(--muted);color:var(--muted-foreground)}
-.mq-src.s-qq{background:color-mix(in oklab,#12b7f5 16%,transparent);color:#0d8fc0}
-.mq-src.s-mc{background:color-mix(in oklab,var(--primary) 16%,transparent);color:var(--primary)}
-[data-theme="dark"] .mq-src.s-qq{color:#59caf0}
+.mq-src.s-qq{background:#d7f0fb;color:#0a6e93}
+.mq-src.s-mc{background:color-mix(in oklab,var(--primary) 20%,transparent);color:var(--primary)}
+.mq-src.s-web{background:var(--muted);color:var(--muted-foreground)}
+[data-theme="dark"] .mq-src.s-qq{background:#123c4c;color:#8fdcf5}
+[data-theme="dark"] .mq-src.s-web{background:#2f2f2f;color:#b9b9b9}
 .mq-dot{color:var(--muted-foreground);opacity:.5}
 .mq-more{flex:none;font-size:12px;font-weight:650;color:var(--primary);white-space:nowrap}
 .mq-more:hover{text-decoration:underline}
@@ -1053,3 +1055,27 @@ a.wk-nm:hover{color:var(--primary)}
   .hl-top{flex-wrap:wrap;padding:13px}
   .hl-age{margin-left:0;width:100%}
 }
+
+/* ===== 成就徽章墙（个人中心） ===== */
+.me-badges{margin-top:16px}
+.me-badges-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.me-badges-head h3{margin:0;font-size:15px;font-weight:750}
+.me-badges-cnt{font-size:12px;font-weight:700;color:var(--primary);
+  padding:2px 9px;border-radius:99px;background:color-mix(in oklab,var(--primary) 12%,transparent)}
+.badge-wall{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:9px}
+.badge-cell{display:grid;justify-items:center;gap:3px;padding:12px 6px;border-radius:11px;
+  background:var(--muted);border:1px solid var(--border);text-align:center;transition:transform .12s,box-shadow .12s}
+.badge-cell:hover{transform:translateY(-2px);box-shadow:var(--shadow-sm)}
+.badge-cell .badge-ico{font-size:22px;line-height:1.15;filter:grayscale(1);opacity:.42}
+.badge-cell b{font-size:12px;font-weight:700;line-height:1.35;
+  overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.badge-cell i{font-style:normal;font-size:10.5px;line-height:1.3;color:var(--muted-foreground);
+  overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.badge-cell.is-got{
+  background:color-mix(in oklab,var(--gold) 12%,var(--card));
+  border-color:color-mix(in oklab,var(--gold) 45%,var(--border));
+}
+.badge-cell.is-got .badge-ico{filter:none;opacity:1}
+.badge-cell.is-got b{color:var(--foreground)}
+.badge-cell.is-got i{color:var(--gold);font-weight:700}
+@media(max-width:520px){.badge-wall{grid-template-columns:repeat(auto-fill,minmax(78px,1fr));gap:7px}}

@@ -2925,6 +2925,27 @@
     return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
   }
 
+  /* 里程碑徽章：不依赖服务端发放，纯按在线时长 / 论坛活跃度算，人人都有得追 */
+  function localBadges(pt, fm) {
+    var h = pt ? Number(pt.total || 0) / 3600 : 0;
+    var wk = pt ? Number(pt.week || 0) / 3600 : 0;
+    var mo = pt ? Number(pt.month || 0) / 3600 : 0;
+    var posts = Number((fm && fm.posts) || 0);
+    var replies = Number((fm && fm.replies) || 0);
+    var rank = pt ? Number(pt.rank || 0) : 0;
+    return [
+      { icon: '🌱', name: '初来乍到', got: !!pt && h > 0, need: '玩过一次' },
+      { icon: '🕐', name: '十小时', got: h >= 10, need: '在线满 10 小时' },
+      { icon: '⛏️', name: '百小时矿工', got: h >= 100, need: '在线满 100 小时' },
+      { icon: '👑', name: '千小时传奇', got: h >= 1000, need: '在线满 1000 小时' },
+      { icon: '📅', name: '本周活跃', got: wk >= 5, need: '本周满 5 小时' },
+      { icon: '🔥', name: '本月劳模', got: mo >= 20, need: '本月满 20 小时' },
+      { icon: '🏆', name: '榜单前十', got: rank > 0 && rank <= 10, need: '总榜前十' },
+      { icon: '✍️', name: '论坛常客', got: posts >= 5, need: '发满 5 帖' },
+      { icon: '💬', name: '热心回复', got: replies >= 20, need: '回复满 20 条' }
+    ];
+  }
+
   function renderMe(container) {
     var sess = getSession();
     container.innerHTML = pageHead('我的', '个人中心', '查看游戏时长与论坛活跃度，管理已登录的设备。');
@@ -2991,6 +3012,33 @@
         '<div class="card me-stat"><div class="k">论坛发帖</div><div class="v">' + fm.posts + ' 篇</div><div class="s">回复 ' + fm.replies + ' 条</div></div>' +
         '<div class="card me-stat"><div class="k">登录设备</div><div class="v">' + (d.sessionCount || 0) + ' 台</div><div class="s">含当前这台</div></div>' +
         '</div>';
+
+      /* 成就徽章墙：服务器发放的徽章 + 按现有数据算出来的里程碑徽章，
+         解锁的点亮，没解锁的显示成灰格并写明条件 */
+      var bd = d.badges || { items: [] };
+      var wall = (bd.items || []).map(function (b) {
+        return {
+          icon: b.icon, name: b.name,
+          got: b.at > 0,
+          need: b.at > 0 ? (fmtTime(b.at) + ' 解锁') : (b.desc || '服务器发放'),
+          srv: true
+        };
+      }).concat(localBadges(pt, fm));
+      if (wall.length) {
+        var got = wall.filter(function (b) { return b.got; });
+        html += '<div class="card me-badges">' +
+          '<div class="me-badges-head"><h3>成就徽章</h3>' +
+          '<span class="me-badges-cnt">' + got.length + ' / ' + wall.length + ' 已解锁</span></div>' +
+          '<div class="badge-wall">' +
+          wall.map(function (b) {
+            return '<div class="badge-cell' + (b.got ? ' is-got' : '') + '" title="' + esc(b.need) + '">' +
+              '<span class="badge-ico">' + esc(b.got ? b.icon : '🔒') + '</span>' +
+              '<b>' + esc(b.name) + '</b>' +
+              '<i>' + esc(b.got ? '已解锁' : b.need) + '</i></div>';
+          }).join('') +
+          '</div>' +
+          '<p class="me-tip">里程碑徽章按你的在线时长与论坛活跃度自动点亮；服务器徽章由游戏内发放。</p></div>';
+      }
 
       var devs = Array.isArray(d.sessions) ? d.sessions : [];
       html += '<div class="card me-devices"><div class="me-dev-head"><h3>登录设备</h3>' +
