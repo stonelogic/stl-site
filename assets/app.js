@@ -99,7 +99,7 @@
      （名单必须靠 RCON 导出，天生慢 1~2 分钟）。
      连续失败不立刻判离线——先按指数退避重试，避免把网络抖动误报成服务器挂了。
      =========================================================== */
-  var TICK = 5000;    // 状态刷新间隔（5 秒）
+  var TICK = 15000;   // 状态刷新间隔。数据源本身每分钟才更新一次，5 秒一问纯属浪费
   var LIVE = {
     known: false,     // 是否拿到过可信结果（false = 显示"检测中/状态未知"）
     ok: false,        // 服务器是否在线
@@ -115,6 +115,22 @@
     timer: null,
     onUpdate: null    // 当前页面注册的额外刷新函数
   };
+
+  /* ===========================================================
+     服务器状态数据源
+     -----------------------------------------------------------
+     主数据源是仓库里的 online.json（tools/export_online.py 每分钟经 RCON 导出）。
+     它和页面同源、无跨域、无第三方依赖，是我们能控制的那一份。
+
+     以前主数据源是第三方 mclists 接口，2026-11 起它开始稳定返回
+     {"status":"error"}，导致首页徽标永远卡在「状态检测中…」——
+     只有点进「状态」页（读的是 online.json）才看得到真实状态。
+
+     所以现在把两者职责分开：
+       · 在线与否 / 人数 —— 只信 online.json，绝不受第三方影响
+       · 延迟 / 版本 / MOTD —— 第三方能给就给（pollExtras），给不了显示「—」
+     =========================================================== */
+  var SNAPSHOT_URL = 'online.json';   // 自有快照
 
   function liveUrl() {
     return STATUS_API.replace('{host}', JAVA_HOST).replace('{port}', JAVA_PORT);
@@ -177,10 +193,13 @@
     }
     LIVE.known = true;
     // 已经确定在线时，别让一次「离线」采样把人数清掉
+    var p = d.players || {};
     if (isOn || LIVE.ok === false) {
-      var p = d.players || {};
       LIVE.now = Number(p.now) || 0;
     }
+    // 人数上限来自 online.json（第三方接口给的是脏值）
+    if (Number(p.max)) LIVE.max = Number(p.max);
+    if (d.snapTs) LIVE.snapTs = d.snapTs;
     LIVE.ping = (typeof d.latency === 'number' && d.latency > 0) ? d.latency : LIVE.ping;
     LIVE.ver = d.version || d.name || LIVE.ver;
     LIVE.motd = typeof d.description === 'string' ? d.description
@@ -197,15 +216,24 @@
     var ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
     var to = setTimeout(function () { if (ctrl) ctrl.abort(); }, 8000);
     var opts = ctrl ? { signal: ctrl.signal, cache: 'no-store' } : { cache: 'no-store' };
-    fetch(liveUrl() + '&_=' + Date.now(), opts)
+    fetch(SNAPSHOT_URL + '?_=' + Date.now(), opts)
       .then(function (r) {
         if (!r.ok) throw new Error('HTTP ' + r.status);
         return r.json();
       })
-      .then(function (x) {
-        var d = (x && x.data) ? x.data : null;
+      .then(function (d) {
         if (!d || typeof d.online !== 'boolean') throw new Error('bad payload');
-        applyLive(d);
+        /* 导出脚本在名单没变化时只按 20 分钟心跳刷时间戳，所以 30 分钟内的
+           快照都算可信；超过就拿不准了 —— 宁可显示「检测中」，也别硬说在线。 */
+        var up = Number(d.updated) || 0;
+        if (up && (Date.now() / 1000 - up) > 1800) throw new Error('snapshot too old');
+        // 换成 applyLive 认识的结构；TPS/内存等字段一并带过去，页面别处可以直接用
+        applyLive({
+          online: !!d.online,
+          players: { now: Number(d.now) || 0, max: Number(d.max) || 0 },
+          tps: d.tps15, tps1: d.tps1, mem: d.mem, uptime: d.uptime,
+          restart: d.restart, snapTs: String(d.ts || '')
+        });
       })
       .catch(function () {
         // 拿不到数据 ≠ 服务器离线：连续 3 次失败才把徽标降级成"状态未知"
@@ -222,17 +250,43 @@
       });
   }
 
-  /* 单一心跳：5 秒一次；失败次数越多间隔越长（最多 60 秒），页面隐藏时停手 */
+  /* 第三方富信息（延迟 / 版本 / MOTD）：只做锦上添花，绝不参与在线判定。
+     接口挂了或超时就静默放弃，徽标照常显示 online.json 的状态。 */
+  var extrasBusy = false, extrasAt = 0;
+  function pollExtras() {
+    if (extrasBusy || Date.now() - extrasAt < 60000) return;   // 一分钟最多问一次
+    extrasBusy = true; extrasAt = Date.now();
+    var ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+    var to = setTimeout(function () { if (ctrl) ctrl.abort(); }, 8000);
+    var opts = ctrl ? { signal: ctrl.signal, cache: 'no-store' } : { cache: 'no-store' };
+    fetch(liveUrl() + '&_=' + Date.now(), opts)
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (x) {
+        var d = x && x.data;
+        if (!d) return;
+        var touched = false;
+        if (typeof d.latency === 'number' && d.latency > 0) { LIVE.ping = d.latency; touched = true; }
+        if (d.version || d.name) { LIVE.ver = d.version || d.name; touched = true; }
+        var m = typeof d.description === 'string' ? d.description
+          : (d.description && d.description.text ? d.description.text : '');
+        if (m) { LIVE.motd = m; touched = true; }
+        if (touched && typeof LIVE.onUpdate === 'function') LIVE.onUpdate();
+      })
+      .catch(function () {})
+      .then(function () { clearTimeout(to); extrasBusy = false; });
+  }
+
+  /* 单一心跳；失败次数越多间隔越长（最多 60 秒），页面隐藏时停手 */
   function startLiveTicker() {
     if (LIVE.timer) clearTimeout(LIVE.timer);
     function step() {
-      if (!document.hidden) pollLive();
+      if (!document.hidden) { pollLive(); pollExtras(); }
       var delay = LIVE.fail >= 3 ? Math.min(60000, TICK * Math.pow(2, LIVE.fail - 2)) : TICK;
       LIVE.timer = setTimeout(step, delay);
     }
     step();
     document.addEventListener('visibilitychange', function () {
-      if (!document.hidden) pollLive();   // 切回前台立刻补一次，不用等下一个 5 秒
+      if (!document.hidden) pollLive();   // 切回前台立刻补一次，不用等下一个周期
     });
   }
 
@@ -2077,6 +2131,24 @@
     return { page: renderHome, param: '' };
   }
 
+  /* 首页天空渐变要一直铺到顶栏后面（.hero 已经钻到 topbar 底下）。
+     顶栏这时必须让路变透明，否则会在最上面切出一条白带。
+     滚过 Hero 之后自动恢复毛玻璃，保证后面阅读深色文字时的对比度。 */
+  function syncTopbarOverHero() {
+    var bar = document.querySelector('.topbar');
+    if (!bar) return;
+    var hero = document.querySelector('.hero');
+    var over = false;
+    if (hero) {
+      // 用「两个矩形是否相交」判断，别写 top<=0：顶栏有 1px 下边框，
+      // Hero 顶部会正好落在 y=1，用 0 比较永远判不上。
+      var r = hero.getBoundingClientRect();
+      var br = bar.getBoundingClientRect();
+      over = r.top < br.bottom && r.bottom > br.top;
+    }
+    if (bar.classList.contains('over-hero') !== over) bar.classList.toggle('over-hero', over);
+  }
+
   function render() {
     clearInterval(window.__stlHeroTimer);
     LIVE.onUpdate = null;   // 换页了，别再把上一页的刷新函数带着跑
@@ -2088,6 +2160,7 @@
     renderNav(path);
     r.page(main, r.param);
     window.scrollTo(0, 0);
+    syncTopbarOverHero();
   }
 
   /* ---------- 配置加载（config.json 覆盖默认，localStorage 本机预览优先） ---------- */
@@ -2143,6 +2216,8 @@
     syncFooter();
     $id('footerYear').textContent = new Date().getFullYear();
     window.addEventListener('hashchange', render);
+    window.addEventListener('scroll', syncTopbarOverHero, { passive: true });
+    window.addEventListener('resize', syncTopbarOverHero);
     // 配置加载完再起实时心跳：config.json 可能改掉服务器地址，避免第一次探测打错地址
     loadAvatars(function () {
       loadConfig(function () {
