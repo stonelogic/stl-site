@@ -2078,9 +2078,9 @@
       if (!it || cell.querySelector('.where')) continue;
       var s = document.createElement('span');
       s.className = 'where';
-      s.title = it.dim + ' · 约 ' + it.x + ', ' + it.y + ', ' + it.z + '（按 ' +
-        '100 格取整，只做大方向参考）';
-      s.textContent = it.dim + ' · ' + it.x + ', ' + it.y + ', ' + it.z;
+      s.title = it.dim + ' · 约 ' + it.x + ', ' + it.y + ', ' + it.z + '（按 100 格取整，只做大方向参考）';
+      /* 出生点 / 主城附近取整后全是 0，直接写坐标等于没说，换成「原点附近」 */
+      s.textContent = it.dim + ((it.x === 0 && it.z === 0) ? ' · 原点附近' : (' · 约 ' + it.x + ', ' + it.y + ', ' + it.z));
       cell.appendChild(s);
     }
   }
