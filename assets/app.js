@@ -1764,7 +1764,12 @@
     }
     var html = players.map(function (name) {
       var face = avatarUrl(name, 96);
-      return '<div class="player-cell" data-name="' + esc(name) + '"><img src="' + face + '" alt="" loading="lazy" data-fb="' + identicon(name) + '" onerror="this.onerror=null;this.src=this.getAttribute(\'data-fb\')"><span class="nm">' + esc(name) + '</span></div>';
+      /* 格子本身就是进玩家主页的入口（和首页雪花一个去处）；
+         右上角那个 👋 是「戳一下」——点了会在游戏里提示对方，不能触发跳转 */
+      return '<a class="player-cell" href="#/p/' + encodeURIComponent(name) + '" data-name="' + esc(name) + '">' +
+        '<span class="poke" role="button" tabindex="0" data-poke="' + esc(name) + '" title="在游戏里戳 ' + esc(name) + ' 一下" aria-label="戳一下">👋</span>' +
+        '<img src="' + face + '" alt="" loading="lazy" data-fb="' + identicon(name) + '" onerror="this.onerror=null;this.src=this.getAttribute(\'data-fb\')">' +
+        '<span class="nm">' + esc(name) + '</span></a>';
     }).join('');
     // 实时人数和名单条数对不上时说明原因（名单靠 RCON 导出，慢约 1 分钟），
     // 否则又会被当成「显示 3 人却只有 2 个头像」的 bug
@@ -1795,6 +1800,7 @@
       '<div class="pf-tags" id="pfTags"><span class="badge badge-muted">读取中…</span></div></div>' +
       '<div class="pf-act">' +
       '<button class="btn btn-sm" id="pfCard" type="button">🖼️ 名片</button>' +
+      '<button class="btn btn-sm" id="pfPoke" type="button" hidden>👋 戳一下</button>' +
       '<a class="btn btn-sm" href="#/vs/' + encodeURIComponent(nm) + '">⚖️ 对比</a>' +
       '<a class="btn btn-sm" href="#/rank">排行榜</a>' +
       '</div>' +
@@ -1805,6 +1811,18 @@
     var body = card.querySelector('#pfBody');
     var tags = card.querySelector('#pfTags');
     var low = nm.toLowerCase();
+
+    /* 只有人在线才给「戳一下」——离线戳了对方也看不见 */
+    var pokeBtn = card.querySelector('#pfPoke');
+    if (pokeBtn) {
+      pokeBtn.addEventListener('click', function () { pokePlayer(nm, this); });
+      fetchLocalOnline(function (d) {
+        var list = (d && Array.isArray(d.players)) ? d.players : [];
+        for (var i = 0; i < list.length; i++) {
+          if (String(list[i]).toLowerCase() === low) { pokeBtn.hidden = false; return; }
+        }
+      });
+    }
 
     function getJson(f) {
       return fetch(f + '?_=' + Date.now(), { cache: 'no-store' })
@@ -2036,16 +2054,47 @@
 
   /* --- 在线状态页（在线玩家 ID + 头像） --- */
   function renderOnline(container) {
-    container.innerHTML = pageHead('在线', '在线状态', '状态自动刷新；玩家名单每分钟同步，坐标按 100 格取整，只做大方向参考');
+    container.innerHTML = pageHead('在线', '在线状态', '状态自动刷新；玩家名单每分钟同步，坐标按 100 格取整，只做大方向参考；点玩家头像看资料，点 👋 在游戏里提醒他');
     var card = el('div', 'card'); container.appendChild(card);
     card.innerHTML = '<div style="display:flex;align-items:center;gap:14px;margin-bottom:16px;flex-wrap:wrap">' +
       '<span class="status-pill" id="olPill">检测中…</span>' +
       '<span style="font-size:15px;font-weight:700" id="olCount">—</span>' +
       '</div>' +
       '<div class="player-grid" id="olPlayers"></div>';
+    /* 名单每次心跳都会重画，但 #olPlayers 这个容器一直在，事件挂它身上不会丢 */
+    var grid = $id('olPlayers');
+    if (grid) {
+      grid.addEventListener('click', function (e) {
+        var b = e.target.closest ? e.target.closest('.poke') : null;
+        if (!b) return;
+        e.preventDefault();          // 别顺着 <a> 跳到玩家主页
+        e.stopPropagation();
+        pokePlayer(b.getAttribute('data-poke'), b);
+      });
+    }
     renderLive();
     loadOnline();
     LIVE.onUpdate = loadOnline;   // 人数/胶囊由 renderLive 写，这里只负责名单
+  }
+
+  /* 「戳一下」：网站上点一下 → 服务端 RCON 给游戏里的他发一条 tellraw */
+  function pokePlayer(name, btn) {
+    if (!name) return;
+    var sess = getSession();
+    if (!sess) { toast('先登录才能戳人（右上角「登录」）'); return; }
+    if (btn.dataset.busy === '1') return;
+    btn.dataset.busy = '1';
+    btn.classList.add('busy');
+    var rid = randomHex(8);
+    postBus({ type: 'poke', rid: rid, token: sess.token, target: name });
+    waitBus(rid, ['pokeOk', 'pokeErr'], function (m) {
+      delete btn.dataset.busy;
+      btn.classList.remove('busy');
+      if (!m) { toast('戳了个空，等会儿再试'); return; }
+      if (m.type === 'pokeErr' || m.ok === false) { toast(m.reason || '没戳动'); return; }
+      toast('已戳 ' + name + '，他游戏里会收到提示' +
+        (typeof m.left === 'number' ? '（今天还剩 ' + m.left + ' 次）' : ''));
+    });
   }
   function loadOnline() {
     fetchLocalOnline(function (d, err) {
@@ -3044,6 +3093,46 @@
     });
   }
 
+  /* 「我上次死在哪」：服务端读死亡记录 + 当前位置，算出距离和方向；
+     跨维度时按 1:8 换算成「这个维度该去的坐标」，比只给一个死坐标有用 */
+  function loadDeath(box, sess) {
+    var body = box.querySelector('#meDeathBody');
+    var btn = box.querySelector('#meDeathBtn');
+    if (!body) return;
+
+    function paint(m) {
+      if (!m) { body.innerHTML = '<span class="me-death-none">查询超时了，点「重新查询」再试一次。</span>'; return; }
+      if (m.type === 'deathErr') { body.innerHTML = '<span class="me-death-none">' + esc(m.reason || '查询失败') + '</span>'; return; }
+      if (m.none) {
+        body.innerHTML = '<span class="me-death-none">还没有死亡记录 —— 要么没死过，要么记录已被服务器清理。保持住。</span>';
+        return;
+      }
+      var d = m.death || {};
+      var html = '<div class="me-death-row">' +
+        '<span class="me-death-dim">' + esc(d.dim || '未知') + '</span>' +
+        '<code class="me-death-pos">' + d.x + ', ' + d.y + ', ' + d.z + '</code>' +
+        '<button class="me-death-copy" type="button" data-copy="' + d.x + ' ' + d.y + ' ' + d.z + '">复制</button>' +
+        '</div>';
+      if (m.hint) html += '<div class="me-death-hint">' + esc(m.hint) + '</div>';
+      body.innerHTML = html;
+      var cp = body.querySelector('.me-death-copy');
+      if (cp) cp.addEventListener('click', function () { copyText(cp.getAttribute('data-copy'), cp, '坐标'); });
+    }
+
+    function go() {
+      var rid = randomHex(8);
+      if (btn) { btn.disabled = true; btn.textContent = '查询中…'; }
+      postBus({ type: 'deathQuery', rid: rid, token: sess.token });
+      waitBus(rid, ['deathOk', 'deathErr'], function (m) {
+        if (btn) { btn.disabled = false; btn.textContent = '重新查询'; }
+        paint(m);
+      });
+    }
+
+    if (btn) btn.addEventListener('click', go);
+    go();
+  }
+
   function renderMe(container) {
     var sess = getSession();
     container.innerHTML = pageHead('我的', '个人中心', '查看游戏时长与论坛活跃度，管理已登录的设备。');
@@ -3117,6 +3206,14 @@
         '<div class="me-chk-s" id="meChkSub">正在读取签到状态…</div></div>' +
         '<div class="me-chk-act" id="meChkAct"></div></div>';
 
+      /* 死亡点找回：死了找不到掉落物是最难受的时刻，这里直接告诉他坐标和方向 */
+      html += '<div class="card me-death" id="meDeath">' +
+        '<div class="me-death-head">' +
+        '<div class="me-chk-t">💀 我上次死在哪</div>' +
+        '<button class="btn btn-sm btn-outline" id="meDeathBtn" type="button">重新查询</button>' +
+        '</div>' +
+        '<div class="me-death-body" id="meDeathBody">正在向服务器查询死亡记录…</div></div>';
+
       /* 成就徽章墙：服务器发放的徽章 + 按现有数据算出来的里程碑徽章，
          解锁的点亮，没解锁的显示成灰格并写明条件 */
       var bd = d.badges || { items: [] };
@@ -3170,6 +3267,7 @@
 
       box.innerHTML = html;
       loadCheckin(box, sess);
+      loadDeath(box, sess);
 
       var lo = box.querySelector('.me-logout');
       if (lo) lo.addEventListener('click', function () {
