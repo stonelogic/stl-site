@@ -210,11 +210,59 @@ code{font-family:ui-monospace,Consolas,Menlo,monospace}
 .hero-scroll:hover{background:color-mix(in oklab,var(--card) 72%,transparent)}
 .hero-scroll svg{width:24px;height:24px}
 @keyframes stlBounce{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(9px)}}
-.flower{position:absolute;color:#fff;font-size:clamp(15px,2.2vw,26px);text-shadow:0 1px 3px rgba(0,0,0,.28);pointer-events:none;opacity:.92;line-height:1}
-.flower.f1{top:2%;left:5%}
-.flower.f2{top:14%;right:7%}
-.flower.f3{bottom:18%;left:15%}
-.flower.f4{bottom:6%;right:16%}
+
+/* ===== 在线玩家雪花 ===== */
+/* 每个在线玩家一朵，在 Hero 里飘；鼠标悬停出资料卡，点击进玩家主页 */
+/* Hero 现在钻到顶栏背后了，雪花层要从顶栏下沿开始排，
+   否则会有雪花飘进菜单栏、贴着导航文字和按钮，看着像错位 */
+.hero-flakes{position:absolute;left:0;right:0;bottom:0;top:var(--topbar-h);overflow:hidden;pointer-events:none;z-index:2}
+.snow{
+  position:absolute;left:0;top:0;width:24px;height:24px;padding:0;border:0;background:none;
+  pointer-events:auto;cursor:pointer;color:#fff;opacity:.95;
+  filter:drop-shadow(0 1px 2px rgba(10,46,74,.28));
+  transition:opacity .18s,color .18s,filter .18s;
+  will-change:transform;
+}
+.snow svg{width:100%;height:100%;display:block}
+.snow:hover,.snow:focus-visible{opacity:1;color:#f2faff;filter:drop-shadow(0 3px 8px rgba(10,46,74,.55)) brightness(1.08);outline:none}
+.snow:hover{transform-origin:center}
+
+/* 悬停资料卡 */
+.snow-tip{
+  position:fixed;z-index:90;left:0;top:0;pointer-events:none;
+  display:flex;align-items:center;gap:10px;padding:9px 13px 9px 9px;
+  background:var(--card);color:var(--card-foreground);
+  border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow-lg);
+  opacity:0;transform:translateY(6px);transition:opacity .16s,transform .16s;
+}
+.snow-tip.show{opacity:1;transform:none}
+.snow-tip img{width:38px;height:38px;border-radius:9px;background:var(--muted);flex:none;image-rendering:pixelated}
+.snow-tip .t-nm{font-weight:800;font-size:14.5px;line-height:1.25}
+.snow-tip .t-sub{font-size:12px;color:var(--muted-foreground);margin-top:2px;white-space:nowrap}
+.snow-tip .t-go{font-size:11.5px;color:var(--primary);font-weight:700;margin-top:3px;white-space:nowrap}
+
+/* ===== 玩家主页 ===== */
+.pf-head{display:flex;align-items:center;gap:16px;margin-bottom:22px}
+.pf-av{width:76px;height:76px;border-radius:16px;background:var(--muted);flex:none;image-rendering:pixelated;
+  border:1px solid var(--border)}
+.pf-id{min-width:0}
+.pf-name{font-size:22px;font-weight:800;line-height:1.2;word-break:break-all}
+.pf-tags{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:8px}
+.pf-sec{font-size:14px;font-weight:700;margin:22px 0 10px;display:flex;align-items:center;gap:8px}
+.pf-sec:first-child{margin-top:0}
+.pf-cnt{font-size:12px;font-weight:600;color:var(--muted-foreground);background:var(--muted);
+  border-radius:99px;padding:1px 8px}
+.pf-posts{display:grid;gap:8px}
+.pf-post{display:flex;align-items:center;gap:12px;padding:11px 14px;border:1px solid var(--border);
+  border-radius:10px;font-size:14px;font-weight:600;transition:.16s;min-width:0}
+.pf-post:hover{border-color:var(--ring);background:var(--accent);color:var(--primary)}
+.pf-post span{margin-left:auto;flex:none;font-size:12px;font-weight:500;color:var(--muted-foreground)}
+.pf-post{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media (max-width:520px){
+  .pf-head{flex-wrap:wrap;gap:12px}
+  .pf-av{width:60px;height:60px;border-radius:13px}
+  .pf-name{font-size:18px}
+}
 
 /* ===== 页头 ===== */
 .page-head{margin-bottom:24px}
@@ -389,7 +437,6 @@ code{font-family:ui-monospace,Consolas,Menlo,monospace}
 .card,.page-head{animation:stlFadeUp .55s cubic-bezier(.22,.61,.36,1) both}
 .hero-sky .hero-slogan{animation:stlFadeUp .6s .18s both}
 .hero-sky .hero-actions,.hero-sky .hero-ip{animation:stlFadeUp .6s .38s both}
-.hero-sky .flower{animation:stlFadeIn 1s .25s both}
 .grid > *{animation:stlFadeUp .5s both}
 .feat4 > *,.staff-grid > *{animation:stlFadeUp .5s both}
 .feat4 > *:nth-child(2),.staff-grid > *:nth-child(2){animation-delay:.05s}
@@ -404,7 +451,7 @@ code{font-family:ui-monospace,Consolas,Menlo,monospace}
 .stat-row > *{animation:stlFadeUp .5s both}
 @media (prefers-reduced-motion: reduce){
   .card,.page-head,.hero-sky .hero-title,.hero-sky .hero-slogan,
-  .hero-sky .hero-actions,.hero-sky .hero-ip,.hero-sky .flower,.grid > *,
+  .hero-sky .hero-actions,.hero-sky .hero-ip,.grid > *,
   .stat-row > *,.feat4 > *,.staff-grid > *{animation:none!important}
 }
 

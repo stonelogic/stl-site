@@ -435,8 +435,6 @@
     // Hero（Minecraft 像素风大标题，天空渐变背景）
     var hero = el('div', 'hero');
     hero.innerHTML = '<div class="hero-sky">' +
-      '<span class="flower f1">❀</span><span class="flower f2">✿</span>' +
-      '<span class="flower f3">❀</span><span class="flower f4">✿</span>' +
       '<h1 class="hero-title"><span>STONE</span><span>LOGIC</span></h1>' +
       '<p class="hero-slogan">' + esc(SITE.slogan) + '</p>' +
       '<div class="hero-meta">' +
@@ -502,6 +500,287 @@
     clearInterval(window.__stlHeroTimer);
     renderLive();
     if (!LIVE.at) pollLive();   // 首次进入还没拿到过数据就立刻问一次
+    refreshHeroFlakes();        // 在线玩家 → 雪花
+    LIVE.onUpdate = refreshHeroFlakes;   // 跟着心跳同步增减
+  }
+
+  /* ===========================================================
+     在线玩家雪花
+     -----------------------------------------------------------
+     每个在线玩家 = 一朵雪花，在 Hero 里绕着不规则的缓慢轨迹飘。
+     鼠标悬停看资料卡，点击进玩家主页（#/p/<name>）。
+
+     轨迹用「角度由两个不同频率的正弦叠加」来生成：
+       ang = base + sin(t*f1)*.9 + sin(t*f2+p)*.6
+     比帧间随机抖动顺滑，又不会退化成直线（纯随机游走会）。
+     撞到边界时把 base 做镜像翻转，雪花就在框内来回飘，不会瞬移。
+     =========================================================== */
+  var FLAKES = { wrap: null, items: [], raf: 0, last: 0, tip: null, hovered: null };
+
+  /* 雪花图形：同一条路径画两遍 —— 先粗一圈深色当前景描边，再压一条白色。
+     这样无论是在顶部深蓝处还是底部接近白色的天空里都看得清，
+     比单纯 drop-shadow 稳。 */
+  var SNOW_SVG = (function () {
+    var p = '';
+    for (var i = 0; i < 6; i++) {
+      var a = i * Math.PI / 3;
+      var x = 12 + Math.cos(a) * 10.1, y = 12 + Math.sin(a) * 10.1;
+      p += '<line x1="12" y1="12" x2="' + x.toFixed(2) + '" y2="' + y.toFixed(2) + '"/>';
+      // 每条主枝在中段分出两片小枝，像真雪花
+      var bx = 12 + Math.cos(a) * 6.3, by = 12 + Math.sin(a) * 6.3;
+      [a - 0.62, a + 0.62].forEach(function (na) {
+        var ex = bx + Math.cos(na) * 3.0, ey = by + Math.sin(na) * 3.0;
+        p += '<line x1="' + bx.toFixed(2) + '" y1="' + by.toFixed(2) + '" x2="' + ex.toFixed(2) + '" y2="' + ey.toFixed(2) + '"/>';
+      });
+    }
+    return '<svg viewBox="0 0 24 24" fill="none" stroke-linecap="round">' +
+      '<g stroke="rgba(8,42,70,.42)" stroke-width="3.7">' + p + '</g>' +
+      '<g stroke="currentColor" stroke-width="1.45">' + p + '</g></svg>';
+  })();
+
+  function rand(a, b) { return a + Math.random() * (b - a); }
+
+  function snowTipEl() {
+    if (FLAKES.tip) return FLAKES.tip;
+    var t = el('div', 'snow-tip');
+    document.body.appendChild(t);
+    FLAKES.tip = t;
+    return t;
+  }
+
+  /* 在线时长 / 起床战绩只为了资料卡里那行小字，取到一次就缓存 */
+  var PLAYER_SNIP = {};
+  function loadPlayerSnip() {
+    if (PLAYER_SNIP.ready) return;
+    PLAYER_SNIP.ready = true;
+    fetch('playtime.json?_=' + Date.now(), { cache: 'no-store' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (d) {
+        ((d && d.players) || []).forEach(function (p) {
+          // 两个请求谁先回来不一定，这里必须合并而不是覆盖
+          var k = String(p.name).toLowerCase();
+          var e = PLAYER_SNIP[k] || (PLAYER_SNIP[k] = {});
+          e.rank = p.rank; e.total = p.total;
+        });
+      })
+      .catch(function () {});
+    fetch('bedwars.json?_=' + Date.now(), { cache: 'no-store' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (d) {
+        ((d && d.players) || []).forEach(function (p) {
+          var k = String(p.name).toLowerCase();
+          var e = PLAYER_SNIP[k] || (PLAYER_SNIP[k] = {});
+          e.bwScore = p.score;
+          e.bwRank = p.rank;
+        });
+      })
+      .catch(function () {});
+  }
+
+  function showSnowTip(fl) {
+    var name = fl.name;
+    var t = snowTipEl();
+    var snip = PLAYER_SNIP[name.toLowerCase()] || {};
+    var sub = [];
+    if (snip.rank) sub.push('在线时长第 ' + snip.rank + ' 名 · ' + fmtDur(snip.total));
+    if (snip.bwScore != null) sub.push('起床积分 ' + snip.bwScore);
+    t.innerHTML =
+      '<img src="' + avatarUrl(name, 38) + '" alt="" onerror="this.onerror=null;this.src=\'' + identicon(name) + '\'">' +
+      '<div><div class="t-nm">' + esc(name) + '</div>' +
+      '<div class="t-sub">' + esc(sub.length ? sub.join(' · ') : '此刻在线') + '</div>' +
+      '<div class="t-go">点击查看玩家主页 →</div></div>';
+    t.classList.add('show');
+    positionSnowTip(fl);
+  }
+
+  function positionSnowTip(fl) {
+    var t = FLAKES.tip;
+    if (!t) return;
+    var r = fl.el.getBoundingClientRect();
+    var tw = t.offsetWidth, th = t.offsetHeight;
+    var x = r.left + r.width / 2 - tw / 2;
+    var y = r.top - th - 10;
+    if (y < 8) y = r.bottom + 10;                       // 上方放不下就翻到下面
+    x = Math.max(8, Math.min(x, window.innerWidth - tw - 8));
+    t.style.left = Math.round(x) + 'px';
+    t.style.top = Math.round(y) + 'px';
+  }
+
+  function hideSnowTip() {
+    if (FLAKES.tip) FLAKES.tip.classList.remove('show');
+  }
+
+  function addFlake(name) {
+    var wrap = FLAKES.wrap;
+    if (!wrap) return;
+    var w = wrap.clientWidth, h = wrap.clientHeight;
+    if (w < 80 || h < 80) return;
+
+    var size = Math.round(rand(16, 29));
+    var el2 = document.createElement('a');
+    el2.className = 'snow';
+    el2.href = '#/p/' + encodeURIComponent(name);
+    el2.setAttribute('aria-label', name + '（点击查看玩家主页）');
+    el2.style.width = el2.style.height = size + 'px';
+    el2.innerHTML = SNOW_SVG;
+
+    var fl = {
+      name: name, el: el2,
+      x: rand(0, w - size), y: rand(0, h - size),
+      base: rand(0, Math.PI * 2),
+      f1: rand(0.22, 0.42), f2: rand(0.55, 0.95), p: rand(0, Math.PI * 2),
+      sp: rand(7, 17),                 // px/s，慢
+      spin: rand(-14, 14),             // deg/s
+      t: rand(0, 40), size: size
+    };
+    // 出生点尽量别落在中间文字区里（重生 12 次都撞上就直接放行，由运行时推开）
+    var zone = heroZone();
+    if (zone) {
+      for (var k = 0; k < 12; k++) {
+        var mx = fl.x + size / 2, my = fl.y + size / 2;
+        if (!(mx > zone.x0 && mx < zone.x1 && my > zone.y0 && my < zone.y1)) break;
+        fl.x = rand(0, w - size); fl.y = rand(0, h - size);
+      }
+    }
+    el2.addEventListener('mouseenter', function () { FLAKES.hovered = fl; showSnowTip(fl); });
+    el2.addEventListener('focus', function () { FLAKES.hovered = fl; showSnowTip(fl); });
+    el2.addEventListener('mouseleave', function () { if (FLAKES.hovered === fl) FLAKES.hovered = null; hideSnowTip(); });
+    el2.addEventListener('blur', function () { if (FLAKES.hovered === fl) FLAKES.hovered = null; hideSnowTip(); });
+    // 点击后立刻收起资料卡，否则会跟着旧页面留在屏幕上
+    el2.addEventListener('click', function () { hideSnowTip(); });
+    wrap.appendChild(el2);
+    FLAKES.items.push(fl);
+    fl.el.style.transform = 'translate3d(' + fl.x.toFixed(1) + 'px,' + fl.y.toFixed(1) + 'px,0) rotate(' + (fl.t * fl.spin / 10).toFixed(1) + 'deg)';
+  }
+
+  function syncFlakes(names) {
+    if (!FLAKES.wrap) return;
+    var want = {};
+    (names || []).forEach(function (n) { want[String(n).toLowerCase()] = String(n); });
+    // 下线的收走
+    for (var i = FLAKES.items.length - 1; i >= 0; i--) {
+      if (!want[FLAKES.items[i].name.toLowerCase()]) {
+        FLAKES.items[i].el.remove();
+        FLAKES.items.splice(i, 1);
+      }
+    }
+    // 新来的补上（已在场的保持原位置，不要跳）
+    var have = {};
+    FLAKES.items.forEach(function (it) { have[it.name.toLowerCase()] = 1; });
+    Object.keys(want).forEach(function (k) { if (!have[k]) addFlake(want[k]); });
+    if (!FLAKES.items.length) hideSnowTip();
+  }
+
+  /* Hero 中间那块文字（标题/标语/地址/在线人数）在雪花层里的坐标。
+     雪花绕开它走，别糊在大标题上像渲染错误。 */
+  function heroZone() {
+    var wrap = FLAKES.wrap;
+    if (!wrap) return null;
+    var sky = document.querySelector('.hero-sky');
+    if (!sky) return null;
+    var wr = wrap.getBoundingClientRect(), sr = sky.getBoundingClientRect();
+    if (!wr.width || !wr.height || !sr.width) return null;
+    return {
+      x0: sr.left - wr.left - 6, y0: sr.top - wr.top - 6,
+      x1: sr.right - wr.left + 6, y1: sr.bottom - wr.top + 6
+    };
+  }
+
+  function stepFlakes(ts) {
+    var wrap = FLAKES.wrap;
+    if (!wrap || !document.body.contains(wrap)) { FLAKES.raf = 0; return; }
+    var dt = Math.min(64, ts - (FLAKES.last || ts)) / 1000;
+    FLAKES.last = ts;
+    if (!document.hidden && dt > 0) {
+      var w = wrap.clientWidth, h = wrap.clientHeight;
+      var zone = heroZone();
+      FLAKES.items.forEach(function (fl) {
+        fl.t += dt;
+        var ang = fl.base + Math.sin(fl.t * fl.f1) * 0.9 + Math.sin(fl.t * fl.f2 + fl.p) * 0.6;
+        var nx = fl.x + Math.cos(ang) * fl.sp * dt;
+        var ny = fl.y + Math.sin(ang) * fl.sp * dt;
+        // 撞墙做镜像反弹，避免瞬移
+        if (nx < 0) { nx = 0; fl.base = Math.PI - fl.base; }
+        else if (nx > w - fl.size) { nx = w - fl.size; fl.base = Math.PI - fl.base; }
+        if (ny < 0) { ny = 0; fl.base = -fl.base; }
+        else if (ny > h - fl.size) { ny = h - fl.size; fl.base = -fl.base; }
+        // 绕开中间文字区：从最近的一条边推出去，同时把方向镜像
+        if (zone) {
+          var cx = nx + fl.size / 2, cy = ny + fl.size / 2;
+          if (cx > zone.x0 && cx < zone.x1 && cy > zone.y0 && cy < zone.y1) {
+            var dl = cx - zone.x0, dr = zone.x1 - cx, du = cy - zone.y0, dd = zone.y1 - cy;
+            var m = Math.min(dl, dr, du, dd);
+            if (m === dl) { nx = zone.x0 - fl.size; fl.base = Math.PI - fl.base; }
+            else if (m === dr) { nx = zone.x1; fl.base = Math.PI - fl.base; }
+            else if (m === du) { ny = zone.y0 - fl.size; fl.base = -fl.base; }
+            else { ny = zone.y1; fl.base = -fl.base; }
+          }
+        }
+        fl.x = nx; fl.y = ny;
+        fl.el.style.transform = 'translate3d(' + nx.toFixed(1) + 'px,' + ny.toFixed(1) + 'px,0) rotate(' + (fl.t * fl.spin).toFixed(1) + 'deg)';
+      });
+      if (FLAKES.hovered && FLAKES.tip && FLAKES.tip.classList.contains('show')) positionSnowTip(FLAKES.hovered);
+    }
+    FLAKES.raf = requestAnimationFrame(stepFlakes);
+  }
+
+  function startFlakes() {
+    if (FLAKES.raf) return;
+    FLAKES.last = 0;
+    FLAKES.raf = requestAnimationFrame(stepFlakes);
+  }
+
+  function stopFlakes() {
+    if (FLAKES.raf) { cancelAnimationFrame(FLAKES.raf); FLAKES.raf = 0; }
+    hideSnowTip();
+    FLAKES.hovered = null;
+    FLAKES.items = [];
+    FLAKES.wrap = null;
+  }
+
+  /* 拉一次 online.json，按玩家名单增减雪花 */
+  function refreshHeroFlakes() {
+    var hero = document.querySelector('.hero');
+    if (!hero) return;
+    loadPlayerSnip();     // 资料卡那行小字的数据，取一次缓存住
+    if (!FLAKES.wrap || !document.body.contains(FLAKES.wrap)) {
+      FLAKES.wrap = el('div', 'hero-flakes');
+      hero.appendChild(FLAKES.wrap);
+      FLAKES.items = [];
+    }
+    var wrap = FLAKES.wrap;
+
+    function apply(names) {
+      // 实时状态说离线或 0 人时，一个都不挂（名单文件会滞后，别自相矛盾）
+      if (LIVE.known && (!LIVE.ok || LIVE.now === 0)) names = [];
+      if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        // 减少动效：摆成静态的一圈，不做轨迹动画
+        syncFlakes(names);
+        var z = heroZone();
+        FLAKES.items.forEach(function (fl, i) {
+          var w = wrap.clientWidth, h = wrap.clientHeight;
+          var cols = Math.max(1, Math.floor(w / 110));
+          var cx = (i % cols + 0.5) * (w / cols) - fl.size / 2;
+          var cy = (Math.floor(i / cols) + 0.5) * 90 + 40;
+          fl.x = Math.max(0, Math.min(w - fl.size, cx));
+          fl.y = Math.max(0, Math.min(h - fl.size, cy));
+          // 静态布局落进文字区就挪到文字区下面，别压字
+          if (z && fl.x + fl.size / 2 > z.x0 && fl.x + fl.size / 2 < z.x1 &&
+              fl.y + fl.size / 2 > z.y0 && fl.y + fl.size / 2 < z.y1) {
+            fl.y = Math.max(0, Math.min(h - fl.size, z.y1 + 8));
+          }
+          fl.el.style.transform = 'translate3d(' + fl.x.toFixed(1) + 'px,' + fl.y.toFixed(1) + 'px,0)';
+        });
+        return;
+      }
+      syncFlakes(names);
+      startFlakes();
+    }
+
+    fetch('online.json?_=' + Date.now(), { cache: 'no-store' })
+      .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(function (d) { apply((d && Array.isArray(d.players)) ? d.players : []); })
+      .catch(function () { apply([]); });    // 取不到就一朵都不挂
   }
 
   function fallbackCopy(text) {
@@ -868,6 +1147,109 @@
         (mins > 90 ? Math.round(mins / 60) + ' 小时' : mins + ' 分钟') + ' 没运行，以下名单可能不是最新的</div>';
     }
     pg.innerHTML = html;
+  }
+
+  /* --- 玩家主页（#/p/<name>）：雪花点进来就是这里 --- */
+  function renderPlayer(container, name) {
+    var nm = String(name || '').trim();
+    container.innerHTML = pageHead('首页', nm || '玩家', '玩家资料 · 数据来自服务器定时导出，状态实时');
+
+    var card = el('div', 'card');
+    card.innerHTML =
+      '<div class="pf-head">' +
+      '<img class="pf-av" src="' + avatarUrl(nm, 96) + '" alt="" data-fb="' + identicon(nm) + '" ' +
+      'onerror="this.onerror=null;this.src=this.getAttribute(\'data-fb\')">' +
+      '<div class="pf-id"><div class="pf-name">' + esc(nm || '未知玩家') + '</div>' +
+      '<div class="pf-tags" id="pfTags"><span class="badge badge-muted">读取中…</span></div></div>' +
+      '<a class="btn btn-sm" href="#/rank" style="margin-left:auto;flex:none">排行榜</a>' +
+      '</div>' +
+      '<div id="pfBody"><div class="empty"><div class="ico">⏳</div><p>正在读取玩家数据…</p></div></div>';
+    container.appendChild(card);
+
+    var body = card.querySelector('#pfBody');
+    var tags = card.querySelector('#pfTags');
+    var low = nm.toLowerCase();
+
+    function getJson(f) {
+      return fetch(f + '?_=' + Date.now(), { cache: 'no-store' })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .catch(function () { return null; });
+    }
+    function findIn(d, key) {
+      var arr = (d && Array.isArray(d.players)) ? d.players : [];
+      for (var i = 0; i < arr.length; i++) {
+        if (String(arr[i][key || 'name']).toLowerCase() === low) return arr[i];
+      }
+      return null;
+    }
+    function box(k, v, sub, cls) {
+      return '<div class="stat-box"><div class="k">' + k + '</div><div class="v ' + (cls || '') + '">' + v + '</div>' +
+        (sub ? '<div class="ksub">' + sub + '</div>' : '') + '</div>';
+    }
+    // 时长卡：0 要说成「未游玩」，不能显示成「0 秒」，也不能跟「缺数据」的 — 混为一谈
+    function durBox(k, v, sub) {
+      var n = Number(v);
+      var has = (v !== null && v !== undefined && v !== '' && !isNaN(n));
+      return box(k, has ? (n > 0 ? fmtDur(n) : '未游玩') : '—', sub || '');
+    }
+
+    Promise.all([getJson('playtime.json'), getJson('bedwars.json'),
+                 getJson('online.json'), getJson('forum.json')]).then(function (r) {
+      var pt = findIn(r[0]), bw = findIn(r[1]), ol = r[2], fm = r[3];
+
+      /* ---- 顶部标签：在线状态 / 服务器身份 ---- */
+      var isOn = !!(ol && ol.online && (ol.players || []).some(function (p) {
+        return String(p).toLowerCase() === low;
+      }));
+      var tagHtml = '<span class="status-pill ' + (isOn ? 'on' : 'off') + '">' + (isOn ? '● 在线' : '● 离线') + '</span>';
+      SITE.staff.forEach(function (m) {
+        if (String(m.name).toLowerCase() !== low) return;
+        (m.roles || []).forEach(function (ro) {
+          tagHtml += '<span class="badge badge-' + (ro.c === 'gold' ? 'gold' : ro.c === 'red' ? 'red' : 'blue') + '">' + esc(ro.t) + '</span>';
+        });
+      });
+      if (pt && pt.rank) tagHtml += '<span class="badge badge-green">在线时长第 ' + pt.rank + ' 名</span>';
+      if (tags) tags.innerHTML = tagHtml;
+
+      /* ---- 指标卡 ---- */
+      var html = '';
+      if (pt) {
+        html += '<div class="pf-sec">在线时长</div><div class="stat-row">' +
+          durBox('总时长', pt.total, pt.rank ? ('全服第 ' + pt.rank + ' 名') : '') +
+          durBox('本周', pt.week) +
+          durBox('本月', pt.month) +
+          durBox('累计年', pt.year) +
+          '</div>';
+      }
+      if (bw) {
+        var kd = (typeof bw.kd === 'number') ? (Number.isInteger(bw.kd) ? bw.kd : bw.kd.toFixed(2)) : (bw.kd || '—');
+        html += '<div class="pf-sec">起床战争</div><div class="stat-row">' +
+          box('积分', bw.score != null ? bw.score : '—', bw.rank ? ('第 ' + bw.rank + ' 名') : '') +
+          box('胜率', (bw.winRate != null ? bw.winRate + '%' : '—'), (bw.wins || 0) + ' 胜 / ' + (bw.loses || 0) + ' 负') +
+          box('K/D', kd, (bw.kills || 0) + ' 杀 / ' + (bw.deaths || 0) + ' 死') +
+          box('破床', bw.destroyedBeds != null ? bw.destroyedBeds : '—', '') +
+          '</div>';
+      }
+      if (!pt && !bw) {
+        html += '<div class="empty"><div class="ico">🫥</div><p>还没有这位玩家的战绩记录</p></div>';
+      }
+
+      /* ---- 论坛发帖 ---- */
+      var posts = ((fm && fm.posts) || []).filter(function (p) {
+        return String(p.author || '').toLowerCase() === low;
+      });
+      if (posts.length) {
+        html += '<div class="pf-sec">论坛发帖 <span class="pf-cnt">' + posts.length + '</span></div>' +
+          '<div class="pf-posts">' + posts.slice(0, 5).map(function (p) {
+            return '<a class="pf-post" href="#/forum/post/' + encodeURIComponent(p.id) + '">' +
+              esc(p.title || '（无标题）') + '<span>' + (p.replies && p.replies.length ? p.replies.length + ' 回复' : '暂无回复') + '</span></a>';
+          }).join('') + '</div>';
+      }
+      if (body) body.innerHTML = html ||
+        '<div class="empty"><div class="ico">🫥</div><p>暂无这位玩家的数据</p></div>';
+    }).catch(function () {
+      if (body) body.innerHTML = emptyState('📡', '玩家数据加载失败，请稍后刷新');
+    });
   }
 
   /* --- 在线状态页（在线玩家 ID + 头像） --- */
@@ -2133,6 +2515,12 @@
     if (!path || path === '/') return { page: renderHome, param: '' };
     // 论坛子路由：详情页 /forum/post/<id>
     if (path.indexOf('/forum/post/') === 0) return { page: renderForumPost, param: path.split('/')[3] || '' };
+    // 玩家主页：/p/<名字>（雪花点进来的就是它）
+    if (path.indexOf('/p/') === 0) {
+      var who = path.slice(3);
+      try { who = decodeURIComponent(who); } catch (e) {}
+      return { page: renderPlayer, param: who };
+    }
     if (path === '/forum/new') return { page: renderForumNew, param: '' };
     if (path === '/forum') return { page: renderForum, param: '' };
     if (routes[path]) return { page: routes[path], param: '' };
@@ -2159,6 +2547,7 @@
 
   function render() {
     clearInterval(window.__stlHeroTimer);
+    stopFlakes();           // 换页先停掉雪花循环，否则 Hero 没了还在空转
     LIVE.onUpdate = null;   // 换页了，别再把上一页的刷新函数带着跑
     var r = resolve(location.hash);
     var main = $id('main');
