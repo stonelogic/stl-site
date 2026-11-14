@@ -3007,6 +3007,7 @@
   var REMOTE_BUS = !!SERVER_BUS && IS_PAGES;
   var LOCAL_REPLY = {};
   var BUS_FALLBACK = {};   // rid -> true：这次写直连失败、回落了 ntfy，回执也要走 ntfy 轮询
+  var BUS_LEGACY = false;  // 探测到服务端还是旧版 /api/bus（回执仍发 ntfy），本次会话退回 ntfy
 
   /* ntfy 兜底通道（仅静态页没配直连、或直连失败时才用） */
   function ntfyPost(obj) {
@@ -3032,7 +3033,7 @@
     }).catch(function () { return false; });
   }
   function postBus(obj) {
-    if (LOCAL_BUS || REMOTE_BUS) {
+    if (!BUS_LEGACY && (LOCAL_BUS || REMOTE_BUS)) {
       var url = REMOTE_BUS ? (SERVER_BUS.replace(/\/+$/, '') + '/api/bus') : '/api/bus';
       return fetch(url, {
         method: 'POST', headers: { 'content-type': 'application/json' },
@@ -3040,7 +3041,14 @@
       }).then(function (r) {
         if (!r.ok) throw new Error('bus ' + r.status);
         return r.json();
-      }).then(function (m) { LOCAL_REPLY[obj.rid] = m; return true; })
+      }).then(function (m) {
+        /* 服务端还没重启时是旧版 /api/bus：请求其实已经被处理了，只是回执发去了 ntfy，
+           这里只会拿到 busErr。绝不重发（会重复写库），把本次会话退回 ntfy 通道，
+           waitBus 会去 ntfy 轮询里捞到真正的回执。 */
+        if (m && m.type === 'busErr') { BUS_LEGACY = true; return true; }
+        LOCAL_REPLY[obj.rid] = m;
+        return true;
+      })
         .catch(function () {
           /* 服务没启 / 隧道断了 / 站点被托管在别处：回落 ntfy，别让写操作直接失败 */
           BUS_FALLBACK[obj.rid] = true;
@@ -3072,7 +3080,7 @@
   }
   /* 等总线上与自己 rid 匹配的回执（论坛/个人中心/聊天共用同一套玩法） */
   function waitBus(rid, types, cb) {
-    if ((LOCAL_BUS || REMOTE_BUS) && !BUS_FALLBACK[rid]) {
+    if (!BUS_LEGACY && (LOCAL_BUS || REMOTE_BUS) && !BUS_FALLBACK[rid]) {
       var tries = 0;
       (function poll() {
         var m = LOCAL_REPLY[rid];
