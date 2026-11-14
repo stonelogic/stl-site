@@ -2996,8 +2996,10 @@
   /* ---------- 个人中心（资料 / 时长 / 登录设备） ---------- */
 
   /* 往 ntfy 总线发一条请求 */
-  var BUS_DOWN = false, BUS_WARNED = false;
+  var BUS_DOWN = false, BUS_WARNED = false, BUS_MUTE_UNTIL = 0;
   function postBus(obj) {
+    /* 配额打满后先静默 30 分钟，别再发注定失败的请求 */
+    if (BUS_DOWN && Date.now() < BUS_MUTE_UNTIL) return Promise.resolve(false);
     return fetch(NTFY_BASE + '/' + NTFY_TOPIC, {
       method: 'POST',
       headers: { 'content-type': 'text/plain' },
@@ -3005,6 +3007,7 @@
     }).then(function (r) {
       if (r.status === 429) {
         BUS_DOWN = true;
+        BUS_MUTE_UNTIL = Date.now() + 30 * 60000;
         if (!BUS_WARNED) {
           BUS_WARNED = true;
           toast('消息通道今日已达上限，正在显示最近一次快照；写操作暂时不可用');
@@ -3037,6 +3040,8 @@
   }
   /* 等总线上与自己 rid 匹配的回执（论坛/个人中心共用同一套玩法） */
   function waitBus(rid, types, cb) {
+    /* 通道不可用时立刻收尾，页面保留快照数据，不空等 15 秒 */
+    if (BUS_DOWN) return cb(null);
     var deadline = Date.now() + 15000;
     (function tick() {
       fetch(NTFY_BASE + '/' + NTFY_TOPIC + '/json?poll=1&since=' + Math.floor(Date.now() / 1000 - 120))
