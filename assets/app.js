@@ -15,13 +15,12 @@
   var NTFY_TOPIC = 'stl-ql-6bd1ae0f4e7e7968';
   var REPO_URL = 'https://github.com/stonelogic/stl-site';
   /* GitHub Pages 静态页「跨域」直连服务端总线的地址（不占 ntfy 配额）。
-     整站去 ntfy 有两条路，任选其一：
-       A. 用 natfrp 给 127.0.0.1:28080 建一条 HTTP 隧道并开自动 HTTPS，
-          让玩家直接访问隧道域名：页面由本服务 serveStatic 托管，/api/bus 天然同源，
-          零配置直连（下面 IS_PAGES 判定会自动识别），这里保持留空即可。
-       B. 继续用 GitHub Pages，把隧道地址填到这里（如 'https://stl-ql.frp-top.com'），
-          写操作跨域直连服务端 /api/bus，回执内联返回。
-     留空且仍在 GitHub Pages 上 = 写操作继续走 ntfy（旧行为，配额打满时会受限）。 */
+     默认留空：运行时去 fetch 仓库根目录的 bus-endpoint.json，
+     由 tools/bus-tunnel.js 在 Quick Tunnel 每次重连后自动写入并推送，
+     所以玩家访问的网址永远是固定的 Pages 地址、后端地址变了也无感。
+     以后若拿到固定域名（Tailscale / 自有域名），直接填在这里即以它为准，不再读 json。
+     页面由本服务自己托管时（127.0.0.1 / 隧道域名）自动走同源 /api/bus，与这里无关。
+     取不到地址时写操作回落 ntfy（旧行为），功能不会中断。 */
   var SERVER_BUS = '';
 
   /* ---------- 站点配置（纯静态文案） ---------- */
@@ -2966,7 +2965,7 @@
   }
   /* 等 ntfy 回执：论坛用 forumOk/forumErr，反馈兼容 fbOk/fbErr */
   /* 回执统一走 waitBus：本机 / 直连总线模式下在 LOCAL_REPLY 内联返回，
-     不走 ntfy 轮询；公网且没配 SERVER_BUS 时回落到 ntfy 轮询（与旧逻辑一致）。 */
+     不走 ntfy 轮询；公网且没拿到直连端点时回落到 ntfy 轮询（与旧逻辑一致）。 */
   function waitForumAck(rid, cb) {
     waitBus(rid, ['forumOk', 'fbOk', 'forumErr', 'fbErr'], cb);
   }
@@ -3003,8 +3002,30 @@
      写 POST 完全不经过 ntfy，配额打满也照常发帖 / 聊天 / 签到 / 召集。 */
   var IS_PAGES = /(^|\.)github\.io$/i.test(location.hostname);
   var LOCAL_BUS = !IS_PAGES;
-  /* GitHub Pages 静态页：只有填了 SERVER_BUS 才跨域直连服务端 /api/bus */
-  var REMOTE_BUS = !!SERVER_BUS && IS_PAGES;
+  /* GitHub Pages 静态页：只有拿到动态端点才跨域直连服务端 /api/bus */
+  var BUS_ENDPOINT = String(SERVER_BUS || '').trim().replace(/\/+$/, '');
+  /* 允许写进 bus-endpoint.json 的域名后缀：防仓库被改成恶意地址把写请求带走。
+     换自有域名时把后缀加进来，或直接填上面的 SERVER_BUS（手动值不校验）。 */
+  var BUS_HOST_ALLOW = /(^|\.)(trycloudflare\.com|ts\.net)$/i;
+  function busUrlOk(u) {
+    if (!/^https:\/\/[a-z0-9.-]+$/i.test(u)) return false;
+    return BUS_HOST_ALLOW.test(u.replace(/^https:\/\//i, ''));
+  }
+  /* 页面加载时读一次端点；2.5 秒拿不到就放弃本次直连（回落 ntfy），
+     绝不让所有写操作卡在这个 fetch 上。 */
+  var BUS_READY = SERVER_BUS ? Promise.resolve(BUS_ENDPOINT) : Promise.race([
+    fetch('bus-endpoint.json?_=' + Date.now(), { cache: 'no-store' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (d) {
+        var u = d && d.url ? String(d.url).trim().replace(/\/+$/, '') : '';
+        if (u && busUrlOk(u)) BUS_ENDPOINT = u;
+        return BUS_ENDPOINT;
+      })
+      .catch(function () { return ''; }),
+    new Promise(function (resolve) { setTimeout(function () { resolve(''); }, 2500); })
+  ]);
+  function busDirect() { return LOCAL_BUS || (IS_PAGES && !!BUS_ENDPOINT); }
+  function busUrl() { return IS_PAGES ? (BUS_ENDPOINT + '/api/bus') : '/api/bus'; }
   var LOCAL_REPLY = {};
   var BUS_FALLBACK = {};   // rid -> true：这次写直连失败、回落了 ntfy，回执也要走 ntfy 轮询
   var BUS_LEGACY = false;  // 探测到服务端还是旧版 /api/bus（回执仍发 ntfy），本次会话退回 ntfy
@@ -3033,9 +3054,11 @@
     }).catch(function () { return false; });
   }
   function postBus(obj) {
-    if (!BUS_LEGACY && (LOCAL_BUS || REMOTE_BUS)) {
-      var url = REMOTE_BUS ? (SERVER_BUS.replace(/\/+$/, '') + '/api/bus') : '/api/bus';
-      return fetch(url, {
+    return BUS_READY.then(function () { return postBusNow(obj); });
+  }
+  function postBusNow(obj) {
+    if (!BUS_LEGACY && busDirect()) {
+      return fetch(busUrl(), {
         method: 'POST', headers: { 'content-type': 'application/json' },
         body: JSON.stringify(obj)
       }).then(function (r) {
@@ -3080,7 +3103,10 @@
   }
   /* 等总线上与自己 rid 匹配的回执（论坛/个人中心/聊天共用同一套玩法） */
   function waitBus(rid, types, cb) {
-    if (!BUS_LEGACY && (LOCAL_BUS || REMOTE_BUS) && !BUS_FALLBACK[rid]) {
+    BUS_READY.then(function () { waitBusNow(rid, types, cb); });
+  }
+  function waitBusNow(rid, types, cb) {
+    if (!BUS_LEGACY && busDirect() && !BUS_FALLBACK[rid]) {
       var tries = 0;
       (function poll() {
         var m = LOCAL_REPLY[rid];
