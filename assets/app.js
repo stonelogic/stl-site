@@ -2997,7 +2997,19 @@
 
   /* 往 ntfy 总线发一条请求 */
   var BUS_DOWN = false, BUS_WARNED = false, BUS_MUTE_UNTIL = 0;
+  /* 从本机服务打开站点时走同源 /api/bus，一次请求换一次回执，
+     完全不依赖 ntfy —— 公共通道限流时，服主在本机照样能创建赛事、记分、签到。 */
+  var LOCAL_BUS = /^(127\.0\.0\.1|localhost)$/.test(location.hostname);
+  var LOCAL_REPLY = {};
   function postBus(obj) {
+    if (LOCAL_BUS) {
+      return fetch('/api/bus', {
+        method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(obj)
+      }).then(function (r) { return r.json(); })
+        .then(function (m) { LOCAL_REPLY[obj.rid] = m; return true; })
+        .catch(function () { return false; });
+    }
     /* 配额打满后先静默 30 分钟，别再发注定失败的请求 */
     if (BUS_DOWN && Date.now() < BUS_MUTE_UNTIL) return Promise.resolve(false);
     return fetch(NTFY_BASE + '/' + NTFY_TOPIC, {
@@ -3040,6 +3052,16 @@
   }
   /* 等总线上与自己 rid 匹配的回执（论坛/个人中心共用同一套玩法） */
   function waitBus(rid, types, cb) {
+    if (LOCAL_BUS) {
+      var tries = 0;
+      (function poll() {
+        var m = LOCAL_REPLY[rid];
+        if (m) { delete LOCAL_REPLY[rid]; return cb(m); }
+        if (++tries > 60) return cb(null);
+        setTimeout(poll, 100);
+      })();
+      return;
+    }
     /* 通道不可用时立刻收尾，页面保留快照数据，不空等 15 秒 */
     if (BUS_DOWN) return cb(null);
     var deadline = Date.now() + 15000;
