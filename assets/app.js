@@ -2263,9 +2263,7 @@
 
     function say(t, cls) { status.textContent = t; status.className = 'chat-status' + (cls ? ' ' + cls : ''); }
     function post(obj) {
-      return fetch(NTFY_BASE + '/' + NTFY_TOPIC, {
-        method: 'POST', headers: { 'content-type': 'text/plain' }, body: JSON.stringify(obj)
-      });
+      return postBus(obj);
     }
     function timeOf(ts) {
       var d = new Date(Number(ts) || Date.now());
@@ -2951,28 +2949,10 @@
       .catch(function (e) { cb(null, e); });
   }
   /* 等 ntfy 回执：论坛用 forumOk/forumErr，反馈兼容 fbOk/fbErr */
+  /* 回执统一走 waitBus：本机 / 直连总线模式下在 LOCAL_REPLY 内联返回，
+     不走 ntfy 轮询；公网且没配 SERVER_BUS 时回落到 ntfy 轮询（与旧逻辑一致）。 */
   function waitForumAck(rid, cb) {
-    var deadline = Date.now() + 15000;
-    (function tick() {
-      fetch(NTFY_BASE + '/' + NTFY_TOPIC + '/json?poll=1&since=' + Math.floor(Date.now() / 1000 - 120))
-        .then(function (r) { return r.text(); })
-        .then(function (txt) {
-          var lines = txt.split('\n');
-          for (var i = 0; i < lines.length; i++) {
-            if (!lines[i]) continue;
-            try {
-              var o = JSON.parse(lines[i]);
-              if (o.event !== 'message' || !o.message) continue;
-              var m = JSON.parse(o.message);
-              if (!m || m.rid !== rid) continue;
-              if (m.type === 'forumOk' || m.type === 'fbOk' || m.type === 'forumErr' || m.type === 'fbErr') return cb(m);
-            } catch (e) {}
-          }
-          if (Date.now() > deadline) return cb(null);
-          setTimeout(tick, 1500);
-        })
-        .catch(function () { if (Date.now() > deadline) return cb(null); setTimeout(tick, 2000); });
-    })();
+    waitBus(rid, ['forumOk', 'fbOk', 'forumErr', 'fbErr'], cb);
   }
   function randomHex(n) {
     var b = new Uint8Array(n || 8);
@@ -3614,10 +3594,8 @@
           if (reason === null) return;
           reportBtn.disabled = true; reportBtn.textContent = '提交中…';
           var rid = randomHex();
-          fetch(NTFY_BASE + '/' + NTFY_TOPIC, {
-            method: 'POST', headers: { 'content-type': 'text/plain' },
-            body: JSON.stringify({ type: 'forum_report', rid: rid, post_id: post.id, reason: reason, token: msess.token, ts: Date.now() })
-          }).then(function () {
+          postBus({ type: 'forum_report', rid: rid, post_id: post.id, reason: reason, token: msess.token, ts: Date.now() })
+          .then(function () {
             waitForumAck(rid, function (m) {
               reportBtn.disabled = false; reportBtn.textContent = '🚩 举报';
               if (m && m.type === 'forumOk') toast('已提交举报，感谢反馈');
@@ -3636,10 +3614,8 @@
             if (!window.confirm('确定删除这条帖子？删除后不可恢复。')) return;
             delBtn.disabled = true; delBtn.textContent = '删除中…';
             var rid = randomHex();
-            fetch(NTFY_BASE + '/' + NTFY_TOPIC, {
-              method: 'POST', headers: { 'content-type': 'text/plain' },
-              body: JSON.stringify({ type: 'forum_del', rid: rid, post_id: post.id, token: msess.token, ts: Date.now() })
-            }).then(function () {
+            postBus({ type: 'forum_del', rid: rid, post_id: post.id, token: msess.token, ts: Date.now() })
+            .then(function () {
               waitForumAck(rid, function (m) {
                 if (m && m.type === 'forumOk') {
                   forumEchoDrop(post.id);     // 本机回声也删掉，别留在列表里
@@ -3698,10 +3674,8 @@
         var rid = randomHex();
         var since = Math.floor(Date.now() / 1000) - 120;
         rfSend.disabled = true; rfMsg.textContent = '正在发表…'; rfMsg.style.color = 'var(--muted-foreground)';
-        fetch(NTFY_BASE + '/' + NTFY_TOPIC, {
-          method: 'POST', headers: { 'content-type': 'text/plain' },
-          body: JSON.stringify({ type: 'forum_reply', rid: rid, post_id: post.id, content: text, token: sess.token, ts: Date.now() })
-        }).then(function () {
+        postBus({ type: 'forum_reply', rid: rid, post_id: post.id, content: text, token: sess.token, ts: Date.now() })
+        .then(function () {
           waitForumAck(rid, function (m) {
             rfSend.disabled = false;
             if (m && (m.type === 'forumOk')) {
@@ -3747,10 +3721,8 @@
       if (nc.length < 2) { setM('正文至少 2 字', true); return; }
       var btn = wrap.querySelector('#feSave'); btn.disabled = true; setM('保存中…', false);
       var rid = randomHex();
-      fetch(NTFY_BASE + '/' + NTFY_TOPIC, {
-        method: 'POST', headers: { 'content-type': 'text/plain' },
-        body: JSON.stringify({ type: 'forum_edit', rid: rid, post_id: post.id, title: nt, content: nc, token: msess.token, ts: Date.now() })
-      }).then(function () {
+      postBus({ type: 'forum_edit', rid: rid, post_id: post.id, title: nt, content: nc, token: msess.token, ts: Date.now() })
+      .then(function () {
         waitForumAck(rid, function (mm) {
           btn.disabled = false;
           if (mm && mm.type === 'forumOk') {
@@ -3835,13 +3807,11 @@
       var rid = randomHex();
       var since = Math.floor(Date.now() / 1000) - 120;
       submit.disabled = true; setMsg('正在发布…', 'busy');
-      fetch(NTFY_BASE + '/' + NTFY_TOPIC, {
-        method: 'POST', headers: { 'content-type': 'text/plain' },
-        body: JSON.stringify({
-          type: 'forum_post', rid: rid, category: Number(box.querySelector('#fnCat').value),
-          title: t, content: ct, token: sess.token, ts: Date.now()
-        })
-      }).then(function () {
+      postBus({
+        type: 'forum_post', rid: rid, category: Number(box.querySelector('#fnCat').value),
+        title: t, content: ct, token: sess.token, ts: Date.now()
+      })
+      .then(function () {
         waitForumAck(rid, function (m) {
           submit.disabled = false;
           if (m && (m.type === 'forumOk')) {
