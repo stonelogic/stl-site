@@ -4585,6 +4585,11 @@
     wrap.innerHTML =
       '<div class="card mt-board" id="mtBoard"><div class="empty"><div class="ico">⏳</div><p>正在读取赛事沙盘…</p></div></div>' +
       '<div class="card mt-admin" id="mtAdmin" hidden></div>' +
+      '<div class="card mt-signup" id="mtSignup">' +
+        '<div class="mt-sec-t">报名参赛 <span id="mtSuCount"></span></div>' +
+        '<div class="mt-su-wall" id="mtSuWall"></div>' +
+        '<div class="mt-su-ops" id="mtSuOps"></div>' +
+      '</div>' +
       '<div class="card mt-hist" id="mtHist"><div class="mt-sec-t">历史赛事</div><div id="mtHistList">正在读取…</div></div>';
 
     var board = wrap.querySelector('#mtBoard');
@@ -4706,6 +4711,158 @@
       };
     }
 
+    /* ---------- 报名区 ---------- */
+    function signupsOf(d) { return (d && d.signups) || []; }
+    function mySignup(d) {
+      if (!sess || !sess.qq) return null;
+      var su = signupsOf(d);
+      for (var i = 0; i < su.length; i++) if (String(su[i].qq) === String(sess.qq)) return su[i];
+      return null;
+    }
+    function drawSignup(d) {
+      var wall = wrap.querySelector('#mtSuWall');
+      var ops = wrap.querySelector('#mtSuOps');
+      var cnt = wrap.querySelector('#mtSuCount');
+      if (!wall || !ops) return;
+      if (!d) {
+        cnt.textContent = '';
+        wall.innerHTML = '<div class="mt-su-empty">还没有赛事，创建后开放报名。</div>';
+        ops.innerHTML = '';
+        return;
+      }
+      var su = signupsOf(d);
+      var n = su.length;
+      cnt.textContent = '（' + n + ' 人' + (n < 2 ? ' · 还差 ' + (2 - n) + ' 人成赛' : '') + '）';
+      if (!n) {
+        wall.innerHTML = '<div class="mt-su-empty">还没有人报名，快来成为第一个！</div>';
+      } else {
+        wall.innerHTML = su.map(function (s) {
+          var me = sess && String(s.qq) === String(sess.qq);
+          return '<div class="mt-su-card' + (me ? ' me' : '') + '">' +
+            '<img class="mt-su-ava" src="' + avatarUrl(s.name, 48) + '" alt="" loading="lazy" ' +
+            'onerror="this.onerror=null;this.src=\'assets/avatars/_fallback.svg\'">' +
+            '<div class="mt-su-name">' + esc(s.name) + '</div>' +
+            '<div class="mt-su-qq"><img src="' + qqAvatar(s.qq, 40) + '" alt="" onerror="this.style.visibility=\'hidden\'"> ' +
+            esc(String(s.qq)) + '</div>' +
+            (me ? '<button class="btn btn-sm btn-ghost mt-su-cancel" type="button" data-cancel="1">取消报名</button>' : '') +
+            '</div>';
+        }).join('');
+        if (n < 2) wall.innerHTML += '<div class="mt-su-need">还差 ' + (2 - n) + ' 人就能开赛 🏆</div>';
+      }
+
+      /* 操作按钮：未登录 / 已报名 / 未报名 / 已关闭 */
+      if (!sess) {
+        ops.innerHTML = '<a class="btn btn-sm btn-primary" href="confirm.html">登录后报名</a>' +
+          '<span class="mt-su-hint">需要先用 QQ 登录</span>';
+      } else if (d.status === 'finished' || d.status === 'cancelled') {
+        ops.innerHTML = '<span class="mt-su-hint">赛事已结束或取消，报名通道已关闭</span>';
+      } else if (mySignup(d)) {
+        ops.innerHTML = '<button class="btn btn-sm btn-ghost" type="button" data-cancel="1">我已报名（点击取消）</button>';
+      } else {
+        ops.innerHTML = '<button class="btn btn-sm btn-primary" type="button" id="mtSuBtn">报名参赛</button>';
+      }
+      ops.querySelectorAll('[data-cancel]').forEach(function (b) {
+        b.addEventListener('click', function () { cancelSignup(d); });
+      });
+      var btn = ops.querySelector('#mtSuBtn');
+      if (btn) btn.addEventListener('click', function () { startSignup(d); });
+    }
+
+    /* 点报名 → 先拉该 QQ 绑定的账号，多个则选，然后二次确认 */
+    function startSignup(d) {
+      var rid = randomHex(8);
+      postBus({ type: 'matchSignupOptions', rid: rid, id: d.id, token: sess.token });
+      waitBus(rid, ['matchOk', 'matchErr'], function (m) {
+        if (!m) { toast('网络超时，稍后再试'); return; }
+        if (m.type === 'matchErr') { toast(m.reason || '读取报名信息失败'); return; }
+        var names = (m.signupOptions && m.signupOptions.names) || [];
+        if (!names.length) { toast('该 QQ 还没绑定游戏账号，请先在游戏内绑定后再报名'); return; }
+        if (names.length > 1) {
+          pickAccount(names, function (name) { if (name) confirmSignup(d, name); });
+        } else {
+          confirmSignup(d, names[0]);
+        }
+      });
+    }
+
+    /* 多账号：先选一个 */
+    function pickAccount(names, done) {
+      var ov = el('div', 'mt-modal-overlay');
+      var opts = names.map(function (nm, i) {
+        return '<label class="mt-pick' + (i === 0 ? ' on' : '') + '">' +
+          '<input type="radio" name="mtPick" value="' + esc(nm) + '"' + (i === 0 ? ' checked' : '') + '>' +
+          '<img src="' + avatarUrl(nm, 40) + '" alt="" onerror="this.style.visibility=\'hidden\'">' +
+          '<span>' + esc(nm) + '</span></label>';
+      }).join('');
+      ov.innerHTML = '<div class="mt-modal">' +
+        '<div class="mt-modal-t">选择报名账号</div>' +
+        '<div class="mt-modal-b"><p class="mt-modal-p">你的 QQ 绑定了多个游戏账号，选一个报名：</p>' +
+        '<div class="mt-picks">' + opts + '</div></div>' +
+        '<div class="mt-modal-ops">' +
+        '<button class="btn btn-ghost btn-sm" data-act="cancel" type="button">返回</button>' +
+        '<button class="btn btn-primary btn-sm" data-act="ok" type="button">下一步</button>' +
+        '</div></div>';
+      document.body.appendChild(ov);
+      ov.querySelectorAll('input[name="mtPick"]').forEach(function (r) {
+        r.addEventListener('change', function () {
+          ov.querySelectorAll('.mt-pick').forEach(function (l) { l.classList.remove('on'); });
+          r.closest('.mt-pick').classList.add('on');
+        });
+      });
+      ov.querySelector('[data-act="cancel"]').onclick = function () { document.body.removeChild(ov); };
+      ov.querySelector('[data-act="ok"]').onclick = function () {
+        var sel = ov.querySelector('input[name="mtPick"]:checked');
+        var name = sel ? sel.value : names[0];
+        document.body.removeChild(ov);
+        done(name);
+      };
+    }
+
+    /* 二次确认：防止误触 */
+    function confirmSignup(d, name) {
+      var ov = el('div', 'mt-modal-overlay');
+      ov.innerHTML = '<div class="mt-modal">' +
+        '<div class="mt-modal-t">确认报名</div>' +
+        '<div class="mt-modal-b">' +
+        '<p class="mt-modal-p">确认用这个账号报名这场赛事吗？</p>' +
+        '<div class="mt-confirm-id"><img src="' + avatarUrl(name, 56) + '" alt="" onerror="this.style.visibility=\'hidden\'">' +
+        '<div><div class="mt-confirm-name">' + esc(name) + '</div>' +
+        '<div class="mt-confirm-sub">QQ ' + esc(String(sess.qq)) + '</div></div></div>' +
+        '<p class="mt-modal-p mt-modal-warn">报名后会在赛事页公开展示你的头像和游戏ID；一个 QQ 只能报一个账号。</p>' +
+        '</div>' +
+        '<div class="mt-modal-ops">' +
+        '<button class="btn btn-ghost btn-sm" data-act="cancel" type="button">再想想</button>' +
+        '<button class="btn btn-primary btn-sm" data-act="ok" type="button">确认报名</button>' +
+        '</div></div>';
+      document.body.appendChild(ov);
+      var okBtn = ov.querySelector('[data-act="ok"]');
+      okBtn.onclick = function () {
+        okBtn.disabled = true;
+        var rid = randomHex(8);
+        postBus({ type: 'matchSignup', rid: rid, id: d.id, name: name, token: sess.token });
+        waitBus(rid, ['matchOk', 'matchErr'], function (m) {
+          if (ov.parentNode) document.body.removeChild(ov);
+          if (!m) { toast('网络超时，稍后再试'); return; }
+          if (m.type === 'matchErr') { toast(m.reason || '报名失败'); return; }
+          toast('报名成功！');
+          paint(m);
+        });
+      };
+      ov.querySelector('[data-act="cancel"]').onclick = function () { document.body.removeChild(ov); };
+    }
+
+    function cancelSignup(d) {
+      if (!confirm('确定取消这场赛事的报名吗？')) return;
+      var rid = randomHex(8);
+      postBus({ type: 'matchCancelSignup', rid: rid, id: d.id, token: sess.token });
+      waitBus(rid, ['matchOk', 'matchErr'], function (m) {
+        if (!m) { toast('网络超时，稍后再试'); return; }
+        if (m.type === 'matchErr') { toast(m.reason || '取消失败'); return; }
+        toast('已取消报名');
+        paint(m);
+      });
+    }
+
     /* 统一的发消息：带 token，回执刷新整块页面 */
     function send(type, extra, done) {
       var rid = randomHex(8);
@@ -4728,6 +4885,7 @@
       drawBoard(m.detail);
       drawHist(m.items, focusId);
       drawAdmin(m.detail, m.canManage, m.items);
+      drawSignup(m.detail);
     }
 
     function load() {
