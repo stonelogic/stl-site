@@ -14,6 +14,11 @@
   var NTFY_BASE = 'https://ntfy.sh';
   var NTFY_TOPIC = 'stl-ql-6bd1ae0f4e7e7968';
   var REPO_URL = 'https://github.com/stonelogic/stl-site';
+  /* 公网页面直连服务端总线的地址（跨域，不占 ntfy 配额）。
+     留空 = 继续走 ntfy（旧行为）。
+     想让报名/取消/记分等写操作彻底不依赖 ntfy：把 28080 用 natfrp 之类的隧道暴露出公网地址，
+     例如 'https://stl-ql.frp-top.com'，填到这里。配置后写操作直连服务端、回执内联返回。 */
+  var SERVER_BUS = '';
 
   /* ---------- 站点配置（纯静态文案） ---------- */
   var SITE = {
@@ -3000,10 +3005,13 @@
   /* 从本机服务打开站点时走同源 /api/bus，一次请求换一次回执，
      完全不依赖 ntfy —— 公共通道限流时，服主在本机照样能创建赛事、记分、签到。 */
   var LOCAL_BUS = /^(127\.0\.0\.1|localhost)$/.test(location.hostname);
+  /* 公网直连总线：配了 SERVER_BUS 且不在本机时启用，写操作走服务端 /api/bus（跨域） */
+  var REMOTE_BUS = !!SERVER_BUS && !LOCAL_BUS;
   var LOCAL_REPLY = {};
   function postBus(obj) {
-    if (LOCAL_BUS) {
-      return fetch('/api/bus', {
+    if (LOCAL_BUS || REMOTE_BUS) {
+      var url = REMOTE_BUS ? (SERVER_BUS.replace(/\/+$/, '') + '/api/bus') : '/api/bus';
+      return fetch(url, {
         method: 'POST', headers: { 'content-type': 'application/json' },
         body: JSON.stringify(obj)
       }).then(function (r) { return r.json(); })
@@ -3054,7 +3062,7 @@
   }
   /* 等总线上与自己 rid 匹配的回执（论坛/个人中心共用同一套玩法） */
   function waitBus(rid, types, cb) {
-    if (LOCAL_BUS) {
+    if (LOCAL_BUS || REMOTE_BUS) {
       var tries = 0;
       (function poll() {
         var m = LOCAL_REPLY[rid];
@@ -4888,8 +4896,11 @@
       drawSignup(m.detail);
     }
 
-    function load() {
-      var shown = false;
+    var shown = false;
+    /* 只从快照刷新沙盘，不往 ntfy 发任何请求——这是之前烧光 ntfy 配额的元凶
+       （每 8 秒一次 postBus(matchQuery)）。游戏服自动计分后服务端会推快照到 GitHub Pages，
+       浏览器数秒内就能看到最新比分，无需轮询总线。 */
+    function loadSnapshot() {
       snapshot(function (s) {
         if (!s || !s.match) return;
         var d = s.match.detail;
@@ -4898,6 +4909,9 @@
         shown = true;
         paint({ items: s.match.items || [], detail: d || null, canManage: snapAdmins(s, sess) });
       });
+    }
+    function load() {
+      loadSnapshot();
       var rid = randomHex(8);
       var p = focusId ? { type: 'matchDetail', rid: rid, id: focusId } : { type: 'matchQuery', rid: rid };
       if (sess) p.token = sess.token;
@@ -4911,10 +4925,9 @@
     }
 
     load();
-    /* 赛事进行中每 8 秒自动同步一次沙盘；ntfy 限流时靠快照兜底，
-       游戏服自动计分后网页也能在数秒内自动刷新。 */
+    /* 赛事进行中每 8 秒自动同步一次沙盘：只读快照，绝不再往 ntfy POST（避免配额被打满）。 */
     MT_TIMER = setInterval(function () {
-      if (document.visibilityState === 'visible') load();
+      if (document.visibilityState === 'visible') loadSnapshot();
     }, 8000);
   }
 
