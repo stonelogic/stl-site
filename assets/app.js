@@ -505,6 +505,7 @@
   var NAV = [
     { label: '状态', href: '#/status' },
     { label: '在线', href: '#/online' },
+    { label: '召集', href: '#/rally' },
     { label: '排行榜', href: '#/rank' },
     { label: '指南', href: '#/guide' },
     { label: '规则', href: '#/rules' },
@@ -987,6 +988,10 @@
       var f = $id('features'); if (f) f.scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
     loadHeroOnline();
+    /* 首页挂一条召集横幅：有人约的时候，进站第一屏就能看见 */
+    var rallyBar = el('div', 'home-rally');
+    hero.parentNode.insertBefore(rallyBar, hero.nextSibling);
+    loadHomeRally(rallyBar);
 
     // 群聊跑马灯（服务端每分钟导出一份最近闲聊）
     container.appendChild(buildMarquee());
@@ -1824,6 +1829,15 @@
       });
     }
 
+    /* 实时状态（血量/等级/手持）+ 留言：单独两张卡挂在下面，
+       不掺进上面那套异步绘制里，出问题也不影响资料本身 */
+    var liveCard = el('div', 'card pf-live');
+    container.appendChild(liveCard);
+    loadLiveStatus(liveCard, nm);
+    var msgCard = el('div', 'card pf-msg');
+    container.appendChild(msgCard);
+    buildMsgCard(msgCard, nm);
+
     function getJson(f) {
       return fetch(f + '?_=' + Date.now(), { cache: 'no-store' })
         .then(function (r) { return r.ok ? r.json() : null; })
@@ -2383,6 +2397,7 @@
       '<button class="btn btn-sm rank-tab" data-tab="forum" type="button">💬 论坛活跃</button>' +
       '<button class="btn btn-sm rank-tab" data-tab="build" type="button">🏛️ 建筑作品</button>' +
       '<button class="btn btn-sm rank-tab" data-tab="ach" type="button">🏅 成就</button>' +
+      '<button class="btn btn-sm rank-tab" data-tab="score" type="button">🎯 计分板</button>' +
       '</div><div id="rankBody"></div>';
     var body = box.querySelector('#rankBody');
 
@@ -2693,7 +2708,8 @@
         .catch(function () { wrap.innerHTML = emptyState('📡', '战绩加载失败'); });
     }
 
-    var TAB_FN = { play: showPlay, prog: showProg, bw: showBw, lab: showLab, forum: showForum, build: showBuilds, ach: showAch };
+    function showScore() { renderScoreInto(body); }
+    var TAB_FN = { play: showPlay, prog: showProg, bw: showBw, lab: showLab, forum: showForum, build: showBuilds, ach: showAch, score: showScore };
     box.querySelectorAll('.rank-tab').forEach(function (btn) {
       btn.addEventListener('click', function () {
         box.querySelectorAll('.rank-tab').forEach(function (b) { b.classList.remove('btn-primary'); });
@@ -3093,6 +3109,58 @@
     });
   }
 
+  /* 新手任务：进度由服务端按站里已有数据算，前端只负责画和领奖 */
+  function loadQuests(box, sess) {
+    var list = box.querySelector('#qList');
+    var sub = box.querySelector('#qSub');
+    if (!list) return;
+
+    function paint(m) {
+      var items = m.items || [];
+      var got = items.filter(function (x) { return x.claimed; }).length;
+      var ready = items.filter(function (x) { return x.done && !x.claimed; }).length;
+      sub.textContent = '已领 ' + got + ' / ' + items.length +
+        (ready ? ' · 有 ' + ready + ' 个可以领了' : '') + '　奖励会发到游戏里';
+      list.innerHTML = items.map(function (q) {
+        var act = q.claimed
+          ? '<span class="q-got">✓ 已领取</span>'
+          : (q.done
+            ? '<button class="btn btn-sm btn-primary q-claim" data-key="' + esc(q.key) + '">领 ' + q.reward + ' 绿宝石</button>'
+            : '<span class="q-todo">未达成</span>');
+        return '<div class="q-row' + (q.claimed ? ' claimed' : (q.done ? ' ready' : '')) + '">' +
+          '<span class="q-ico">' + q.icon + '</span>' +
+          '<div class="q-main"><div class="q-t">' + esc(q.title) +
+          '<span class="q-label">' + esc(q.label) + '</span></div>' +
+          '<div class="q-desc">' + esc(q.desc) + '</div>' +
+          '<div class="q-bar"><i style="width:' + q.pct + '%"></i></div></div>' +
+          '<div class="q-act">' + act + '</div></div>';
+      }).join('');
+    }
+
+    list.addEventListener('click', function (e) {
+      var b = e.target.closest ? e.target.closest('.q-claim') : null;
+      if (!b) return;
+      b.disabled = true;
+      var rid = randomHex(8);
+      postBus({ type: 'questClaim', rid: rid, token: sess.token, key: b.getAttribute('data-key') });
+      waitBus(rid, ['questOk', 'questErr'], function (m) {
+        b.disabled = false;
+        if (!m) { toast('领取超时，稍后再试'); return; }
+        if (m.type === 'questErr') { toast(m.reason || '领取失败'); return; }
+        toast(m.delivery === 'now' ? ('奖励已发到游戏里，+' + m.reward + ' 绿宝石')
+          : ('领好了，上线后自动补发 +' + m.reward + ' 绿宝石'));
+        paint(m);
+      });
+    });
+
+    var rid = randomHex(8);
+    postBus({ type: 'questQuery', rid: rid, token: sess.token });
+    waitBus(rid, ['questOk', 'questErr'], function (m) {
+      if (!m || m.type === 'questErr') { list.innerHTML = '<div class="q-empty">任务读取失败，刷新再试</div>'; return; }
+      paint(m);
+    });
+  }
+
   /* 「我上次死在哪」：服务端读死亡记录 + 当前位置，算出距离和方向；
      跨维度时按 1:8 换算成「这个维度该去的坐标」，比只给一个死坐标有用 */
   function loadDeath(box, sess) {
@@ -3206,6 +3274,12 @@
         '<div class="me-chk-s" id="meChkSub">正在读取签到状态…</div></div>' +
         '<div class="me-chk-act" id="meChkAct"></div></div>';
 
+      /* 新手任务：用站里已有数据算进度，不用玩家额外打卡 */
+      html += '<div class="card me-quest" id="meQuest">' +
+        '<div class="q-head"><div class="me-chk-t">🎁 新手任务</div>' +
+        '<div class="q-sub" id="qSub">完成下面的小目标，领点绿宝石当启动资金</div></div>' +
+        '<div class="q-list" id="qList">正在读取任务…</div></div>';
+
       /* 死亡点找回：死了找不到掉落物是最难受的时刻，这里直接告诉他坐标和方向 */
       html += '<div class="card me-death" id="meDeath">' +
         '<div class="me-death-head">' +
@@ -3268,6 +3342,7 @@
       box.innerHTML = html;
       loadCheckin(box, sess);
       loadDeath(box, sess);
+      loadQuests(box, sess);
 
       var lo = box.querySelector('.me-logout');
       if (lo) lo.addEventListener('click', function () {
@@ -4029,6 +4104,319 @@
     timer = setInterval(draw, 60000);
   }
 
+  /* ================= 开黑召集 ================= */
+
+  function pad2(n) { return (n < 10 ? '0' : '') + n; }
+  function fmtClock(ms) {
+    var d = new Date(Number(ms) || 0);
+    return pad2(d.getMonth() + 1) + '/' + pad2(d.getDate()) + ' ' + pad2(d.getHours()) + ':' + pad2(d.getMinutes());
+  }
+  function untilText(ms) {
+    var diff = Number(ms) - Date.now();
+    if (diff <= 0) return '已开打';
+    var mins = Math.round(diff / 60000);
+    if (mins < 60) return '还有 ' + mins + ' 分钟';
+    var h = Math.floor(mins / 60), m = mins % 60;
+    if (h < 24) return '还有 ' + h + ' 小时' + (m ? ' ' + m + ' 分' : '');
+    return '还有 ' + Math.round(h / 24) + ' 天';
+  }
+  /* 默认时间：今晚 20:30，已经过了就明天 */
+  function defaultRallyTime() {
+    var d = new Date();
+    d.setHours(20, 30, 0, 0);
+    if (d.getTime() < Date.now() + 10 * 60000) d.setDate(d.getDate() + 1);
+    return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()) +
+      'T' + pad2(d.getHours()) + ':' + pad2(d.getMinutes());
+  }
+
+  function loadHomeRally(host) {
+    if (!host) return;
+    var rid = randomHex(8);
+    postBus({ type: 'rallyQuery', rid: rid });
+    waitBus(rid, ['rallyOk', 'rallyErr'], function (m) {
+      if (!m || m.type === 'rallyErr' || !m.items || !m.items.length) { host.hidden = true; return; }
+      var r = m.items[0];
+      host.hidden = false;
+      host.innerHTML = '<span class="hr-tag">📣 召集</span>' +
+        '<span class="hr-main">' + esc(r.title) + '</span>' +
+        '<span class="hr-when">' + fmtClock(r.startAt) + ' · ' + untilText(r.startAt) +
+        (r.need > 0 ? ' · ' + (r.left > 0 ? '还缺 ' + r.left + ' 人' : '人已够') : '') + '</span>' +
+        '<a class="hr-go" href="#/rally">报名 →</a>';
+    });
+  }
+
+  function renderRally(container) {
+    var sess = getSession();
+    container.innerHTML = pageHead('召集', '开黑召集',
+      '约个时间一起打：发起后立刻推到群里，开打前 10 分钟再喊一次，人齐了就到点开打');
+    var box = el('div', 'rally-wrap');
+    container.appendChild(box);
+
+    box.innerHTML =
+      (sess
+        ? '<div class="card rally-new">' +
+        '<div class="rly-t">发起一条召集</div>' +
+        '<div class="rly-form">' +
+        '<input id="rlyTitle" class="rly-in" maxlength="40" placeholder="打什么？例如：起床战争 2v2">' +
+        '<input id="rlyWhen" class="rly-in rly-time" type="datetime-local" value="' + defaultRallyTime() + '">' +
+        '<label class="rly-need"><span>缺</span><input id="rlyNeed" type="number" min="0" max="20" value="0"><span>人</span></label>' +
+        '<button class="btn btn-primary" id="rlyGo" type="button">发到群里</button>' +
+        '</div>' +
+        '<div class="rly-hint">「缺几人」填 0 表示不限人数；最多约两周以内的。</div>' +
+        '</div>'
+        : '<div class="card rally-gate">登录后才能发起召集。 <a href="confirm.html">去登录</a></div>') +
+      '<div class="card"><div class="rly-list" id="rlyList">' +
+      '<div class="empty"><div class="ico">⏳</div><p>正在读取召集…</p></div></div></div>';
+
+    var listEl = box.querySelector('#rlyList');
+
+    function paint(items) {
+      if (!items || !items.length) {
+        listEl.innerHTML = emptyState('📣', '现在没有召集。想打什么就发一条，群里会收到。');
+        return;
+      }
+      listEl.innerHTML = items.map(function (r) {
+        var mine = r.mine;
+        var joined = r.joinedByMe;
+        var btn = !sess ? '' :
+          (joined
+            ? '<button class="btn btn-sm rly-btn" data-act="leave" data-id="' + r.id + '">取消报名</button>'
+            : '<button class="btn btn-sm btn-primary rly-btn" data-act="join" data-id="' + r.id + '">我要来</button>');
+        if (mine) btn += '<button class="btn btn-sm rly-btn rly-cancel" data-act="cancel" data-id="' + r.id + '">撤掉</button>';
+        return '<div class="rly-item' + (joined ? ' on' : '') + '">' +
+          '<div class="rly-when"><b>' + fmtClock(r.startAt) + '</b><span>' + untilText(r.startAt) + '</span></div>' +
+          '<div class="rly-main"><div class="rly-name">' + esc(r.title) + '</div>' +
+          '<div class="rly-sub">' + esc(r.by || '有人') + ' 发起 · 已报 ' + r.joined + ' 人' +
+          (r.need > 0 ? ' · ' + (r.left > 0 ? '还缺 ' + r.left + ' 人' : '人已够，还能来') : ' · 不限人数') +
+          '</div></div>' +
+          '<div class="rly-act">' + btn + '</div></div>';
+      }).join('');
+    }
+
+    function load() {
+      var rid = randomHex(8);
+      postBus({ type: 'rallyQuery', rid: rid });
+      waitBus(rid, ['rallyOk', 'rallyErr'], function (m) {
+        if (!m || m.type === 'rallyErr') { listEl.innerHTML = emptyState('📡', '读取失败，刷新再试'); return; }
+        paint(m.items || []);
+      });
+    }
+
+    listEl.addEventListener('click', function (e) {
+      var b = e.target.closest ? e.target.closest('.rly-btn') : null;
+      if (!b) return;
+      if (!sess) { toast('先登录'); return; }
+      var act = b.getAttribute('data-act');
+      var type = act === 'join' ? 'rallyJoin' : (act === 'leave' ? 'rallyLeave' : 'rallyCancel');
+      if (act === 'cancel' && !confirm('撤掉这条召集？群里已经看到的人不会收到通知。')) return;
+      b.disabled = true;
+      var rid = randomHex(8);
+      postBus({ type: type, rid: rid, token: sess.token, id: Number(b.getAttribute('data-id')) });
+      waitBus(rid, ['rallyOk', 'rallyErr'], function (m) {
+        b.disabled = false;
+        if (!m || m.type === 'rallyErr') { toast((m && m.reason) || '操作失败'); return; }
+        if (act === 'join') toast('算你一个，到点见');
+        paint(m.items || []);
+      });
+    });
+
+    if (sess) {
+      box.querySelector('#rlyGo').addEventListener('click', function () {
+        var btn = this;
+        var title = box.querySelector('#rlyTitle').value.trim();
+        var when = box.querySelector('#rlyWhen').value;
+        var need = Number(box.querySelector('#rlyNeed').value) || 0;
+        var startAt = when ? new Date(when).getTime() : 0;
+        if (title.length < 2) { toast('写一句要打什么'); return; }
+        if (!startAt) { toast('选个时间'); return; }
+        btn.disabled = true;
+        var rid = randomHex(8);
+        postBus({ type: 'rallyNew', rid: rid, token: sess.token, title: title, startAt: startAt, need: need });
+        waitBus(rid, ['rallyOk', 'rallyErr'], function (m) {
+          btn.disabled = false;
+          if (!m || m.type === 'rallyErr') { toast((m && m.reason) || '发起失败'); return; }
+          toast('已发到群里');
+          box.querySelector('#rlyTitle').value = '';
+          paint(m.items || []);
+        });
+      });
+    }
+
+    load();
+  }
+
+  /* ================= 危险区 ================= */
+
+  function renderHeat(container) {
+    container.innerHTML = pageHead('状态', '危险区',
+      '按死亡点聚合出来的「老有人死」的区域。同一片至少 2 人死过才会显示，100 格一格，只看大方向');
+    var box = el('div', 'card');
+    container.appendChild(box);
+    box.innerHTML = '<div class="heat-meta" id="heatMeta">正在读取死亡记录…</div>' +
+      '<div class="heat-body" id="heatBody"></div>';
+    var meta = box.querySelector('#heatMeta');
+    var body = box.querySelector('#heatBody');
+    var days = 30;
+
+    box.insertAdjacentHTML('afterbegin',
+      '<div class="seg" id="heatSeg">' +
+      [7, 30, 90].map(function (d) {
+        return '<button class="seg-btn' + (d === days ? ' on' : '') + '" data-d="' + d + '">' +
+          (d === 7 ? '近 7 天' : d === 30 ? '近 30 天' : '近 90 天') + '</button>';
+      }).join('') + '</div>');
+
+    function draw() {
+      meta.textContent = '正在读取死亡记录…';
+      var rid = randomHex(8);
+      postBus({ type: 'heatQuery', rid: rid, days: days });
+      waitBus(rid, ['heatOk', 'heatErr'], function (m) {
+        if (!m || m.type === 'heatErr') { meta.textContent = '读取失败，刷新再试'; return; }
+        var spots = m.spots || [];
+        var total = m.total || { n: 0, who: 0 };
+        if (!total.n) {
+          meta.textContent = '';
+          body.innerHTML = emptyState('🩸', '还没有攒到死亡点。等服务里有人死几次，这里就会长出红色。');
+          return;
+        }
+        meta.textContent = '近 ' + m.days + ' 天记录了 ' + total.n + ' 个死亡点、' + total.who +
+          ' 个人；下面只显示死过 ≥' + m.minHits + ' 次的区域（' + m.step + ' 格一格）。';
+        if (!spots.length) {
+          body.innerHTML = emptyState('🕯️', '暂时没有「同一片死过 2 次以上」的区域 —— 要么大家都很稳，要么样本还不够。');
+          return;
+        }
+        var maxN = Math.max.apply(null, spots.map(function (s) { return s.n; }));
+        body.innerHTML = '<div class="heat-grid">' + spots.map(function (s) {
+          var pct = Math.round(s.n / maxN * 100);
+          return '<div class="heat-row">' +
+            '<span class="heat-dim">' + esc(s.dim || '?') + '</span>' +
+            '<span class="heat-pos">' + s.x + ', ' + s.z + '</span>' +
+            '<span class="heat-bar"><i style="width:' + Math.max(8, pct) + '%"></i></span>' +
+            '<span class="heat-n">' + s.n + ' 次 / ' + s.who + ' 人</span>' +
+            '</div>';
+        }).join('') + '</div>' +
+          '<p class="heat-foot">坐标是 100 格取整后的大致位置，用来提醒「那片别空手过去」，不是精确死亡点。</p>';
+      });
+    }
+
+    box.querySelector('#heatSeg').addEventListener('click', function (e) {
+      var b = e.target.closest ? e.target.closest('.seg-btn') : null;
+      if (!b) return;
+      box.querySelectorAll('#heatSeg .seg-btn').forEach(function (x) { x.classList.remove('on'); });
+      b.classList.add('on');
+      days = Number(b.getAttribute('data-d')) || 30;
+      draw();
+    });
+
+    draw();
+  }
+
+  /* ================= 游戏内计分板榜单 ================= */
+  /* 挂到排行榜页面尾部：服务器本来就在记 §7死亡 / §7胜场，不用插件就能出榜 */
+  function renderScoreInto(host) {
+    host.innerHTML = '<div class="score-head"><div class="me-chk-t">🎯 游戏内计分板</div>' +
+      '<div class="score-sub">直接读服务器的 scoreboard，和游戏里 <code>/scoreboard</code> 看到的一致</div></div>' +
+      '<div id="scoreBody"><div class="empty"><div class="ico">⏳</div><p>正在读计分板…</p></div></div>';
+    var body = host.querySelector('#scoreBody');
+
+    var rid = randomHex(8);
+    postBus({ type: 'scoreQuery', rid: rid });
+    waitBus(rid, ['scoreOk', 'scoreErr'], function (m) {
+      if (!m || m.type === 'scoreErr') { body.innerHTML = emptyState('📡', '计分板读取失败'); return; }
+      var objs = m.objectives || [];
+      var rows = m.rows || [];
+      if (!objs.length || !rows.length) {
+        body.innerHTML = emptyState('🎯', '服务器里还没有可读的计分板项目');
+        return;
+      }
+
+      function draw(obj) {
+        var arr = rows.filter(function (r) { return obj in r.s; })
+          .sort(function (a, b) { return b.s[obj] - a.s[obj]; }).slice(0, 20);
+        if (!arr.length) { body.querySelector('#scoreList').innerHTML = emptyState('📊', '这个项目还没有数据'); return; }
+        var top = arr[0].s[obj] || 1;
+        body.querySelector('#scoreList').innerHTML = arr.map(function (r, i) {
+          var v = r.s[obj];
+          return '<div class="score-row">' +
+            '<span class="score-rank' + (i < 3 ? ' top' : '') + '">' + (i + 1) + '</span>' +
+            '<span class="score-name">' + esc(r.name) + '</span>' +
+            '<span class="score-bar"><i style="width:' + Math.max(6, Math.round(v / top * 100)) + '%"></i></span>' +
+            '<span class="score-v">' + v + '</span></div>';
+        }).join('');
+      }
+
+      body.innerHTML = '<div class="seg" id="scoreSeg">' + objs.map(function (o, i) {
+        return '<button class="seg-btn' + (i === 0 ? ' on' : '') + '" data-o="' + esc(o) + '">' + esc(o) + '</button>';
+      }).join('') + '</div><div id="scoreList"></div>';
+
+      body.querySelector('#scoreSeg').addEventListener('click', function (e) {
+        var b = e.target.closest ? e.target.closest('.seg-btn') : null;
+        if (!b) return;
+        body.querySelectorAll('#scoreSeg .seg-btn').forEach(function (x) { x.classList.remove('on'); });
+        b.classList.add('on');
+        draw(b.getAttribute('data-o'));
+      });
+      draw(objs[0]);
+    });
+  }
+
+  /* ================= 玩家实时状态 + 留言 ================= */
+
+  function loadLiveStatus(host, name) {
+    host.innerHTML = '<div class="pf-live-t">🎮 实时状态</div>' +
+      '<div class="pf-live-body" id="pfLiveBody">正在查…</div>';
+    var body = host.querySelector('#pfLiveBody');
+    var rid = randomHex(8);
+    postBus({ type: 'statusQuery', rid: rid, name: name });
+    waitBus(rid, ['statusOk', 'statusErr'], function (m) {
+      if (!m || m.type === 'statusErr') { body.innerHTML = '<span class="pf-live-off">查不到</span>'; return; }
+      if (!m.online) {
+        body.innerHTML = '<span class="pf-live-off">现在不在线，等他上线再看</span>';
+        return;
+      }
+      var hp = m.health == null ? '—' : m.health;
+      var hearts = m.health == null ? '' : ('❤'.repeat(Math.max(1, Math.round(m.health / 2))));
+      var item = m.item ? (m.item.count > 1 ? m.item.count + ' × ' : '') + m.item.id.replace(/_/g, ' ')
+        : '空手';
+      body.innerHTML = '<div class="pf-live-row">' +
+        '<span class="pf-live-k">血量</span><span class="pf-live-v">' + hp + ' / 20 <b class="pf-hearts">' + hearts + '</b></span>' +
+        '</div><div class="pf-live-row">' +
+        '<span class="pf-live-k">等级</span><span class="pf-live-v">' + (m.level == null ? '—' : m.level) + ' 级</span>' +
+        '</div><div class="pf-live-row">' +
+        '<span class="pf-live-k">手持</span><span class="pf-live-v">' + esc(item) + '</span>' +
+        '</div><div class="pf-live-row">' +
+        '<span class="pf-live-k">所在</span><span class="pf-live-v">' + esc(m.dim || '未知') + '</span>' +
+        '</div>';
+    });
+  }
+
+  function buildMsgCard(host, name) {
+    var sess = getSession();
+    if (!sess) return;          // 没登录就别摆一个发不出去的输入框
+    host.innerHTML = '<div class="pf-msg-t">✉️ 给他留句话</div>' +
+      '<div class="pf-msg-row">' +
+      '<input class="pf-msg-in" id="pfMsgIn" maxlength="60" placeholder="60 字以内，他一上线就会在游戏里看到">' +
+      '<button class="btn btn-sm btn-primary" id="pfMsgGo" type="button">发送</button>' +
+      '</div>' +
+      '<div class="pf-msg-hint">在线直接送达；不在线就存着，等他上线再弹。每小时最多 3 条。</div>';
+
+    host.querySelector('#pfMsgGo').addEventListener('click', function () {
+      var input = host.querySelector('#pfMsgIn');
+      var text = input.value.trim();
+      if (!text) { toast('写点什么'); return; }
+      var btn = this;
+      btn.disabled = true;
+      var rid = randomHex(8);
+      postBus({ type: 'msgSend', rid: rid, token: sess.token, target: name, body: text });
+      waitBus(rid, ['msgOk', 'msgErr'], function (m) {
+        btn.disabled = false;
+        if (!m || m.type === 'msgErr') { toast((m && m.reason) || '没发出去'); return; }
+        input.value = '';
+        toast(m.delivered ? ('已送到 ' + name + ' 的游戏里') : ('存好了，' + name + ' 上线后会看到'));
+      });
+    });
+  }
+
+
   var routes = {
     '/': renderHome,
     '/status': renderStatus,
@@ -4045,6 +4433,8 @@
     '/weekly': renderWeekly,
     '/events': renderEvents,
     '/health': renderHealth,
+    '/rally': renderRally,
+    '/heat': renderHeat,
     '/me': renderMe
   };
 

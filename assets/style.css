@@ -1158,3 +1158,136 @@ a.wk-nm:hover{color:var(--primary)}
   border-color:color-mix(in oklab,var(--primary) 45%,transparent);color:var(--primary)}
 .me-death-hint{margin-top:6px;font-size:12.5px;line-height:1.7}
 .me-death-none{color:var(--muted-foreground)}
+
+/* ===== 开黑召集 ===== */
+.rally-wrap{display:flex;flex-direction:column;gap:16px}
+.rly-t{font-size:15px;font-weight:750;margin-bottom:12px}
+.rly-form{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.rly-in{
+  flex:1;min-width:180px;background:var(--card);border:1px solid var(--input);
+  color:var(--foreground);border-radius:9px;padding:9px 11px;font-size:13.5px;outline:none;
+}
+.rly-in:focus{border-color:var(--ring);box-shadow:0 0 0 3px var(--ring)}
+.rly-time{flex:none;width:230px;min-width:0;font-variant-numeric:tabular-nums}
+.rly-need{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--muted-foreground)}
+.rly-need input{
+  width:64px;background:var(--card);border:1px solid var(--input);color:var(--foreground);
+  border-radius:9px;padding:9px 8px;font-size:13.5px;outline:none;text-align:center;
+}
+.rly-hint{margin-top:10px;font-size:12px;color:var(--muted-foreground)}
+.rly-list{display:flex;flex-direction:column;gap:10px}
+.rly-item{
+  display:flex;gap:14px;align-items:center;padding:12px 14px;border:1px solid var(--border);
+  border-radius:12px;background:var(--secondary);transition:.15s;
+}
+.rly-item.on{
+  border-color:color-mix(in oklab,var(--primary) 55%,transparent);
+  background:color-mix(in oklab,var(--primary) 8%,var(--card));
+}
+.rly-when{flex:none;width:96px;display:flex;flex-direction:column;gap:2px}
+.rly-when b{font-size:14px;font-variant-numeric:tabular-nums;letter-spacing:.01em}
+.rly-when span{font-size:11.5px;color:var(--muted-foreground)}
+.rly-main{flex:1;min-width:120px}
+.rly-name{font-size:14.5px;font-weight:750;line-height:1.4}
+.rly-sub{font-size:12.5px;color:var(--muted-foreground);margin-top:3px}
+.rly-act{display:flex;gap:8px;flex:none}
+.rly-cancel{color:var(--destructive);border-color:color-mix(in oklab,var(--destructive) 35%,transparent)}
+@media (max-width:560px){
+  .rly-item{flex-wrap:wrap}
+  .rly-when{width:auto;flex-direction:row;gap:8px;align-items:baseline}
+  .rly-time{width:100%}
+  .rly-act{width:100%;justify-content:flex-end}
+  .rly-when,.rly-main{min-width:0}
+}
+
+/* ===== 危险区 ===== */
+.heat-meta{font-size:13px;color:var(--muted-foreground);margin:12px 0 14px;line-height:1.6}
+.heat-grid{display:flex;flex-direction:column;gap:9px}
+.heat-row{display:flex;align-items:center;gap:10px;font-size:13px}
+.heat-dim{
+  flex:none;font-size:11.5px;font-weight:750;padding:2px 8px;border-radius:6px;
+  color:var(--primary);background:color-mix(in oklab,var(--primary) 13%,transparent);
+}
+.heat-pos{flex:none;width:116px;font-weight:700;font-variant-numeric:tabular-nums}
+.heat-bar{flex:1;height:8px;border-radius:99px;background:var(--secondary);overflow:hidden;min-width:60px}
+.heat-bar i{display:block;height:100%;border-radius:99px;
+  background:linear-gradient(90deg,color-mix(in oklab,var(--primary) 70%,transparent),var(--destructive))}
+.heat-n{flex:none;width:92px;text-align:right;font-size:12px;color:var(--muted-foreground);font-variant-numeric:tabular-nums}
+.heat-foot{margin-top:14px;font-size:12px;color:var(--muted-foreground);line-height:1.6}
+@media (max-width:560px){
+  .heat-pos{width:88px;font-size:12px}
+  .heat-n{width:76px;font-size:11.5px}
+}
+
+/* ===== 计分板榜单 ===== */
+.score-card{margin-top:16px}
+.score-head{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.score-sub{font-size:12.5px;color:var(--muted-foreground)}
+.score-row{display:flex;align-items:center;gap:10px;padding:6px 0;font-size:13px}
+.score-rank{flex:none;width:24px;text-align:center;font-weight:750;color:var(--muted-foreground);
+  font-variant-numeric:tabular-nums}
+.score-rank.top{color:var(--primary)}
+.score-name{flex:none;width:112px;font-weight:650;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.score-bar{flex:1;height:8px;border-radius:99px;background:var(--secondary);overflow:hidden;min-width:60px}
+.score-bar i{display:block;height:100%;border-radius:99px;background:color-mix(in oklab,var(--primary) 70%,transparent)}
+.score-v{flex:none;width:64px;text-align:right;font-weight:750;font-variant-numeric:tabular-nums}
+
+/* ===== 玩家主页：实时状态 / 留言 ===== */
+.pf-live,.pf-msg{margin-top:16px}
+.pf-live-t,.pf-msg-t{font-size:15px;font-weight:750;margin-bottom:10px}
+.pf-live-row{display:flex;gap:12px;font-size:13px;padding:4px 0;align-items:baseline}
+.pf-live-k{flex:none;width:44px;color:var(--muted-foreground)}
+.pf-live-v{font-weight:650;line-height:1.5}
+.pf-hearts{color:var(--destructive);letter-spacing:-1px;font-weight:400;margin-left:6px}
+.pf-live-off{font-size:13px;color:var(--muted-foreground)}
+.pf-msg-row{display:flex;gap:10px;flex-wrap:wrap}
+.pf-msg-in{
+  flex:1;min-width:200px;background:var(--card);border:1px solid var(--input);
+  color:var(--foreground);border-radius:9px;padding:9px 11px;font-size:13.5px;outline:none;
+}
+.pf-msg-in:focus{border-color:var(--ring);box-shadow:0 0 0 3px var(--ring)}
+.pf-msg-hint{margin-top:8px;font-size:12px;color:var(--muted-foreground)}
+
+/* ===== 首页召集横幅 ===== */
+.home-rally{
+  display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+  max-width:1080px;margin:0 auto 18px;padding:11px 16px;border-radius:12px;
+  border:1px solid color-mix(in oklab,var(--primary) 35%,transparent);
+  background:color-mix(in oklab,var(--primary) 9%,var(--card));
+  font-size:13.5px;
+}
+.home-rally[hidden]{display:none}
+.hr-tag{font-size:12px;font-weight:750;color:var(--primary)}
+.hr-main{font-weight:750}
+.hr-when{color:var(--muted-foreground);font-size:12.5px;font-variant-numeric:tabular-nums}
+.hr-go{margin-left:auto;font-weight:750;color:var(--primary);text-decoration:none;white-space:nowrap}
+.hr-go:hover{text-decoration:underline}
+
+/* ===== 个人中心：新手任务 ===== */
+.me-quest{margin-top:16px}
+.q-head{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.q-sub{font-size:12.5px;color:var(--muted-foreground);line-height:1.6}
+.q-list{margin-top:12px;display:flex;flex-direction:column;gap:8px}
+.q-row{
+  display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:11px;
+  border:1px solid var(--border);background:var(--card);
+}
+.q-row.ready{border-color:color-mix(in oklab,var(--primary) 50%,transparent);
+  background:color-mix(in oklab,var(--primary) 6%,var(--card))}
+.q-row.claimed{opacity:.72}
+.q-ico{flex:none;font-size:20px;width:26px;text-align:center}
+.q-main{flex:1;min-width:0}
+.q-t{font-size:13.5px;font-weight:750;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.q-label{font-size:11.5px;font-weight:650;color:var(--muted-foreground);font-variant-numeric:tabular-nums}
+.q-desc{font-size:12px;color:var(--muted-foreground);margin-top:2px}
+.q-bar{height:5px;border-radius:99px;background:var(--secondary);overflow:hidden;margin-top:6px}
+.q-bar i{display:block;height:100%;border-radius:99px;background:var(--primary)}
+.q-act{flex:none;margin-left:auto}
+.q-got{font-size:12.5px;font-weight:750;color:var(--primary)}
+.q-todo{font-size:12.5px;color:var(--muted-foreground)}
+.q-empty{font-size:13px;color:var(--muted-foreground);padding:14px 0;text-align:center}
+@media (max-width:560px){
+  .q-row{flex-wrap:wrap}
+  .q-act{width:100%;margin-left:38px}
+  .q-claim{width:100%}
+}
