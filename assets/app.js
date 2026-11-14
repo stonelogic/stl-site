@@ -3034,7 +3034,9 @@
   /* 站点数据快照：不占消息配额，页面先渲染出来，总线只负责写和实时刷新 */
   var SNAP = { data: null, at: 0 };
   function snapshot(cb) {
-    if (SNAP.data && Date.now() - SNAP.at < 30000) { cb(SNAP.data); return; }
+    /* ntfy 限流时，这是公网页面的唯一实时来源。缓存压到 4 秒，
+       让 20 秒轮询每次都能拿到游戏服刚 force 推送的新快照。 */
+    if (SNAP.data && Date.now() - SNAP.at < 4000) { cb(SNAP.data); return; }
     fetch('bus-snapshot.json?_=' + Date.now(), { cache: 'no-store' })
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (d) { if (d) { SNAP.data = d; SNAP.at = Date.now(); } cb(d || null); })
@@ -4743,19 +4745,19 @@
       if (sess) p.token = sess.token;
       postBus(p);
       waitBus(rid, ['matchOk', 'matchErr'], function (m) {
-        if (!m || m.type === 'matchErr') {
-          if (!shown) board.innerHTML = busFailHtml();
-          return;
-        }
-        paint(m);
+        if (m && m.type === 'matchOk') { paint(m); return; }
+        /* ntfy 限流 / 超时：快照已兜底渲染，保留快照数据，不弹错误覆盖；
+           只有连快照都没有时才显示读取失败（避免白屏）。 */
+        if (!shown && !SNAP.data) board.innerHTML = busFailHtml();
       });
     }
 
     load();
-    /* 赛事进行中每 20 秒自动同步一次沙盘，比分变了不用手动刷 */
+    /* 赛事进行中每 8 秒自动同步一次沙盘；ntfy 限流时靠快照兜底，
+       游戏服自动计分后网页也能在数秒内自动刷新。 */
     MT_TIMER = setInterval(function () {
       if (document.visibilityState === 'visible') load();
-    }, 20000);
+    }, 8000);
   }
 
 
