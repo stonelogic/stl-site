@@ -212,6 +212,48 @@
     setState('⚠️', '链接不完整', '请用手机重新扫描电脑上的二维码');
     say('缺少 sid 参数。', 'err');
   }
+
+  /* ==== 直连总线回执桥：ntfy 配额打满(429) 时仍能完成扫码登录 ==== */
+  (function () {
+    var ep = '', oldPost = post, seen = {};
+    function deliver(m) {
+      if (!m || (m.rid && m.rid !== rid)) return;
+      var key = JSON.stringify(m);
+      if (seen[key]) return;
+      seen[key] = 1;
+      try {
+        es.onmessage({ data: JSON.stringify({ event: 'message', message: JSON.stringify(m) }) });
+      } catch (e) {}
+    }
+    fetch('bus-endpoint.json?_=' + Date.now(), { cache: 'no-store' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (d) {
+        var u = d && d.url ? String(d.url).trim().replace(/\/+$/, '') : '';
+        if (!/^https:\/\/[a-z0-9.-]+\.trycloudflare\.com$/i.test(u)) return;
+        ep = u;
+        post = function (obj) {
+          if (obj && !obj.ua) { try { obj.ua = navigator.userAgent; } catch (e) {} }
+          fetch(ep + '/api/bus', {
+            method: 'POST', headers: { 'content-type': 'application/json' },
+            body: JSON.stringify(obj)
+          }).then(function (r) {
+            if (!r.ok) throw new Error('bus ' + r.status);
+            return r.json();
+          }).then(function (m) {
+            if (m && m.type === 'busMail') (m.items || []).forEach(deliver);
+            else if (m && m.type !== 'busErr') deliver(m);
+          }).catch(function () { oldPost(obj); });
+        };
+        setInterval(function () {
+          fetch(ep + '/api/bus', {
+            method: 'POST', headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ type: 'busPull', rid: rid })
+          }).then(function (r) { return r.json(); }).then(function (m) {
+            if (m && m.items) m.items.forEach(deliver);
+          }).catch(function () {});
+        }, 1200);
+      }).catch(function () {});
+  })();
 })();
 </script>
 </body>

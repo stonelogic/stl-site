@@ -453,6 +453,52 @@
     var timer = setInterval(function () { if (tries++ > 6 || reqName) { clearInterval(timer); return; } probe(); }, 2000);
     setTimeout(function () { if (!reqName) say('核验链接超时，请回游戏重新获取。', true); }, 18000);
   }
+
+  /* ==== 直连总线回执桥：ntfy 配额打满(429) 时仍能完成一键登录 ====
+     回执直接喂给现有 es.onmessage，授权/登录业务逻辑一行都不用改。 */
+  (function () {
+    var ep = '', oldPost = post, seen = {};
+    function deliver(m) {
+      if (!m || (m.rid && m.rid !== rid)) return;
+      var key = JSON.stringify(m);
+      if (seen[key]) return;
+      seen[key] = 1;
+      try {
+        es.onmessage({ data: JSON.stringify({ event: 'message', message: JSON.stringify(m) }) });
+      } catch (e) {}
+    }
+    fetch('bus-endpoint.json?_=' + Date.now(), { cache: 'no-store' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (d) {
+        var u = d && d.url ? String(d.url).trim().replace(/\/+$/, '') : '';
+        if (!/^https:\/\/[a-z0-9.-]+\.trycloudflare\.com$/i.test(u)) return;
+        ep = u;
+        /* 写请求优先直连；只有直连彻底不可用才回落 ntfy（不双发，避免重复授权） */
+        post = function (obj) {
+          if (obj && !obj.ua) { try { obj.ua = navigator.userAgent; } catch (e) {} }
+          fetch(ep + '/api/bus', {
+            method: 'POST', headers: { 'content-type': 'application/json' },
+            body: JSON.stringify(obj)
+          }).then(function (r) {
+            if (!r.ok) throw new Error('bus ' + r.status);
+            return r.json();
+          }).then(function (m) {
+            if (m && m.type === 'busMail') (m.items || []).forEach(deliver);
+            else if (m && m.type !== 'busErr') deliver(m);
+            /* busErr = 服务端已收到，回执会进信箱，绝不重发请求 */
+          }).catch(function () { oldPost(obj); });
+        };
+        /* 异步回执（QQ 群发登录码、扫码确认）没有对应请求，用轮询取 */
+        setInterval(function () {
+          fetch(ep + '/api/bus', {
+            method: 'POST', headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ type: 'busPull', rid: rid })
+          }).then(function (r) { return r.json(); }).then(function (m) {
+            if (m && m.items) m.items.forEach(deliver);
+          }).catch(function () {});
+        }, 1200);
+      }).catch(function () {});
+  })();
 })();
 </script>
 </body>
