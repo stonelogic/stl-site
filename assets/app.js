@@ -14,10 +14,14 @@
   var NTFY_BASE = 'https://ntfy.sh';
   var NTFY_TOPIC = 'stl-ql-6bd1ae0f4e7e7968';
   var REPO_URL = 'https://github.com/stonelogic/stl-site';
-  /* 公网页面直连服务端总线的地址（跨域，不占 ntfy 配额）。
-     留空 = 继续走 ntfy（旧行为）。
-     想让报名/取消/记分等写操作彻底不依赖 ntfy：把 28080 用 natfrp 之类的隧道暴露出公网地址，
-     例如 'https://stl-ql.frp-top.com'，填到这里。配置后写操作直连服务端、回执内联返回。 */
+  /* GitHub Pages 静态页「跨域」直连服务端总线的地址（不占 ntfy 配额）。
+     整站去 ntfy 有两条路，任选其一：
+       A. 用 natfrp 给 127.0.0.1:28080 建一条 HTTP 隧道并开自动 HTTPS，
+          让玩家直接访问隧道域名：页面由本服务 serveStatic 托管，/api/bus 天然同源，
+          零配置直连（下面 IS_PAGES 判定会自动识别），这里保持留空即可。
+       B. 继续用 GitHub Pages，把隧道地址填到这里（如 'https://stl-ql.frp-top.com'），
+          写操作跨域直连服务端 /api/bus，回执内联返回。
+     留空且仍在 GitHub Pages 上 = 写操作继续走 ntfy（旧行为，配额打满时会受限）。 */
   var SERVER_BUS = '';
 
   /* ---------- 站点配置（纯静态文案） ---------- */
@@ -2315,8 +2319,13 @@
       if (!items.length) list.innerHTML = '<div class="chat-empty">还没有消息，来打个招呼吧</div>';
     }
 
-    /* 历史：先问服务端拿内存快照（最可靠），再补一遍 ntfy 缓存 */
-    post({ type: 'chatHistory', rid: rid, limit: 60 }).catch(function () {});
+    /* 历史：先问服务端拿内存快照（直连总线内联回执 / ntfy 回执都兼容），再补一遍 ntfy 缓存。
+       用独立的 hrid，避免和 chatSend 的确认回执共用 rid 时串台。 */
+    var hrid = rid + 'h';
+    post({ type: 'chatHistory', rid: hrid, limit: 60 }).catch(function () {});
+    waitBus(hrid, ['chatSnapshot'], function (m) {
+      if (m && Array.isArray(m.items)) { gotData = true; addMany(m.items); }
+    });
     fetch(NTFY_BASE + '/' + NTFY_TOPIC + '/json?poll=1&since=' + (Math.floor(Date.now() / 1000) - 7200))
       .then(function (r) { return r.text(); })
       .then(function (t) {
@@ -2340,7 +2349,7 @@
       if (d.event !== 'message' || !d.message) return;
       var m; try { m = JSON.parse(d.message); } catch (e) { return; }
       if (m.type === 'chatMsg' && m.msg) { appendMsg(m.msg); return; }
-      if (m.type === 'chatSnapshot' && m.rid === rid) { gotData = true; addMany(m.items); return; }
+      if (m.type === 'chatSnapshot' && (m.rid === rid || m.rid === hrid)) { gotData = true; addMany(m.items); return; }
       if (m.type === 'chatSent' && m.rid === rid) { say('已发送'); return; }
       if (m.type === 'chatFail' && m.rid === rid) { say(m.reason || '发送失败', 'err'); return; }
     };
@@ -2372,7 +2381,14 @@
         .then(function () {
           input.value = '';
           btn.disabled = false;
-          // 消息本身由服务端以 chatMsg 广播回来，这里不做乐观显示
+          // 消息本身由服务端以 chatMsg 广播回来，这里不做乐观显示；
+          // 直连总线模式下确认/失败是内联回执（SSE 收不到），在这里补上提示
+          var m = LOCAL_REPLY[rid];
+          if (m && (m.type === 'chatSent' || m.type === 'chatFail')) {
+            delete LOCAL_REPLY[rid];
+            if (m.type === 'chatFail') say(m.reason || '发送失败', 'err');
+            else say('已发送');
+          }
         })
         .catch(function () {
           btn.disabled = false;
@@ -2979,24 +2995,21 @@
 
   /* ---------- 个人中心（资料 / 时长 / 登录设备） ---------- */
 
-  /* 往 ntfy 总线发一条请求 */
+  /* 往消息总线发一条写请求：优先直连服务端 /api/bus，不可用才回落 ntfy */
   var BUS_DOWN = false, BUS_WARNED = false, BUS_MUTE_UNTIL = 0;
-  /* 从本机服务打开站点时走同源 /api/bus，一次请求换一次回执，
-     完全不依赖 ntfy —— 公共通道限流时，服主在本机照样能创建赛事、记分、签到。 */
-  var LOCAL_BUS = /^(127\.0\.0\.1|localhost)$/.test(location.hostname);
-  /* 公网直连总线：配了 SERVER_BUS 且不在本机时启用，写操作走服务端 /api/bus（跨域） */
-  var REMOTE_BUS = !!SERVER_BUS && !LOCAL_BUS;
+  /* 页面是不是由「本服务」自己托管的：server.js 的 serveStatic 直接发站点文件，
+     所以只要不是 GitHub Pages 静态域(*.github.io)，页面与 /api/bus 就天然同源。
+     本机 127.0.0.1:28080、以及 natfrp 隧道域名都属此类 —— 零配置直连，
+     写 POST 完全不经过 ntfy，配额打满也照常发帖 / 聊天 / 签到 / 召集。 */
+  var IS_PAGES = /(^|\.)github\.io$/i.test(location.hostname);
+  var LOCAL_BUS = !IS_PAGES;
+  /* GitHub Pages 静态页：只有填了 SERVER_BUS 才跨域直连服务端 /api/bus */
+  var REMOTE_BUS = !!SERVER_BUS && IS_PAGES;
   var LOCAL_REPLY = {};
-  function postBus(obj) {
-    if (LOCAL_BUS || REMOTE_BUS) {
-      var url = REMOTE_BUS ? (SERVER_BUS.replace(/\/+$/, '') + '/api/bus') : '/api/bus';
-      return fetch(url, {
-        method: 'POST', headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(obj)
-      }).then(function (r) { return r.json(); })
-        .then(function (m) { LOCAL_REPLY[obj.rid] = m; return true; })
-        .catch(function () { return false; });
-    }
+  var BUS_FALLBACK = {};   // rid -> true：这次写直连失败、回落了 ntfy，回执也要走 ntfy 轮询
+
+  /* ntfy 兜底通道（仅静态页没配直连、或直连失败时才用） */
+  function ntfyPost(obj) {
     /* 配额打满后先静默 30 分钟，别再发注定失败的请求 */
     if (BUS_DOWN && Date.now() < BUS_MUTE_UNTIL) return Promise.resolve(false);
     return fetch(NTFY_BASE + '/' + NTFY_TOPIC, {
@@ -3017,6 +3030,24 @@
       BUS_DOWN = false;
       return true;
     }).catch(function () { return false; });
+  }
+  function postBus(obj) {
+    if (LOCAL_BUS || REMOTE_BUS) {
+      var url = REMOTE_BUS ? (SERVER_BUS.replace(/\/+$/, '') + '/api/bus') : '/api/bus';
+      return fetch(url, {
+        method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(obj)
+      }).then(function (r) {
+        if (!r.ok) throw new Error('bus ' + r.status);
+        return r.json();
+      }).then(function (m) { LOCAL_REPLY[obj.rid] = m; return true; })
+        .catch(function () {
+          /* 服务没启 / 隧道断了 / 站点被托管在别处：回落 ntfy，别让写操作直接失败 */
+          BUS_FALLBACK[obj.rid] = true;
+          return ntfyPost(obj);
+        });
+    }
+    return ntfyPost(obj);
   }
   /* 站点数据快照：不占消息配额，页面先渲染出来，总线只负责写和实时刷新 */
   var SNAP = { data: null, at: 0 };
@@ -3039,18 +3070,25 @@
       '</p><p style="font-size:12px;color:var(--muted-foreground)">' +
       (BUS_DOWN ? '上面是最近一次的快照；创建、记分等操作需等通道恢复' : '') + '</p></div>';
   }
-  /* 等总线上与自己 rid 匹配的回执（论坛/个人中心共用同一套玩法） */
+  /* 等总线上与自己 rid 匹配的回执（论坛/个人中心/聊天共用同一套玩法） */
   function waitBus(rid, types, cb) {
-    if (LOCAL_BUS || REMOTE_BUS) {
+    if ((LOCAL_BUS || REMOTE_BUS) && !BUS_FALLBACK[rid]) {
       var tries = 0;
       (function poll() {
         var m = LOCAL_REPLY[rid];
-        if (m) { delete LOCAL_REPLY[rid]; return cb(m); }
-        if (++tries > 60) return cb(null);
+        /* 按 type 过滤：聊天页会复用同一个 rid，别把 chatSent 当 chatSnapshot 交出去；
+           busErr 是「没有模块响应」，直接交给调用方报错，不必空等到超时。 */
+        if (m && (m.type === 'busErr' || !types || !types.length || types.indexOf(m.type) >= 0)) {
+          delete LOCAL_REPLY[rid];
+          return cb(m);
+        }
+        if (++tries > 100) return cb(null);   // 10s，与 /api/bus 内联回执超时一致
         setTimeout(poll, 100);
       })();
       return;
     }
+    delete BUS_FALLBACK[rid];
+    delete LOCAL_REPLY[rid];
     /* 通道不可用时立刻收尾，页面保留快照数据，不空等 15 秒 */
     if (BUS_DOWN) return cb(null);
     var deadline = Date.now() + 15000;
