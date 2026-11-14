@@ -2996,12 +2996,44 @@
   /* ---------- 个人中心（资料 / 时长 / 登录设备） ---------- */
 
   /* 往 ntfy 总线发一条请求 */
+  var BUS_DOWN = false, BUS_WARNED = false;
   function postBus(obj) {
     return fetch(NTFY_BASE + '/' + NTFY_TOPIC, {
       method: 'POST',
       headers: { 'content-type': 'text/plain' },
       body: JSON.stringify(obj)
-    });
+    }).then(function (r) {
+      if (r.status === 429) {
+        BUS_DOWN = true;
+        if (!BUS_WARNED) {
+          BUS_WARNED = true;
+          toast('消息通道今日已达上限，正在显示最近一次快照；写操作暂时不可用');
+          setTimeout(function () { BUS_WARNED = false; }, 60000);
+        }
+        return false;
+      }
+      BUS_DOWN = false;
+      return true;
+    }).catch(function () { return false; });
+  }
+  /* 站点数据快照：不占消息配额，页面先渲染出来，总线只负责写和实时刷新 */
+  var SNAP = { data: null, at: 0 };
+  function snapshot(cb) {
+    if (SNAP.data && Date.now() - SNAP.at < 30000) { cb(SNAP.data); return; }
+    fetch('bus-snapshot.json?_=' + Date.now(), { cache: 'no-store' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (d) { if (d) { SNAP.data = d; SNAP.at = Date.now(); } cb(d || null); })
+      .catch(function () { cb(null); });
+  }
+  function snapAdmins(s, sess) {
+    return !!(s && sess && Array.isArray(s.admins) &&
+      s.admins.map(String).indexOf(String(sess.qq)) >= 0);
+  }
+  function busFailHtml() {
+    return '<div class="empty"><div class="ico">📡</div><p>' +
+      (BUS_DOWN ? '消息通道今日已达上限，暂时读不到最新数据' : '读取失败，稍后刷新再试') +
+      '</p><p style="font-size:12px;color:var(--muted-foreground)">' +
+      (BUS_DOWN ? '上面是最近一次的快照；创建、记分等操作需等通道恢复' : '') + '</p></div>';
   }
   /* 等总线上与自己 rid 匹配的回执（论坛/个人中心共用同一套玩法） */
   function waitBus(rid, types, cb) {
@@ -4132,17 +4164,22 @@
 
   function loadHomeRally(host) {
     if (!host) return;
-    var rid = randomHex(8);
-    postBus({ type: 'rallyQuery', rid: rid });
-    waitBus(rid, ['rallyOk', 'rallyErr'], function (m) {
-      if (!m || m.type === 'rallyErr' || !m.items || !m.items.length) { host.hidden = true; return; }
-      var r = m.items[0];
+    function banner(items) {
+      if (!items || !items.length) { host.hidden = true; return; }
+      var r = items[0];
       host.hidden = false;
       host.innerHTML = '<span class="hr-tag">📣 召集</span>' +
         '<span class="hr-main">' + esc(r.title) + '</span>' +
         '<span class="hr-when">' + fmtClock(r.startAt) + ' · ' + untilText(r.startAt) +
         (r.need > 0 ? ' · ' + (r.left > 0 ? '还缺 ' + r.left + ' 人' : '人已够') : '') + '</span>' +
         '<a class="hr-go" href="#/rally">报名 →</a>';
+    }
+    snapshot(function (s) { if (s && s.rally) banner(s.rally.items); });
+    var rid = randomHex(8);
+    postBus({ type: 'rallyQuery', rid: rid });
+    waitBus(rid, ['rallyOk', 'rallyErr'], function (m) {
+      if (!m || m.type === 'rallyErr') return;   // 横幅已有快照兜底，不弹错误
+      banner(m.items);
     });
   }
 
@@ -4195,10 +4232,17 @@
     }
 
     function load() {
+      var shown = false;
+      snapshot(function (s) {
+        if (s && s.rally) { shown = true; paint(s.rally.items || []); }
+      });
       var rid = randomHex(8);
       postBus({ type: 'rallyQuery', rid: rid });
       waitBus(rid, ['rallyOk', 'rallyErr'], function (m) {
-        if (!m || m.type === 'rallyErr') { listEl.innerHTML = emptyState('📡', '读取失败，刷新再试'); return; }
+        if (!m || m.type === 'rallyErr') {
+          if (!shown) listEl.innerHTML = busFailHtml();
+          return;
+        }
         paint(m.items || []);
       });
     }
@@ -4266,12 +4310,7 @@
           (d === 7 ? '近 7 天' : d === 30 ? '近 30 天' : '近 90 天') + '</button>';
       }).join('') + '</div>');
 
-    function draw() {
-      meta.textContent = '正在读取死亡记录…';
-      var rid = randomHex(8);
-      postBus({ type: 'heatQuery', rid: rid, days: days });
-      waitBus(rid, ['heatOk', 'heatErr'], function (m) {
-        if (!m || m.type === 'heatErr') { meta.textContent = '读取失败，刷新再试'; return; }
+    function paintHeat(m) {
         var spots = m.spots || [];
         var total = m.total || { n: 0, who: 0 };
         if (!total.n) {
@@ -4296,6 +4335,24 @@
             '</div>';
         }).join('') + '</div>' +
           '<p class="heat-foot">坐标是 100 格取整后的大致位置，用来提醒「那片别空手过去」，不是精确死亡点。</p>';
+    }
+
+    function draw() {
+      var shown = false;
+      /* 先读快照，总线挂了也能看到危险区；7/30/90 三档都备了 */
+      snapshot(function (s) {
+        var h = s && s.heat ? s.heat[days] : null;
+        if (h) { shown = true; paintHeat(h); }
+      });
+      if (!shown) meta.textContent = '正在读取死亡记录…';
+      var rid = randomHex(8);
+      postBus({ type: 'heatQuery', rid: rid, days: days });
+      waitBus(rid, ['heatOk', 'heatErr'], function (m) {
+        if (!m || m.type === 'heatErr') {
+          if (!shown) { body.innerHTML = busFailHtml(); meta.textContent = ''; }
+          return;
+        }
+        paintHeat(m);
       });
     }
 
@@ -4319,10 +4376,7 @@
       '<div id="scoreBody"><div class="empty"><div class="ico">⏳</div><p>正在读计分板…</p></div></div>';
     var body = host.querySelector('#scoreBody');
 
-    var rid = randomHex(8);
-    postBus({ type: 'scoreQuery', rid: rid });
-    waitBus(rid, ['scoreOk', 'scoreErr'], function (m) {
-      if (!m || m.type === 'scoreErr') { body.innerHTML = emptyState('📡', '计分板读取失败'); return; }
+    function paintScore(m) {
       var objs = m.objectives || [];
       var rows = m.rows || [];
       if (!objs.length || !rows.length) {
@@ -4357,6 +4411,22 @@
         draw(b.getAttribute('data-o'));
       });
       draw(objs[0]);
+    }
+
+    var scoreShown = false;
+    snapshot(function (s) {
+      if (s && s.score && s.score.rows && s.score.rows.length) {
+        scoreShown = true; paintScore(s.score);
+      }
+    });
+    var rid = randomHex(8);
+    postBus({ type: 'scoreQuery', rid: rid });
+    waitBus(rid, ['scoreOk', 'scoreErr'], function (m) {
+      if (!m || m.type === 'scoreErr') {
+        if (!scoreShown) body.innerHTML = busFailHtml();
+        return;
+      }
+      paintScore(m);
     });
   }
 
@@ -4632,13 +4702,22 @@
     }
 
     function load() {
+      var shown = false;
+      snapshot(function (s) {
+        if (!s || !s.match) return;
+        var d = s.match.detail;
+        /* 指定 id 的历史赛事快照里没有，交给总线；当前赛事可以直接画 */
+        if (focusId && (!d || d.id !== focusId)) return;
+        shown = true;
+        paint({ items: s.match.items || [], detail: d || null, canManage: snapAdmins(s, sess) });
+      });
       var rid = randomHex(8);
       var p = focusId ? { type: 'matchDetail', rid: rid, id: focusId } : { type: 'matchQuery', rid: rid };
       if (sess) p.token = sess.token;
       postBus(p);
       waitBus(rid, ['matchOk', 'matchErr'], function (m) {
         if (!m || m.type === 'matchErr') {
-          board.innerHTML = '<div class="empty"><div class="ico">📡</div><p>赛事读取失败，刷新再试</p></div>';
+          if (!shown) board.innerHTML = busFailHtml();
           return;
         }
         paint(m);
