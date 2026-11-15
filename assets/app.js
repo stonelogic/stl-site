@@ -7,8 +7,8 @@
 
   /* ---------- 服务器地址（用于状态查询） ---------- */
   var STATUS_API = 'https://www.mclists.cn/api/server-status/?host={host}&port={port}';
-  var JAVA_HOST = 'frp-off.com';
-  var JAVA_PORT = '44558';
+  var JAVA_HOST = 'mcstl.v6.army';
+  var JAVA_PORT = '25565';
 
   /* ---------- 消息总线 / 反馈去向 ---------- */
   var NTFY_BASE = 'https://ntfy.sh';
@@ -966,6 +966,11 @@
     hero.innerHTML = '<div class="hero-sky">' +
       '<h1 class="hero-title"><span>STONE</span><span>LOGIC</span></h1>' +
       '<p class="hero-slogan">' + esc(SITE.slogan) + '</p>' +
+      '<div class="hero-actions">' +
+      '<a class="btn btn-primary hero-guide-btn" href="ipv6-guide.html" target="_blank" rel="noopener">' +
+      '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:7px"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>' +
+      '进服须知(必看！！！)</a>' +
+      '</div>' +
       '<div class="hero-meta">' +
       '<a class="hero-qq" href="' + SITE.groupUrl + '" target="_blank" rel="noopener" title="加入 QQ 群" aria-label="加入 QQ 群">' + SVG.penguin + '</a>' +
       '<span class="hero-addr"><span class="hero-ip">' + esc(SITE.javaIp) + '</span>' +

@@ -181,8 +181,20 @@ code{font-family:ui-monospace,Consolas,Menlo,monospace}
   color:var(--muted-foreground);
   text-shadow:0 1px 0 rgba(255,255,255,.4);
 }
-.hero-actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.hero-actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:22px}
 .hero-actions .btn{font-size:14.5px;padding:11px 22px}
+.hero-guide-btn{
+  font-weight:800;font-size:15px!important;padding:12px 26px!important;border-radius:999px;
+  background:linear-gradient(135deg,#ff5a5f,#ff8a3d);color:#fff;border:0;
+  box-shadow:0 6px 20px rgba(255,90,95,.42);text-decoration:none;
+  animation:guidePulse 2.2s ease-in-out infinite;transition:transform .18s,box-shadow .18s;
+}
+.hero-guide-btn:hover{transform:translateY(-2px) scale(1.03);box-shadow:0 10px 26px rgba(255,90,95,.55);color:#fff}
+@keyframes guidePulse{
+  0%,100%{box-shadow:0 6px 20px rgba(255,90,95,.42)}
+  50%{box-shadow:0 6px 28px rgba(255,90,95,.75),0 0 0 6px rgba(255,90,95,.12)}
+}
+@media (prefers-reduced-motion: reduce){.hero-guide-btn{animation:none}}
 .hero-meta{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:clamp(20px,3.2vh,36px);flex-wrap:wrap}
 .hero-qq{width:48px;height:48px;border-radius:50%;display:grid;place-items:center;flex:none;
   border:1.6px solid color-mix(in oklab,var(--foreground) 24%,transparent);color:var(--foreground);
