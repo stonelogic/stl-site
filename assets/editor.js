@@ -126,7 +126,7 @@
     h += '<label>服务器名称' + inputHtml('input', 'name', c.name, '服务器名称') + '</label>';
     h += '<label>标语' + inputHtml('input', 'tagline', c.tagline, '一句话标语') + '</label>';
     h += '<label class="full">首页 slogan' + inputHtml('input', 'slogan', c.slogan, '首页大字标语') + '</label>';
-    h += '<label>服务器地址 host' + inputHtml('input', 'javaHost', c.javaHost, 'frp-top.com') + '</label>';
+    h += '<label>服务器地址 host' + inputHtml('input', 'javaHost', c.javaHost, 'frp-off.com') + '</label>';
     h += '<label>服务器端口' + inputHtml('input', 'javaPort', c.javaPort, '44558') + '</label>';
     h += '<label class="full">QQ 群链接' + inputHtml('input', 'groupUrl', c.groupUrl, 'https://qm.qq.com/...') + '</label>';
     h += '</div>';

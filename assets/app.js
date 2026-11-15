@@ -7,7 +7,7 @@
 
   /* ---------- 服务器地址（用于状态查询） ---------- */
   var STATUS_API = 'https://www.mclists.cn/api/server-status/?host={host}&port={port}';
-  var JAVA_HOST = 'frp-top.com';
+  var JAVA_HOST = 'frp-off.com';
   var JAVA_PORT = '44558';
 
   /* ---------- 消息总线 / 反馈去向 ---------- */
