@@ -967,7 +967,7 @@
       '<h1 class="hero-title"><span>STONE</span><span>LOGIC</span></h1>' +
       '<p class="hero-slogan">' + esc(SITE.slogan) + '</p>' +
       '<div class="hero-actions">' +
-      '<a class="btn btn-primary hero-guide-btn" href="ipv6-guide.html" target="_blank" rel="noopener">' +
+      '<a class="btn btn-primary hero-guide-btn" href="ipv6-guide.html?v=20261120b" target="_blank" rel="noopener">' +
       '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:7px"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>' +
       '进服须知(必看！！！)</a>' +
       '</div>' +
