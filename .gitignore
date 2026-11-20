@@ -6,3 +6,6 @@ repo.json
 *.tmp
 _tmp/
 tools/live-status.json
+__pycache__/
+*.pyc
+tools/ntfy-online-state.json
