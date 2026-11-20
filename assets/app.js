@@ -297,6 +297,50 @@
     });
   }
 
+  /* ---------- 实时在线推送（ntfy）----------
+     后端 export_online.py 每 60 秒经 RCON 查询，人数/名单变化即时 POST 到 ntfy，
+     官网用 SSE 订阅，做到「人数秒级更新」，不再受 online.json 静态快照 + CDN 缓存拖慢。
+     pollLive 仍保留作兜底；推送到达时直接覆盖 LIVE 并刷新当前页所有人数/名单/雪花。 */
+  var PUSH_AT = 0;          // 最近一次已处理的推送时间戳（防重复/乱序）
+  var onlineES = null;
+  function startOnlinePush() {
+    if (typeof EventSource === 'undefined') return;
+    try {
+      onlineES = new EventSource('https://ntfy.sh/' + ONLINE_TOPIC + '/json?since=all');
+    } catch (e) { return; }
+    onlineES.onmessage = function (ev) {
+      var msg;
+      try { msg = JSON.parse(ev.data); } catch (e) { return; }
+      if (msg.event !== 'message' || !msg.message) return;
+      var d;
+      try { d = JSON.parse(msg.message); } catch (e) { return; }
+      if (!d || typeof d.now !== 'number' || typeof d.online !== 'boolean') return;
+      var ts = Number(d.ts) || 0;
+      if (ts && ts <= PUSH_AT) return;   // 旧消息（含 12 小时缓存里的历史）忽略
+      PUSH_AT = ts;
+
+      // 人数/在线判定：以实时推送为准
+      LIVE.known = true;
+      LIVE.ok = !!d.online;
+      LIVE.now = LIVE.ok ? d.now : 0;
+      if (Number(d.max)) LIVE.max = Number(d.max);
+      LIVE.fail = 0;
+      LIVE.at = Date.now();
+
+      // 名单：同步到 ST_ONLINE_DATA，供状态页/在线页/雪花共用，保持人数同源
+      ST_ONLINE_DATA = ST_ONLINE_DATA || {};
+      ST_ONLINE_DATA.players = Array.isArray(d.players) ? d.players : [];
+      ST_ONLINE_DATA.now = d.now;
+      ST_ONLINE_DATA.max = d.max;
+      ST_ONLINE_DATA.online = !!d.online;
+      ST_ONLINE_DATA.updated = ts;
+
+      renderLive();
+      if (typeof LIVE.onUpdate === 'function') LIVE.onUpdate();
+    };
+    // 断线不限：EventSource 自带重连；不 close，保证全站常驻实时
+  }
+
   /* 顶部导航里的迷你状态徽标（全站可见，点进在线状态页） */
   function mountNavLive() {
     var right = document.querySelector('.nav-right');
@@ -967,7 +1011,7 @@
       '<h1 class="hero-title"><span>STONE</span><span>LOGIC</span></h1>' +
       '<p class="hero-slogan">' + esc(SITE.slogan) + '</p>' +
       '<div class="hero-actions">' +
-      '<a class="btn btn-primary hero-guide-btn" href="ipv6-guide.html?v=20261120b" target="_blank" rel="noopener">' +
+      '<a class="btn btn-primary hero-guide-btn" href="ipv6-guide.html?v=20261121b" target="_blank" rel="noopener">' +
       '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:7px"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>' +
       '进服须知(必看！！！)</a>' +
       '</div>' +
@@ -1324,9 +1368,19 @@
       startFlakes();
     }
 
+    // 优先用实时推送同步过来的名单（ST_ONLINE_DATA），没有再回退 online.json
+    if (ST_ONLINE_DATA && Array.isArray(ST_ONLINE_DATA.players)) {
+      apply(ST_ONLINE_DATA.players);
+      return;
+    }
     fetch('online.json?_=' + Date.now(), { cache: 'no-store' })
       .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-      .then(function (d) { apply((d && Array.isArray(d.players)) ? d.players : []); })
+      .then(function (d) {
+        var names = (d && Array.isArray(d.players)) ? d.players : [];
+        ST_ONLINE_DATA = ST_ONLINE_DATA || {};
+        ST_ONLINE_DATA.players = names;
+        apply(names);
+      })
       .catch(function () { apply([]); });    // 取不到就一朵都不挂
   }
 
@@ -2124,6 +2178,17 @@
     });
   }
   function loadOnline() {
+    // 实时推送已带名单时直接用，避免再读滞后的 online.json；否则回退快照
+    if (ST_ONLINE_DATA && Array.isArray(ST_ONLINE_DATA.players)) {
+      var pgRT = $id('olPlayers');
+      var okRT = LIVE.known ? LIVE.ok : !!ST_ONLINE_DATA.online;
+      var ageRT = ST_ONLINE_DATA.updated ? Math.max(0, Math.round(Date.now() / 1000 - ST_ONLINE_DATA.updated)) : -1;
+      if (Number(ST_ONLINE_DATA.max)) LIVE.max = Number(ST_ONLINE_DATA.max);
+      renderPlayerGrid(pgRT, ST_ONLINE_DATA.players, okRT, ageRT);
+      loadWhere();
+      renderLive();
+      return;
+    }
     fetchLocalOnline(function (d, err) {
       var pg = $id('olPlayers');
       if (err || !d) {
@@ -4711,6 +4776,7 @@
         mountNavLive();
         render();
         startLiveTicker();
+        startOnlinePush();   // 实时在线人数推送（人数秒级更新）
       });
     });
   }

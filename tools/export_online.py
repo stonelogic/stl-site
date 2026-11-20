@@ -20,6 +20,7 @@ import socket
 import struct
 import sys
 import time
+import urllib.request
 
 sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
@@ -34,6 +35,14 @@ LIVE_OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "live-status
 # 否则网页算出的「同步多久没跑」会一直涨，玩家挂机不动的名单会被误判成「同步已停止」。
 # 每 HEARTBEAT 秒强制刷一次时间戳（顺带提交），网页的 30 分钟告警就只会真出问题时出现。
 HEARTBEAT = 1200
+
+# ---- 官网实时在线推送（ntfy.sh）----
+# 静态官网拿不到内网 RCON，只能用 ntfy 做实时通道。
+# 免费额度 250 条/天（与其他 topic 共用），所以「变化才推 + 低频心跳」，
+# 绝不每次心跳都推。前端 EventSource 订阅此 topic 实时刷新人数。
+NTFY_URL = "https://ntfy.sh/stl-online-6bd1ae0f4e7e7968"
+NTFY_PUSH_HEARTBEAT = 600          # 无变化时最多 10 分钟推一次保活
+NTFY_STATE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "ntfy-online-state.json")
 
 AUTH = 3
 EXEC = 2
@@ -263,6 +272,45 @@ def collect_extras():
     return out
 
 
+def push_online_realtime(players, now, mx, force=False):
+    """把在线状态推到 ntfy，供官网实时刷新人数（变化才推 + 低频心跳，省额度）。
+    失败静默——绝不影响本地 online.json 的正常导出。"""
+    try:
+        state = {"now": -1, "max": -1, "players": [], "at": 0}
+        try:
+            with open(NTFY_STATE, encoding="utf-8") as f:
+                state = json.load(f)
+        except Exception:
+            pass
+
+        changed = (state.get("now") != now or state.get("max") != mx
+                   or state.get("players") != players)
+        due = (time.time() - int(state.get("at") or 0)) >= NTFY_PUSH_HEARTBEAT
+        if not (changed or due or force):
+            return False
+
+        payload = json.dumps({
+            "players": players, "now": now, "max": mx,
+            "online": True, "ts": int(time.time()),
+        }, ensure_ascii=False, separators=(",", ":"))
+        req = urllib.request.Request(
+            NTFY_URL, data=payload.encode("utf-8"),
+            headers={"Content-Type": "text/plain; charset=utf-8",
+                     "X-Title": "STL Online"}, method="POST")
+        with urllib.request.urlopen(req, timeout=8) as resp:
+            if resp.status != 200:
+                raise RuntimeError("HTTP %d" % resp.status)
+        with open(NTFY_STATE, "w", encoding="utf-8") as f:
+            json.dump({"now": now, "max": mx, "players": players,
+                       "at": int(time.time())}, f, ensure_ascii=False)
+        print("[ntfy] 已推送实时在线 %d/%d（%s）" % (
+            now, mx, "变化" if changed else "心跳"))
+        return True
+    except Exception as e:
+        print("[ntfy] 推送失败（不影响快照）：%s" % e)
+        return False
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--print", dest="dry", action="store_true", help="只打印不写文件")
@@ -311,6 +359,9 @@ def main():
     if args.dry:
         print(json.dumps(data, ensure_ascii=False))
         return 0
+
+    # ---- 实时推送：官网靠它秒级刷新人数（变化才推，省 ntfy 额度）----
+    push_online_realtime(players, now, mx)
 
     # ---- 2) 仓库里的 online.json 只带一份「轻量快照」，跟心跳一起刷 ----
     #         实时 TPS/内存每几秒就变，全写进仓库会变成提交噪音。
