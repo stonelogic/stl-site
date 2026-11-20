@@ -7,7 +7,7 @@
 
   /* ---------- 服务器地址（用于状态查询） ---------- */
   var STATUS_API = 'https://www.mclists.cn/api/server-status/?host={host}&port={port}';
-  var JAVA_HOST = 'mcstl.v6.army';
+  var JAVA_HOST = 'mcstl.duckdns.org';
   var JAVA_PORT = '25565';
 
   /* ---------- 消息总线 / 反馈去向 ---------- */

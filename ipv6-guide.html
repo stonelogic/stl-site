@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>进服须知(必看！！！) - Stone Logic 服务器</title>
 <link rel="icon" href="assets/icon.png">
-<link rel="stylesheet" href="assets/style.css?v=20261115b">
+<link rel="stylesheet" href="assets/style.css?v=20261120">
 <style>
 body{margin:0}
 .gd-wrap{max-width:820px;margin:0 auto;padding:calc(var(--topbar-h,56px) + 28px) 20px 80px}
@@ -23,7 +23,8 @@ body{margin:0}
 .gd-card blockquote code,.gd-card p code,.gd-card li code{background:var(--muted);padding:2px 6px;border-radius:5px;font-family:ui-monospace,Consolas,monospace;font-size:13.5px;color:var(--primary);font-weight:700}
 .gd-card pre{background:var(--muted);padding:16px 18px;border-radius:10px;overflow-x:auto;margin:14px 0}
 .gd-card pre code{background:none;padding:0;font-size:14px;color:var(--foreground)}
-.gd-card a{color:var(--primary);text-decoration:underline}
+.gd-card a{color:#2563eb;text-decoration:underline;cursor:pointer}
+.gd-card a:hover{color:#1d4ed8}
 .gd-card hr{border:0;border-top:1px solid var(--border);margin:28px 0}
 @media(max-width:600px){.gd-card{padding:20px 18px}.gd-title{font-size:20px}}
 </style>
@@ -33,84 +34,147 @@ body{margin:0}
   <a class="gd-back" href="index.html">← 返回首页</a>
   <h1 class="gd-title">进服须知(必看！！！)</h1>
   <div class="gd-card">
-<blockquote><strong>服务器地址：<code>mcstl.v6.army</code></strong><br>Java 版端口 <code>25565</code>　基岩/手机/Windows 商店版端口 <code>19132</code></blockquote>
-<p>&gt;</p>
-<blockquote>特点：<strong>零安装、零费用、最低延迟</strong>。不用装联机软件，不用买加速器。<br>只要你的网络有 IPv6，就能像加普通服务器一样直接进。<br>服务器地址是域名，会自动跟随最新 IP，不用手动记 IP、IP 变了也不用改。</blockquote>
+<blockquote><strong>服务器地址：<code>mcstl.duckdns.org</code></strong>（首选，好记、IP 变了自动跟随）<br>Java 版端口 <code>25565</code>　基岩/手机/Windows 商店版端口 <code>19132</code><br><br>特点：<strong>零安装、零费用、最低延迟</strong>。不用装联机软件，不用买加速器。<br>只要你的网络支持 IPv6，就能像加普通服务器一样直接进。<br><br>备用字面地址：<code>2408:8214:4b2a:5711:d410:13ba:4670:71ed</code>（域名万一解析不了就用这个）</blockquote>
 <hr>
-<h2>快速开始（大多数人 3 步搞定）</h2>
-<ol><li>用手机开热点，电脑连上（手机网络基本都自带 IPv6）——见 <a href="#第三部分让设备拿到-ipv6" target="_blank" rel="noopener">第三部分 A</a>。</li><li>Minecraft 里添加服务器，地址填 <code>mcstl.v6.army</code>。</li><li>加入。进不去再看下面的详细排查。</li></ol>
+<h2 id="快速开始大多数人-3-步搞定">快速开始（大多数人 3 步搞定）</h2>
+<ol>
+<li>用手机开热点，电脑连上（手机网络基本都自带 IPv6）——见 <a href="#第三部分让设备拿到-ipv6">第三部分 A</a>。</li>
+<li>Minecraft 里添加服务器，地址填 <code>mcstl.duckdns.org</code>。</li>
+<li>加入。进不去再看下面的详细排查。</li>
+</ol>
 <hr>
-<h2>第一部分：IPv6 是什么，为什么要用它</h2>
+<h2 id="第一部分ipv6-是什么为什么要用它">第一部分：IPv6 是什么，为什么要用它</h2>
 <p>简单说，IPv6 是新一代网络地址。你家宽带、手机流量现在基本都有 IPv6，只是很多人不知道。</p>
 <p>服务器用的是 <strong>IPv6 直连</strong>：玩家和服务器之间端到端直连，<strong>不经过任何第三方中转服务器</strong>。相比联机加速器/内网穿透（隧道），延迟更低、不限中继带宽。</p>
 <p>要进服，唯一条件：<strong>你的网络支持 IPv6</strong>。下面教你确认和开启。</p>
 <hr>
-<h2>第二部分：确认你有没有 IPv6</h2>
-<h3>方法 1：网页一键检测（最简单）</h3>
-<p>浏览器打开以下任一网站，看是否显示&quot;支持 IPv6 / 绿色通过&quot;：</p>
-<ul><li>https://test-ipv6.com</li><li>https://ipv6test.com</li></ul>
-<h3>方法 2：Windows 命令行检测</h3>
+<h2 id="第二部分确认你有没有-ipv6">第二部分：确认你有没有 IPv6</h2>
+<h3 id="方法-1网页一键检测最简单">方法 1：网页一键检测（最简单）</h3>
+<p>浏览器打开以下任一网站，看是否显示"支持 IPv6 / 绿色通过"：</p>
+<ul>
+<li><a href="https://test-ipv6.com" target="_blank" rel="noopener">https://test-ipv6.com</a></li>
+<li><a href="https://ipv6test.com" target="_blank" rel="noopener">https://ipv6test.com</a></li>
+</ul>
+<h3 id="方法-2windows-命令行检测">方法 2：Windows 命令行检测</h3>
 <p>按 <code>Win + R</code> → 输入 <code>cmd</code> → 回车，执行：</p>
-<pre><code>ping -6 mcstl.v6.army</code></pre>
-<ul><li>能收到 <code>来自 ... 的回复</code> → IPv6 正常，直接去 <a href="#第四部分进服" target="_blank" rel="noopener">第四部分进服</a>。</li><li>显示 <code>找不到主机</code> 或 <code>请求超时</code> → 往下看开启方法。</li></ul>
-<h3>方法 3：看本机有没有 IPv6 地址</h3>
+<pre><code>ping -6 mcstl.duckdns.org</code></pre>
+<ul>
+<li>能收到 <code>来自 ... 的回复</code> → IPv6 正常，直接去 <a href="#第四部分进服">第四部分进服</a>。</li>
+<li>显示 <code>请求超时</code> → 往下看开启方法。</li>
+</ul>
+<h3 id="方法-3看本机有没有-ipv6-地址">方法 3：看本机有没有 IPv6 地址</h3>
 <p>Windows 命令行执行 <code>ipconfig</code>，找 <code>IPv6 地址</code> 那一行。</p>
-<ul><li>看到类似 <code>2408:xxxx:...</code> / <code>240e:...</code> / <code>2409:...</code> 开头的一长串（带冒号）→ 有 IPv6。</li><li>只看到 <code>fe80:</code> 开头 → 那只是本地地址，<strong>不算</strong>公网 IPv6。</li><li>完全没有 IPv6 地址 → 需要开启，看第三部分。</li></ul>
-<h3>方法 4：手机检测</h3>
-<p>浏览器打开 https://test-ipv6.com，用当前网络（WiFi 或流量）测试。</p>
+<ul>
+<li>看到类似 <code>2408:xxxx:...</code> / <code>240e:...</code> / <code>2409:...</code> 开头的一长串（带冒号）→ 有 IPv6。</li>
+<li>只看到 <code>fe80:</code> 开头 → 那只是本地地址，<strong>不算</strong>公网 IPv6。</li>
+<li>完全没有 IPv6 地址 → 需要开启，看第三部分。</li>
+</ul>
+<h3 id="方法-4手机检测">方法 4：手机检测</h3>
+<p>浏览器打开 <a href="https://test-ipv6.com" target="_blank" rel="noopener">https://test-ipv6.com</a>，用当前网络（WiFi 或流量）测试。</p>
 <hr>
-<h2>第三部分：让设备拿到 IPv6</h2>
+<h2 id="第三部分让设备拿到-ipv6">第三部分：让设备拿到 IPv6</h2>
 <p>按你的网络环境选一种。<strong>推荐先试 A（手机热点），最省事、成功率最高。</strong></p>
-<h3>A. 手机热点（推荐，不用动任何设置）</h3>
+<h3 id="a-手机热点推荐不用动任何设置">A. 手机热点（推荐，不用动任何设置）</h3>
 <p>手机流量（4G/5G）国内三大运营商基本都自带 IPv6，开热点让电脑连上即可。</p>
 <p><strong>iPhone：</strong></p>
-<ol><li>设置 → 蜂窝网络 → 关闭「WiFi」（确保走的是流量不是 WiFi）。</li><li>设置 → 个人热点 → 打开「允许其他人加入」。</li><li>电脑 WiFi 连上这个热点。</li><li>回到 <a href="#第二部分确认你有没有-ipv6" target="_blank" rel="noopener">第二部分</a> 重新检测，通了就能进服。</li></ol>
+<ol>
+<li>设置 → 蜂窝网络 → 关闭「WiFi」（确保走的是流量不是 WiFi）。</li>
+<li>设置 → 个人热点 → 打开「允许其他人加入」。</li>
+<li>电脑 WiFi 连上这个热点。</li>
+<li>回到 <a href="#第二部分确认你有没有-ipv6">第二部分</a> 重新检测，通了就能进服。</li>
+</ol>
 <p><strong>安卓（华为/小米/OPPO/vivo 等）：</strong></p>
-<ol><li>下拉状态栏关掉 WiFi，确保用流量。</li><li>设置 → 网络和互联网（或「连接与共享」）→ 个人热点 / 便携热点 → 开启。</li><li>电脑 WiFi 连上这个热点。</li><li>重新检测 IPv6，通了就能进服。</li></ol>
+<ol>
+<li>下拉状态栏关掉 WiFi，确保用流量。</li>
+<li>设置 → 网络和互联网（或「连接与共享」）→ 个人热点 / 便携热点 → 开启。</li>
+<li>电脑 WiFi 连上这个热点。</li>
+<li>重新检测 IPv6，通了就能进服。</li>
+</ol>
 <blockquote>注意：电脑此时<strong>别同时插着网线</strong>，否则可能走网线的 IPv4 通道。断开网线或禁用有线网卡。</blockquote>
-<h3>B. 家里宽带路由器开 IPv6</h3>
+<h3 id="b-家里宽带路由器开-ipv6">B. 家里宽带路由器开 IPv6</h3>
 <p>国内宽带（电信/联通/移动）几乎都支持 IPv6，很多时候只是路由器默认没开。</p>
-<ol><li>浏览器打开路由器后台。常见地址：<code>192.168.1.1</code>、<code>192.168.0.1</code>、<code>192.168.3.1</code>（路由器背面贴纸也有写）。</li><li>登录（账号密码通常也在贴纸上，或初始 <code>admin/admin</code>）。</li><li>找 IPv6 相关设置，一般在「网络设置 / 上网设置 / IPv6 / 双栈模式」里，把它设为：</li></ol>
-<ul><li><strong>开启</strong> / <strong>启用</strong></li><li>或「上网方式」选 <strong>自动获取 / DHCPv6 / 双栈</strong></li></ul>
-<ol><li>保存重启路由器。</li><li>电脑重新连 WiFi（或重插网线），再检测 IPv6。</li></ol>
+<ol>
+<li>浏览器打开路由器后台。常见地址：<code>192.168.1.1</code>、<code>192.168.0.1</code>、<code>192.168.3.1</code>（路由器背面贴纸也有写）。</li>
+<li>登录（账号密码通常也在贴纸上，或初始 <code>admin/admin</code>）。</li>
+<li>找 IPv6 相关设置，一般在「网络设置 / 上网设置 / IPv6 / 双栈模式」里，把它设为：</li>
+</ol>
+<ul>
+<li><strong>开启</strong> / <strong>启用</strong></li>
+<li>或「上网方式」选 <strong>自动获取 / DHCPv6 / 双栈</strong></li>
+</ul>
+<ol>
+<li>保存重启路由器。</li>
+<li>电脑重新连 WiFi（或重插网线），再检测 IPv6。</li>
+</ol>
 <blockquote>有些情况是<strong>光猫</strong>没开 IPv6：如果你用光猫自带路由功能上网，也要进光猫后台（通常 <code>192.168.1.1</code>）把 IPv6 打开。如果你没有光猫管理员密码，直接用方案 A 手机热点更省事。</blockquote>
-<h3>C. Windows 电脑开启 IPv6（一般不用做）</h3>
+<h3 id="c-windows-电脑开启-ipv6一般不用做">C. Windows 电脑开启 IPv6（一般不用做）</h3>
 <p>正常情况下 Windows 的 IPv6 是默认开启的。只有被手动关掉时才需要重开：</p>
-<ol><li><code>Win + R</code> → 输入 <code>ncpa.cpl</code> → 回车，打开网络连接。</li><li>右键你正在用的网络（WiFi 或以太网）→ 属性。</li><li>勾选「<strong>Internet 协议版本 6 (TCP/IPv6)</strong>」→ 确定。</li><li>断开重连网络，再检测。</li></ol>
-<h3>D. Mac 电脑</h3>
-<p>Mac 一般自动获取 IPv6，无需设置。检测方式：打开 https://test-ipv6.com。若不通，用方案 A 手机热点。</p>
-<h3>E. 实在没有 IPv6 的兜底方案</h3>
+<ol>
+<li><code>Win + R</code> → 输入 <code>ncpa.cpl</code> → 回车，打开网络连接。</li>
+<li>右键你正在用的网络（WiFi 或以太网）→ 属性。</li>
+<li>勾选「<strong>Internet 协议版本 6 (TCP/IPv6)</strong>」→ 确定。</li>
+<li>断开重连网络，再检测。</li>
+</ol>
+<h3 id="d-mac-电脑">D. Mac 电脑</h3>
+<p>Mac 一般自动获取 IPv6，无需设置。检测方式：打开 <a href="https://test-ipv6.com" target="_blank" rel="noopener">https://test-ipv6.com</a>。若不通，用方案 A 手机热点。</p>
+<h3 id="e-实在没有-ipv6-的兜底方案">E. 实在没有 IPv6 的兜底方案</h3>
 <p>如果以上都不行（比如公司/校园网封了 IPv6），可以：</p>
-<ul><li>换网络：手机热点、家里宽带、咖啡厅 WiFi 挨个试。</li><li>临时用手机玩（基岩版，用流量，见下）。</li><li>或者联系房主走备用隧道地址（延迟会高一些，但能进）。</li></ul>
+<ul>
+<li>换网络：手机热点、家里宽带、咖啡厅 WiFi 挨个试。</li>
+<li>临时用手机玩（基岩版，用流量，见下）。</li>
+<li>或者联系房主走备用隧道地址（延迟会高一些，但能进）。</li>
+</ul>
 <hr>
-<h2>第四部分：进服</h2>
-<h3>Java 版（电脑，官方启动器 / HMCL / PCL 等）</h3>
-<ol><li>打开 Minecraft → 「多人游戏」→「添加服务器」。</li><li>服务器地址填：</li></ol>
-<pre><code>   mcstl.v6.army</code></pre>
+<h2 id="第四部分进服">第四部分：进服</h2>
+<h3 id="java-版电脑官方启动器--hmcl--pcl-等">Java 版（电脑，官方启动器 / HMCL / PCL 等）</h3>
+<ol>
+<li>打开 Minecraft → 「多人游戏」→「添加服务器」。</li>
+<li>服务器地址填：</li>
+</ol>
+<pre><code>mcstl.duckdns.org</code></pre>
 <p>端口留 <code>25565</code>（默认就是，不用填）。</p>
-<ol><li>加入。</li></ol>
-<h3>基岩版（手机 / Windows 商店版 / 主机）</h3>
-<ol><li>「游戏」→「服务器」→「添加服务器」。</li><li>填：</li></ol>
-<ul><li>服务器名称：随便写，比如 <code>mcstl</code></li><li>服务器地址：<code>mcstl.v6.army</code></li><li>端口：<code>19132</code></li></ul>
-<ol><li>保存并加入。</li></ol>
-<blockquote>服务器是离线模式，<strong>不需要正版账号</strong>，随便输入昵称即可进。</blockquote>
+<ol>
+<li>加入。</li>
+</ol>
+<h3 id="基岩版手机--windows-商店版--主机">基岩版（手机 / Windows 商店版 / 主机）</h3>
+<ol>
+<li>「游戏」→「服务器」→「添加服务器」。</li>
+<li>填：</li>
+</ol>
+<ul>
+<li>服务器名称：随便写，比如 <code>mcstl</code></li>
+<li>服务器地址：<code>mcstl.duckdns.org</code></li>
+<li>端口：<code>19132</code></li>
+</ul>
+<ol>
+<li>保存并加入。</li>
+</ol>
+<blockquote>服务器是离线模式，<strong>不需要正版账号</strong>，随便输入昵称即可进。<br>IPv6 地址不用加中括号 <code>[ ]</code>。</blockquote>
 <hr>
-<h2>第五部分：连不上怎么办（按顺序排查）</h2>
-<ol><li><strong>重测 IPv6</strong>：浏览器开 https://test-ipv6.com，或命令行 <code>ping -6 mcstl.v6.army</code>。不通就是网络没 IPv6，回第三部分。</li><li><strong>清 DNS 缓存</strong>（Windows 命令行，管理员或非管理员均可）：</li></ol>
-<pre><code>   ipconfig /flushdns</code></pre>
-<p>然后重进游戏。</p>
-<ol><li><strong>换手机热点</strong>：这是最稳的验证方式。热点能进、家里 WiFi 不能进 → 是你家网络的问题，按第三部分 B 开 IPv6。</li><li><strong>确认地址没写错</strong>：是 <code>mcstl.v6.army</code>（字母 <strong>l</strong>，不是数字 <strong>1</strong>；是 <code>.army</code>，不是 <code>.navy</code>）。</li><li><strong>多等几秒</strong>：第一次连接如果卡一下，等 5–10 秒，别急着退出重连。</li><li><strong>仍不行</strong>：把下面几项的截图发给房主排查：</li></ol>
-<ul><li><code>ping -6 mcstl.v6.army</code> 的结果</li><li>https://test-ipv6.com 的检测结果</li><li>游戏里的报错原文</li></ul>
+<h2 id="第五部分连不上怎么办按顺序排查">第五部分：连不上怎么办（按顺序排查）</h2>
+<ol>
+<li><strong>重测 IPv6</strong>：浏览器开 <a href="https://test-ipv6.com" target="_blank" rel="noopener">https://test-ipv6.com</a>，或命令行 <code>ping -6 mcstl.duckdns.org</code>。不通就是网络没 IPv6，回第三部分。</li>
+<li><strong>确认地址没写错</strong>：是 <code>mcstl.duckdns.org</code>（全是小写，别漏 <code>.org</code>）。</li>
+<li><strong>换手机热点</strong>：这是最稳的验证方式。热点能进、家里 WiFi 不能进 → 是你家网络的问题，按第三部分 B 开 IPv6。</li>
+<li><strong>试备用字面地址</strong>：把地址换成 <code>2408:8214:4b2a:5711:d410:13ba:4670:71ed</code> 试试（域名万一解析异常时用）。</li>
+<li><strong>多等几秒</strong>：第一次连接如果卡一下，等 5–10 秒，别急着退出重连。</li>
+<li><strong>仍不行</strong>：把下面几项的截图发给房主排查：</li>
+</ol>
+<ul>
+<li><code>ping -6 mcstl.duckdns.org</code> 的结果</li>
+<li><a href="https://test-ipv6.com" target="_blank" rel="noopener">https://test-ipv6.com</a> 的检测结果</li>
+<li>游戏里的报错原文</li>
+</ul>
 <hr>
-<h2>常见问题</h2>
+<h2 id="常见问题">常见问题</h2>
 <p><strong>Q：一定要开会员/买加速器吗？</strong></p>
 <p>不用。IPv6 直连完全免费，不需要任何加速器或会员。</p>
 <p><strong>Q：手机能用流量直接进吗？</strong></p>
 <p>能。国内手机流量基本都有 IPv6，基岩版直接按第四部分填地址端口即可。</p>
 <p><strong>Q：为什么有时第一次进会卡一下？</strong></p>
-<p>域名要解析、链路要建立，等几秒就好。之后会快。</p>
-<p><strong>Q：服务器 IP 变了我要改地址吗？</strong></p>
-<p>不用。地址是域名，后台会自动更新指向最新 IP，你永远填 <code>mcstl.v6.army</code> 就行。</p>
+<p>链路要建立，等几秒就好。之后会快。</p>
+<p><strong>Q：这串地址以后会变吗？会变的话怎么办？</strong></p>
+<p>会变，但<strong>你不用管</strong>。域名 <code>mcstl.duckdns.org</code> 由服务器自动更新（每 5 分钟），IP 变了域名自动跟着变，你填的域名永远有效。只有域名万一解析异常时，才用上面的备用字面地址（那个才会变，变了找房主要最新的）。</p>
   </div>
 </div>
 </body>
