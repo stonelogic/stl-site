@@ -202,7 +202,9 @@ code{font-family:ui-monospace,Consolas,Menlo,monospace}
   50%{box-shadow:0 6px 28px rgba(255,90,95,.75),0 0 0 6px rgba(255,90,95,.12)}
 }
 @media (prefers-reduced-motion: reduce){.hero-guide-btn{animation:none}}
-.hero-meta{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:clamp(20px,3.2vh,36px);flex-wrap:wrap}
+.hero-meta{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;margin-top:clamp(20px,3.2vh,36px)}
+.hero-meta .hero-qq{justify-self:end}
+.hero-meta .live-badge{justify-self:start}
 .hero-qq{width:48px;height:48px;border-radius:50%;display:grid;place-items:center;flex:none;
   border:1.6px solid color-mix(in oklab,var(--foreground) 24%,transparent);color:var(--foreground);
   background:color-mix(in oklab,var(--card) 55%,transparent);transition:.18s}
@@ -462,6 +464,14 @@ code{font-family:ui-monospace,Consolas,Menlo,monospace}
   .brand-name{display:none}
   .main{padding:20px 14px 50px}
   .nav-main a,.nav-main .nav-item{padding:6px 9px;font-size:13px}
+  .hero-meta{display:flex;flex-wrap:wrap;justify-content:center;gap:8px}
+  .hero-meta .hero-qq,.hero-meta .live-badge{justify-self:auto}
+  .hero-meta .hero-qq{width:42px;height:42px}
+  .hero-meta .hero-qq svg{width:22px;height:22px}
+  .hero-meta .hero-addr{padding:3px 3px 3px 12px}
+  .hero-meta .hero-ip{font-size:14px}
+  .hero-meta .hero-copy{width:34px;height:34px}
+  .hero-meta .live-badge{padding:8px}
 }
 
 /* ===== 入场动画 ===== */
@@ -529,6 +539,9 @@ code{font-family:ui-monospace,Consolas,Menlo,monospace}
 [data-theme="dark"] .live-badge.is-on{color:#4ade80}
 /* 首页：跟地址一起淡入，别突兀地蹦出来 */
 .hero-sky .live-badge{animation:stlFadeUp .6s .38s both}
+/* 首页 Hero：状态只保留一个圆点，隐藏文字、胶囊收成圆形 */
+.hero-sky .live-badge{padding:9px;gap:0}
+.hero-sky .live-badge .live-txt{display:none}
 @media (prefers-reduced-motion: reduce){
   .hero-sky .live-badge{animation:none!important}
   .live-badge.is-on .live-dot{animation:none!important}
