@@ -13,7 +13,7 @@ rem 计划任务的环境里没有 git（git 来自便携版 PortableGit，只有交互会话才有那个 P
 rem 所以把便携版目录挂到 PATH 最前面
 if exist "D:\服务端正式\tools\PortableGit\cmd\git.exe" set "PATH=D:\服务端正式\tools\PortableGit\cmd;%PATH%"
 if exist "C:\Program Files\Git\cmd\git.exe" set "PATH=C:\Program Files\Git\cmd;%PATH%"
-if exist "D:\workbuddy\resources\vendor\PortableGit\cmd\git.exe" set "PATH=D:\workbuddy\resources\vendor\PortableGit\cmd;%PATH%"
+if exist "D:\workbuddy\resources\vendor\PortableGit\mingw64\bin\git.exe" set "PATH=D:\workbuddy\resources\vendor\PortableGit\mingw64\bin;%PATH%"
 
 rem 无人值守：禁止 git 弹窗等待凭据输入
 set "GIT_TERMINAL_PROMPT=0"
